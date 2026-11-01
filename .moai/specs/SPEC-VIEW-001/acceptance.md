@@ -73,4 +73,5 @@ Reference platform: `Aand2024/P1` (5 modules, 6 steps, 5 connections in the rele
 
 ### AC-14 Gates
 - `npm test`, `npm run typecheck`, `npm run build` and the Playwright suite pass; the SPEC-DATA-001 tests still pass;
-  `src/lib/` coverage at least 85%; the production `dist/` bundle contains no `__cy`.
+  `src/lib/` coverage at least 85%; the production `dist/` bundle contains no `window.__cy` (a plain `__cy` substring also occurs inside Cytoscape's own
+  code, so the check targets the hook assignment).

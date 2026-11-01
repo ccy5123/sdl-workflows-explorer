@@ -1,0 +1,105 @@
+// Small hand-made platform for the viewer unit tests (SPEC-VIEW-001 AC-3 to AC-5).
+import type { Evidence, PlatformGraph } from "../../src/data/types";
+
+const ev = (doc: string, page: number | null, locator: string | null): Evidence => ({ doc, page, locator });
+
+export function fixturePlatform(): PlatformGraph {
+  return {
+    platform_id: "Test2020/P1",
+    paper_id: "Test2020",
+    doi: "10.1000/test.1",
+    first_public_year: 2020,
+    field_tags: ["chemistry_synthesis"],
+    name: "test platform",
+    commercial_integrated: false,
+    identity_id: "Test2020/P1",
+    evidence: ev("main", 3, "Fig. 2"),
+    modules: [
+      {
+        module_id: "Test2020/P1/M1",
+        module_type: "software",
+        name_in_paper: "planner",
+        on_platform: true,
+        unmapped_note: null,
+        evidence: ev("SI1", 4, "§1"),
+      },
+      {
+        module_id: "Test2020/P1/M2",
+        module_type: "flow_reactor",
+        name_in_paper: "reactor",
+        on_platform: true,
+        unmapped_note: null,
+        evidence: ev("main", null, null),
+      },
+      {
+        module_id: "Test2020/P1/M3",
+        module_type: "unmapped",
+        name_in_paper: null,
+        on_platform: false,
+        unmapped_note: "external NMR service",
+        evidence: ev("SI2", 7, "Table S1"),
+      },
+    ],
+    steps: [
+      {
+        step_id: "Test2020/P1/S2",
+        step_order: 2,
+        unit_operation: "measure_optical",
+        family: null,
+        performed_by: null,
+        modules: ["Test2020/P1/M3"],
+        uncertain: true,
+        unmapped_note: null,
+        evidence: ev("SI1", 5, "§2"),
+      },
+      {
+        step_id: "Test2020/P1/S1",
+        step_order: 1,
+        unit_operation: "react_flow",
+        family: "react",
+        performed_by: "robot",
+        modules: ["Test2020/P1/M1", "Test2020/P1/M2"],
+        uncertain: false,
+        unmapped_note: null,
+        evidence: ev("SI1", 4, "§1 ¶2"),
+      },
+    ],
+    connections: [
+      {
+        edge_id: "Test2020/P1/E1",
+        from_module: "Test2020/P1/M1",
+        to_module: "Test2020/P1/M2",
+        transfer_mode: "data_transfer",
+        is_material: false,
+        stated: true,
+        uncertain: false,
+        unmapped_note: null,
+        evidence: ev("main", 3, "Fig. 2"),
+      },
+      {
+        edge_id: "Test2020/P1/E2",
+        from_module: "Test2020/P1/M2",
+        to_module: "Test2020/P1/M3",
+        transfer_mode: "human_transfer",
+        is_material: true,
+        stated: false,
+        uncertain: false,
+        unmapped_note: null,
+        evidence: ev("SI1", 6, "§3"),
+      },
+      {
+        edge_id: "Test2020/P1/E3",
+        from_module: "Test2020/P1/M2",
+        to_module: "Test2020/P1/M3",
+        transfer_mode: "fixed_tubing",
+        is_material: true,
+        stated: true,
+        uncertain: true,
+        unmapped_note: "tubing assumed",
+        evidence: ev("SI1", 6, null),
+      },
+    ],
+    campaigns: null,
+    shared_with: [],
+  };
+}

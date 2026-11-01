@@ -244,3 +244,8 @@ dist-ssr/
 public/data/
 .cache/
 coverage/
+
+# SPEC-VIEW-001: e2e build and Playwright output
+dist-e2e/
+test-results/
+playwright-report/

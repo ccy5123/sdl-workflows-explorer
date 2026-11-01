@@ -1,28 +1,27 @@
-// Step 1 shell: shows the release counts read from data/index.json and the data version footer (REQ-015).
-import { useEffect, useState, type CSSProperties } from "react";
-import { COUNT_NAMES, type CountName, type IndexJson } from "./data/types";
+// Hash router of the site (REQ-001 to REQ-004): home, platform viewer, or not found.
+import { useEffect, useState } from "react";
+import type { IndexJson } from "./data/types";
+import { parseRoute } from "./lib/route";
+import { Home } from "./views/Home";
+import { NotFound } from "./views/NotFound";
+import { PlatformView } from "./views/PlatformView";
 
-const LABELS: Record<CountName, string> = {
-  papers: "Papers",
-  platforms: "Platforms",
-  modules: "Modules",
-  steps: "Steps",
-  connections: "Connections",
-  material_connections: "Material connections",
-  candidates: "Screened candidates",
-};
-
-const page: CSSProperties = {
-  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-  maxWidth: "40rem",
-  margin: "0 auto",
-  padding: "2rem 1rem",
-  lineHeight: 1.5,
-  color: "#1f2328",
-};
-const cell: CSSProperties = { padding: "0.35rem 0.75rem", borderBottom: "1px solid #d0d7de" };
+function useHash(): string {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const onChange = () => {
+      setHash(window.location.hash);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
+  }, []);
+  return hash;
+}
 
 export function App() {
+  const hash = useHash();
+  const route = parseRoute(hash);
   const [index, setIndex] = useState<IndexJson | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,35 +36,27 @@ export function App() {
   }, []);
 
   return (
-    <main style={page}>
-      <h1 style={{ fontSize: "1.6rem" }}>SDL Workflows Explorer</h1>
-      {error && <p role="alert">Could not load the data: {error}</p>}
-      {!index && !error && <p>Loading…</p>}
+    <div className="page">
+      <nav className="site-nav">
+        <a href="#/" className="site-title">
+          SDL Workflows Explorer
+        </a>
+      </nav>
+      <main>
+        {error && <p role="alert">Could not load the data: {error}</p>}
+        {!index && !error && <p>Loading…</p>}
+        {index && route.kind === "home" && <Home index={index} />}
+        {index && route.kind === "platform" && (
+          <PlatformView key={route.platformId} index={index} paperId={route.paperId} platformId={route.platformId} hash={hash} />
+        )}
+        {index && route.kind === "notFound" && <NotFound hash={route.hash} />}
+      </main>
       {index && (
-        <table style={{ borderCollapse: "collapse", width: "100%" }}>
-          <caption style={{ textAlign: "left", fontWeight: 600, paddingBottom: "0.5rem" }}>
-            Counts in release {index.release.version}
-          </caption>
-          <tbody>
-            {COUNT_NAMES.map((name) => (
-              <tr key={name}>
-                <th scope="row" style={{ ...cell, textAlign: "left", fontWeight: 400 }}>
-                  {LABELS[name]}
-                </th>
-                <td style={{ ...cell, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                  {index.counts[name].toLocaleString("en")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {index && (
-        <footer style={{ marginTop: "2rem", fontSize: "0.9rem", color: "#57606a" }}>
+        <footer className="site-footer">
           Data version {index.release.version} ·{" "}
           <a href={`https://doi.org/${index.release.doi}`}>doi:{index.release.doi}</a>
         </footer>
       )}
-    </main>
+    </div>
   );
 }

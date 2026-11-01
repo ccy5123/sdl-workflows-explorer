@@ -2,7 +2,7 @@
 id: SPEC-VIEW-001
 title: "Platform viewer: module graph, cycle steps, evidence panel and per-platform links"
 version: "0.2.0"
-status: draft
+status: in-progress
 created: 2026-11-01
 updated: 2026-11-01
 author: cyjoe
