@@ -1,3 +1,5 @@
-class_kind,class,XDL,XDL_source,Gottstein2026,Gottstein2026_source
-module_type,fluidics,Pump (exact),Mehr2020,none,Gottstein2026 ; pdf p.3
-unit_operation,dispense_liquid,Add (broad),Mehr2020,none,Gottstein2026 ; pdf p.4
+class_kind,class,XDL,XDL_source,OntoLab_SAREF,OntoLab_SAREF_source,Gottstein2026,Gottstein2026_source
+module_type,fluidics,Pump (exact),Mehr2020 ; p.4 ; Fig. 2,pump (narrower),Bai2024 ; p.5 ; Table 1,setup (exact),Gottstein2026 ; pdf p.3 ; Fig. 1
+module_type,software,none,Mehr2020,none,Bai2024,none,Gottstein2026 ; pdf p.4 ; §Formalism
+transfer_mode,data_transfer,none,Mehr2020,,,none,Gottstein2026
+unit_operation,dispense_liquid,Add (exact); Dispense (narrower),Mehr2020 ; p.4 ; Fig. 2 · Mehr2020 ; p.11 ; main text,,,unit_operation (broader),Gottstein2026 ; pdf p.3 ; §UO

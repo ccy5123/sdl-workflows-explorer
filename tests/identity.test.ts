@@ -18,6 +18,7 @@ const row = (platform_id: string, identity_id: string, platform_name: string | n
   n_steps: 1,
   module_types: [],
   material_transfer_modes: [],
+  unit_operations: [],
 });
 
 describe("sharedIdentityLinks", () => {

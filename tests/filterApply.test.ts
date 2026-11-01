@@ -33,6 +33,7 @@ const platform = (
   n_steps: 0,
   module_types,
   material_transfer_modes,
+  unit_operations: [],
 });
 
 const alpha = paper({

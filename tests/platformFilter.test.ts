@@ -18,6 +18,7 @@ const row = (platform_id: string, platform_name: string | null): PlatformRow => 
   n_steps: 1,
   module_types: [],
   material_transfer_modes: [],
+  unit_operations: [],
 });
 
 const rows = [row("Smith2020/P1", "Chemspeed Swing"), row("Jones2021/P2", null), row("Lee2022/P1", "Flow Rig")];

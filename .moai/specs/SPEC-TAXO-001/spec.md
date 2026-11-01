@@ -2,7 +2,7 @@
 id: SPEC-TAXO-001
 title: "Taxonomy explorer: class overview and detail pages with counts, browse links, examples and vocabulary correspondence; unit-operation filter in the browser"
 version: "0.3.0"
-status: draft
+status: in-progress
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe

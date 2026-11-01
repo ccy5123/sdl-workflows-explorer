@@ -8,9 +8,9 @@ const MINI = "tests/fixtures/release-mini";
 const EXPECTED: Counts = {
   papers: 2,
   platforms: 3,
-  modules: 5,
+  modules: 6,
   steps: 6,
-  connections: 3,
+  connections: 5,
   material_connections: 2,
   candidates: 3,
 };

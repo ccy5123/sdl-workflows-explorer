@@ -47,6 +47,8 @@ export interface PlatformRow {
   n_steps: number;
   module_types: string[];
   material_transfer_modes: string[];
+  /** Distinct unit operations of the platform's steps, sorted (SPEC-TAXO-001 REQ-001). */
+  unit_operations: string[];
 }
 
 export interface IndexJson {
@@ -119,6 +121,33 @@ export interface PlatformFile {
   platforms: PlatformGraph[];
 }
 
+/** A platform using a class (SPEC-TAXO-001 REQ-002); n is null for field tags. */
+export interface TaxonomyExample {
+  platform_id: string;
+  platform_name: string | null;
+  n: number | null;
+}
+
+export interface CorrespondenceTarget {
+  target: string;
+  /** Relation as recorded: exact, broader, narrower or none. */
+  match: string;
+}
+
+/** One source of a correspondence cell: the key alone, or key, page and locator. */
+export interface CorrespondenceSource {
+  key: string;
+  page: string | null;
+  locator: string | null;
+}
+
+/** The mapping of one class into one vocabulary (one cell of the correspondence table). */
+export interface CorrespondenceEntry {
+  vocabulary: string;
+  targets: CorrespondenceTarget[];
+  sources: CorrespondenceSource[];
+}
+
 export interface TaxonomyClass {
   class_kind: string;
   class: string;
@@ -126,11 +155,38 @@ export interface TaxonomyClass {
   definition: string;
   /** Items using the class: modules, connections, steps or papers depending on class_kind. */
   n_items: number;
+  n_platforms: number;
+  n_papers: number;
+  examples: TaxonomyExample[];
+  /** Null when the correspondence table has no row for the class. */
+  correspondence: CorrespondenceEntry[] | null;
+}
+
+export interface TaxonomyVocabulary {
+  vocabulary: string;
+  /** Class kinds with at least one correspondence row for the vocabulary. */
+  kinds: string[];
+  source_keys: string[];
+}
+
+/** One row of the release README's table of correspondence sources. */
+export interface TaxonomySource {
+  keys: string[];
+  vocabulary: string;
+  reference: string;
+  doi: string;
+}
+
+export interface TaxonomyRelation {
+  match: string;
+  meaning: string | null;
 }
 
 export interface TaxonomyJson {
   classes: TaxonomyClass[];
-  correspondence: Record<string, string>[];
+  vocabularies: TaxonomyVocabulary[];
+  sources: TaxonomySource[];
+  relations: TaxonomyRelation[];
 }
 
 export interface BenchmarkJson {
