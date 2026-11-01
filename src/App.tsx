@@ -1,5 +1,6 @@
-// Hash router of the site (REQ-001 to REQ-004; SPEC-BROWSE-001 REQ-001): home, platform viewer, browser, comparison, or not found.
-import { useEffect, useState } from "react";
+// Hash router of the site (REQ-001 to REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001, REQ-015): home, platform
+// viewer, browser, trends dashboard, comparison, or not found.
+import { Suspense, lazy, useEffect, useState } from "react";
 import type { IndexJson } from "./data/types";
 import { parseRoute } from "./lib/route";
 import { Browse } from "./views/Browse";
@@ -7,6 +8,9 @@ import { Compare } from "./views/Compare";
 import { Home } from "./views/Home";
 import { NotFound } from "./views/NotFound";
 import { PlatformView } from "./views/PlatformView";
+
+// The dashboard and Observable Plot load in their own chunk, only when #/trends is opened.
+const Trends = lazy(() => import("./views/Trends").then((m) => ({ default: m.Trends })));
 
 /** Current hash, and a navigate function that shows the new view in the same render as the click. */
 function useHash(): [string, (next: string) => void] {
@@ -52,6 +56,7 @@ export function App() {
         </a>
         <a href="#/">Home</a>
         <a href="#/browse">Browse</a>
+        <a href="#/trends">Trends</a>
       </nav>
       <main>
         {error && <p role="alert">Could not load the data: {error}</p>}
@@ -61,6 +66,11 @@ export function App() {
           <PlatformView key={route.platformId} index={index} paperId={route.paperId} platformId={route.platformId} hash={hash} />
         )}
         {index && route.kind === "browse" && <Browse index={index} onNavigate={navigate} />}
+        {index && route.kind === "trends" && (
+          <Suspense fallback={<p>Loading…</p>}>
+            <Trends index={index} />
+          </Suspense>
+        )}
         {index && route.kind === "compare" && <Compare key={route.ids.join(",")} index={index} ids={route.ids} />}
         {index && route.kind === "notFound" && <NotFound hash={route.hash} />}
       </main>

@@ -16,6 +16,7 @@ import {
 } from "../lib/filterState";
 import { browseHash, decodeFilters } from "../lib/filterUrl";
 import { compareHash, parseRoute, platformHash } from "../lib/route";
+import { trendsHash } from "../lib/trends";
 
 const paperId = (p: PaperRow) => p.paper_id;
 const platformId = (l: PlatformRow) => l.platform_id;
@@ -190,6 +191,9 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
               </button>
             ))}
           </div>
+          <p>
+            <a href={trendsHash(state, "im")}>Show these in Trends</a>
+          </p>
           {state.view === "papers" ? (
             <section aria-label="Papers">
               <p className="result-count" aria-live="polite">

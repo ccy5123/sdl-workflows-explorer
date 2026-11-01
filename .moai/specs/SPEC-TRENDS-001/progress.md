@@ -68,7 +68,14 @@
   (fixed_tubing/unmapped). They touch only when every value between them counts 0 in a bar; REQ-012 (c) covers that
   case with the 2 px surface gap, the labels and the table. The dark set is not reachable until the site-wide dark
   theme of step 7.
-- Screenshot check at 1280 px and 375 px: _<pending run phase>_
+- Screenshot check at 1280 px and 375 px (orchestrator, 2026-11-02, dev server on port 5173, working tree after the
+  run phase): split im at 1280 px shows sidebar filters, stacked bars with n above each bar, "2026*" tick, legend in
+  stack order, the partial-year note and the sample note; split mt at 1280 px: table 856 px wide inside an 892 px
+  container, no page scroll. At 375 px after a reload: filters collapsed ("Filters (0 active)"), chart 343 px wide,
+  tick labels rotated without overlap, document scrollWidth 375 for split im and split mt; the mt table (856 px)
+  scrolls inside its 343 px container (`overflow-x: auto`). No "%" in the main text. Observation, not a defect: the
+  filter panel's open state is set on mount, so resizing without a reload keeps it (same as the browser).
+  `npm audit --omit=dev`: only the existing csv-parse advisory; the Plot/d3 tree adds none.
 - Implementation Kickoff Approval: approved by the researcher on 2026-11-02 (progression: autonomous to commit, push
   and sync; stop on failing tests or a needed SPEC change). Chart library (Observable Plot), one chart with a split
   control, count grid for multi-valued splits, and chart colours now with the site-wide dark theme in step 7 were
@@ -85,11 +92,97 @@
 
 ## §E.2 Run-phase Evidence
 
-_<pending run phase>_
+Captured 2026-11-02 against base HEAD 618b6ee plus uncommitted run-phase changes (no commit made by manager-develop).
+
+| AC | Status | Command | Actual output |
+|----|--------|---------|---------------|
+| AC-1 | PASS | `npx vitest run` (tests/route.test.ts; new `parseRoute: trends` block appended, existing cases unedited) | `✓ tests/route.test.ts (32 tests)` |
+| AC-2 | PASS | same (tests/trends.test.ts, "trends URL") | `✓ tests/trends.test.ts (50 tests)` |
+| AC-3 | PASS | same ("year bins and labels", inverted inputs) + `npm run e2e` | as above; `✓ AC-3: inverted year inputs apply no range` |
+| AC-4 | PASS | same (fixture block and real-index block) | as above |
+| AC-5 | PASS | same (12 link/count rows of the AC-5 table, 2010–2014 bin under `years=2010-&split=tm`) | as above |
+| AC-6 | PASS | same (unfiltered n, full im table, exclusive column sums, filtered and mt/im selection tables, sum of n = count line) | as above |
+| AC-7 | PASS | same (tests/chartTokens.test.ts: token map, styles.css `:root` / `:root[data-theme="dark"]`, 13 contrasts, ramp steps) | `✓ tests/chartTokens.test.ts (10 tests)` |
+| AC-8 | PASS | same (17 texts exact, 17 banned substrings, no "%") + tests/libBoundary.test.ts (trends.ts, chartTokens.ts; Plot/d3 pattern; new self-test cases) | `✓ tests/libBoundary.test.ts (7 tests)` |
+| AC-9 | PASS | `npm run e2e` | `✓ AC-9: route, navigation and split control` |
+| AC-10 | PASS | `npm run e2e` | `✓ AC-10: unit switch, filters and the filter toggle` |
+| AC-11 | PASS | `npm run e2e` | `✓ AC-11: cross links show equal count lines` |
+| AC-12 | PASS | `npm run e2e` | `✓ AC-12: bar chart, segment and bin-total links, legend` |
+| AC-13 | PASS | `npm run e2e` | `✓ AC-13: count table as chart, cell links and shading` |
+| AC-14 | PASS | `npm run e2e` | `✓ AC-14: partial year, notes, data card link, no percentages` |
+| AC-15 | PASS | `npm run e2e` | `✓ AC-15: the dashboard and Plot load in a lazy chunk` |
+| AC-16 | PASS | `npm run e2e` + tails below | `✓ AC-16: narrow screen, keyboard and empty result`; `npm test` 281/281, typecheck exit 0, `npm run build` exit 0, e2e 34/34, src/lib 100% lines; `package.json` has `"@observablehq/plot": "0.6.17"` |
+
+Run-phase checks left open by spec §4 and plan §C:
+
+- `var()` colours in Plot 0.6.17: Plot's `isColor` (`src/options.js`) accepts `var(...)` strings as CSS colours. The
+  segments use a `fill` channel holding `var(--chart-im-N)` / `var(--chart-autonomy-N)` with `color: {type: "identity"}`,
+  so Plot writes `fill="var(...)"` on each `rect`, and Chromium resolves it: computed fill `rgb(42, 120, 214)` for
+  slot 1 and `rgb(27, 175, 122)` for slot 3 (asserted in AC-12). No fallback (class names or computed values) needed.
+- Accessible names: Plot's `href` channel wraps each mark in an SVG `<a>` (xlink:href), its `ariaLabel` channel sets
+  `aria-label` on the `rect`/`text` inside it, and its `title` channel puts the native `<title>` inside the `rect`
+  (so inside the link). `TrendsChart.tsx` (`nameLinks`) moves each `aria-label` from the mark to its `<a>` after
+  rendering and mirrors xlink:href into `href`. AC-12 and AC-16 find the links by exact name and follow them with click
+  and Enter.
+- AC-15 string unique to Plot: `plot-d6a7b5`, Plot's default SVG class name (`maybeClassName` in `src/style.js`).
+  Present in the built `Trends-*.js` chunk; absent from every JavaScript response on `#/` (asserted in the test).
+- Chunks (`npx vite build`, normal mode): `dist/assets/Trends-Cqzcoyem.js 255.10 kB │ gzip: 89.84 kB`,
+  `dist/assets/index-CEvsT5tm.js 717.00 kB │ gzip: 230.24 kB` (main chunk was about 711 kB before; it now holds
+  `src/lib/trends.ts`, which the browser's "Show these in Trends" link uses).
+- Screenshots at 1280 px and 375 px (`#/trends`, `#/trends?split=field`, `#/trends?split=hw&view=platforms`) were taken
+  by the run phase for a visual pass (stacking order, 2 px gaps, rotated tick labels at 375 px, table scroll); the
+  orchestrator's screenshot check remains open below.
+
+Verbatim tails:
+
+```
+$ npx vitest run --coverage
+ Test Files  23 passed (23)
+      Tests  281 passed (281)
+All files          |   96.84 |    97.33 |   97.91 |   96.84 |
+ src/lib           |     100 |    98.28 |   98.75 |     100 |
+  chartTokens.ts   |     100 |      100 |     100 |     100 |
+  route.ts         |     100 |    97.14 |     100 |     100 | 35
+  trends.ts        |     100 |     95.4 |   94.73 |     100 | 138-139,155-156
+$ npm run typecheck      → exit 0 (tsc --noEmit, no output)
+$ npm run e2e
+  34 passed (14.9s)        (9 in e2e/trends.spec.ts, 19 in e2e/browse.spec.ts, 6 in e2e/viewer.spec.ts)
+$ npm run build          → exit 0, ✓ built in 3.89s
+```
+
+RED before GREEN (unit level):
+
+```
+$ npx vitest run tests/route.test.ts tests/trends.test.ts
+ FAIL  tests/trends.test.ts [ tests/trends.test.ts ]
+Error: Failed to load url ../src/lib/trends (resolved id: ../src/lib/trends) in .../tests/trends.test.ts. Does the file exist?
+ FAIL  tests/route.test.ts > parseRoute: trends > parses "#/trends" as trends with query ""
+AssertionError: expected { kind: 'notFound', hash: '#/trends' } to deeply equal { kind: 'trends', query: '' }
+ FAIL  tests/route.test.ts > parseRoute: trends > parses "#/trends?" as trends with query ""
+ FAIL  tests/route.test.ts > parseRoute: trends > parses "#/trends?split=mt&view=platforms" as trends with query "split=mt&view=platforms"
+ Test Files  2 failed (2)
+      Tests  3 failed | 29 passed (32)
+$ npx vitest run tests/chartTokens.test.ts
+ FAIL  tests/chartTokens.test.ts [ tests/chartTokens.test.ts ]
+Error: Failed to load url ../src/lib/chartTokens (resolved id: ../src/lib/chartTokens) in .../tests/chartTokens.test.ts. Does the file exist?
+$ npx vitest run tests/libBoundary.test.ts
+   × UI-free library modules (AC-8) > src/lib/chartTokens.ts imports no UI package and reads no window or document
+     → ENOENT: no such file or directory, open '.../src/lib/chartTokens.ts'
+      Tests  1 failed | 6 passed (7)
+```
+
+The Playwright spec was written after the view code; its first run had 2 failures, both in the test (a segment name
+also matches the table link once "Counts as a table" is opened; x tick labels read before the chart drew), fixed by
+scoping chart links to the SVG and polling for ticks.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
-_<pending run phase>_
+- run_status: audit-ready
+- run_complete_at: 2026-11-02
+- AC: 16/16 PASS (AC-1 to AC-8 Vitest, AC-9 to AC-16 Playwright).
+- Not committed: all changes are in the working tree for the orchestrator to verify and commit.
+- Open for the orchestrator: the screenshot check at 1280 px and 375 px (§E.1 item), and `npm audit` review of the
+  new dependency tree (`@observablehq/plot` 0.6.17 with `d3` 7).
 
 ## §E.4 Sync-phase Audit-Ready Signal
 

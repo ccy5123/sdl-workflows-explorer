@@ -1,10 +1,11 @@
-// AC-8: the filter and compare modules stay free of UI code so the trends dashboard can import them (REQ-009).
+// AC-8: the filter, compare and trends modules stay free of UI and chart code so the dashboard can import them
+// (SPEC-BROWSE-001 REQ-009; SPEC-TRENDS-001 REQ-009, AC-8).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const FILES = ["filterState.ts", "filterUrl.ts", "filterApply.ts", "compare.ts"];
-const UI_PACKAGE = String.raw`(?:react|react-dom|@tanstack\/[^"']*)`;
+const FILES = ["filterState.ts", "filterUrl.ts", "filterApply.ts", "compare.ts", "trends.ts", "chartTokens.ts"];
+const UI_PACKAGE = String.raw`(?:react|react-dom|@tanstack\/[^"']*|@observablehq\/[^"']*|d3|d3-[^"']*)`;
 const RULES: [string, RegExp][] = [
   ["import from a UI package", new RegExp(String.raw`\bfrom\s*["']${UI_PACKAGE}["']`)],
   ["side-effect import of a UI package", new RegExp(String.raw`\bimport\s*["']${UI_PACKAGE}["']`)],
@@ -36,5 +37,9 @@ describe("UI-free library modules (AC-8)", () => {
     expect(violations(`document["title"] = "x";`)).toEqual(["use of window or document"]);
     expect(violations(`// import "react";\n/* window.x */ const s = "open a window or document";`)).toEqual([]);
     expect(violations(`import { x } from "./reactive";`)).toEqual([]);
+    expect(violations(`import * as Plot from "@observablehq/plot";`)).toEqual(["import from a UI package"]);
+    expect(violations(`import { scaleBand } from "d3-scale";`)).toEqual(["import from a UI package"]);
+    expect(violations(`import * as d3 from "d3";`)).toEqual(["import from a UI package"]);
+    expect(violations(`import { x } from "./d3ish";`)).toEqual([]);
   });
 });

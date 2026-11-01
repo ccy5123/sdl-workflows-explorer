@@ -1,9 +1,10 @@
-// Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001). Pure: never throws.
+// Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001). Pure: never throws.
 
 export type Route =
   | { kind: "home" }
   | { kind: "platform"; paperId: string; platformId: string }
   | { kind: "browse"; query: string }
+  | { kind: "trends"; query: string }
   | { kind: "compare"; ids: string[] }
   | { kind: "notFound"; hash: string };
 
@@ -35,6 +36,8 @@ export function parseRoute(hash: string): Route {
   const rest = hash.slice(2);
   if (rest === "browse") return { kind: "browse", query: "" };
   if (rest.startsWith("browse?")) return { kind: "browse", query: rest.slice("browse?".length) };
+  if (rest === "trends") return { kind: "trends", query: "" };
+  if (rest.startsWith("trends?")) return { kind: "trends", query: rest.slice("trends?".length) };
   if (rest.startsWith("compare/")) {
     const list = rest.slice("compare/".length);
     return { kind: "compare", ids: list === "" ? [] : list.split(",").map(compareId) };

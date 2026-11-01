@@ -523,3 +523,168 @@ button {
   text-align: left;
   font-weight: 600;
 }
+
+/* Trends dashboard (SPEC-TRENDS-001). Chart colour tokens equal CHART_TOKENS in src/lib/chartTokens.ts (REQ-012);
+   the dark set waits for the site-wide theme switch. */
+:root {
+  --chart-im-1: #2a78d6;
+  --chart-im-2: #eb6834;
+  --chart-im-3: #1baf7a;
+  --chart-im-4: #eda100;
+  --chart-im-5: #e87ba4;
+  --chart-im-6: #008300;
+  --chart-im-7: #6250d6;
+  --chart-autonomy-1: #86b6ef;
+  --chart-autonomy-2: #3987e5;
+  --chart-autonomy-3: #1c5cab;
+  --chart-ramp-0: #cde2fb;
+  --chart-ramp-1: #b7d3f6;
+  --chart-ramp-2: #9ec5f4;
+  --chart-ramp-3: #86b6ef;
+  --chart-ramp-4: #6da7ec;
+  --chart-ramp-5: #5598e7;
+  --chart-ramp-6: #3987e5;
+  --chart-ramp-7: #2a78d6;
+  --chart-ramp-8: #256abf;
+  --chart-ramp-9: #1c5cab;
+  --chart-ramp-10: #184f95;
+  --chart-ramp-11: #104281;
+  --chart-ramp-12: #0d366b;
+  --chart-surface: #ffffff;
+  --chart-ink: #0b0b0b;
+  --chart-ink-secondary: #52514e;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+}
+
+:root[data-theme="dark"] {
+  --chart-im-1: #3987e5;
+  --chart-im-2: #d95926;
+  --chart-im-3: #199e70;
+  --chart-im-4: #c98500;
+  --chart-im-5: #d55181;
+  --chart-im-6: #008300;
+  --chart-im-7: #9085e9;
+  --chart-autonomy-1: #86b6ef;
+  --chart-autonomy-2: #3987e5;
+  --chart-autonomy-3: #1c5cab;
+  --chart-ramp-0: #cde2fb;
+  --chart-ramp-1: #b7d3f6;
+  --chart-ramp-2: #9ec5f4;
+  --chart-ramp-3: #86b6ef;
+  --chart-ramp-4: #6da7ec;
+  --chart-ramp-5: #5598e7;
+  --chart-ramp-6: #3987e5;
+  --chart-ramp-7: #2a78d6;
+  --chart-ramp-8: #256abf;
+  --chart-ramp-9: #1c5cab;
+  --chart-ramp-10: #184f95;
+  --chart-ramp-11: #104281;
+  --chart-ramp-12: #0d366b;
+  --chart-surface: #1a1a19;
+  --chart-ink: #f0efec;
+  --chart-ink-secondary: #c3c2b7;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+}
+
+.split-control {
+  margin-bottom: 0.5rem;
+}
+
+.unit-switch {
+  margin-bottom: 0.5rem;
+}
+
+.platforms-line,
+.trends-caption,
+.trends-note {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.trends-caption {
+  max-width: 60rem;
+}
+
+.trends-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.trends-chart {
+  width: 100%;
+  min-width: 0;
+  color: var(--chart-ink-secondary);
+  background: var(--chart-surface);
+}
+
+.trends-chart svg {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.trends-chart a:focus-visible {
+  outline: 3px solid var(--accent);
+}
+
+.trends-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+  color: var(--chart-ink);
+}
+
+.trends-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-swatch {
+  display: inline-block;
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 2px;
+}
+
+.count-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 0.5rem 0;
+}
+
+table.count-table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  color: var(--chart-ink);
+  background: var(--chart-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+table.count-table th,
+table.count-table td {
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--chart-grid);
+  text-align: right;
+  white-space: nowrap;
+}
+
+table.count-table th[scope="row"] {
+  text-align: left;
+  font-weight: 600;
+}
+
+/* A cell link takes the cell text colour, not the site link accent (REQ-011). */
+table.count-table a {
+  color: inherit;
+}
+
+.trends-table-details summary {
+  cursor: pointer;
+}

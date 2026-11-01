@@ -78,3 +78,20 @@ describe("compareHash", () => {
     expect(parseRoute(compareHash(["A,B/P1", "C D/P2"]))).toEqual({ kind: "compare", ids: ["A,B/P1", "C D/P2"] });
   });
 });
+
+// SPEC-TRENDS-001 AC-1: the trends route (REQ-001).
+describe("parseRoute: trends", () => {
+  it.each([
+    ["#/trends", ""],
+    ["#/trends?", ""],
+    ["#/trends?split=mt&view=platforms", "split=mt&view=platforms"],
+  ])("parses %j as trends with query %j", (hash, query) => {
+    expect(() => parseRoute(hash)).not.toThrow();
+    expect(parseRoute(hash)).toEqual({ kind: "trends", query });
+  });
+
+  it.each(["#/trends/", "#/trends/x", "#/trendsx"])("treats %j as not found, carrying the hash", (hash) => {
+    expect(() => parseRoute(hash)).not.toThrow();
+    expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+  });
+});

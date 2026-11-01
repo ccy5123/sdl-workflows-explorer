@@ -14,6 +14,7 @@
     "e2e": "vite build --mode e2e --outDir dist-e2e && playwright test"
   },
   "dependencies": {
+    "@observablehq/plot": "0.6.17",
     "@tanstack/react-table": "9.3.1",
     "csv-parse": "5.6.0",
     "cytoscape": "3.34.4",
