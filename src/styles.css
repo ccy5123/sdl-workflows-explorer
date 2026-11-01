@@ -382,3 +382,101 @@ button {
     margin-top: 0.35rem;
   }
 }
+
+/* Navigation links (SPEC-BROWSE-001) */
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+}
+
+/* Browser */
+.filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.filter-group,
+.column-chooser {
+  min-width: 0;
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.filter-group legend,
+.column-chooser legend {
+  font-weight: 600;
+}
+
+.filter-group label,
+.column-chooser label {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+
+.filter-group.years input {
+  width: 6rem;
+  font: inherit;
+}
+
+.year-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: #cf222e;
+}
+
+.filter.search {
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.table-switch {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.table-switch button[aria-pressed="true"] {
+  font-weight: 700;
+}
+
+.column-chooser {
+  margin: 0.5rem 0;
+}
+
+.sort-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  font-weight: 600;
+  text-align: left;
+}
+
+.platform-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 0.4rem;
+}
+
+/* Comparison */
+.compare-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.compare-steps caption {
+  text-align: left;
+  font-weight: 600;
+}

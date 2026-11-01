@@ -1,6 +1,6 @@
 // AC-1: hash route parsing (REQ-001, REQ-002).
 import { describe, expect, it } from "vitest";
-import { parseRoute, platformHash } from "../src/lib/route";
+import { compareHash, parseRoute, platformHash } from "../src/lib/route";
 
 describe("parseRoute", () => {
   it("parses a complete platform route", () => {
@@ -40,5 +40,41 @@ describe("platformHash", () => {
   it("builds the hash URL of a platform id and round-trips through parseRoute", () => {
     expect(platformHash("Aand2024/P1")).toBe("#/platform/Aand2024/P1");
     expect(parseRoute(platformHash("Aand2024/P1"))).toMatchObject({ platformId: "Aand2024/P1" });
+  });
+});
+
+// SPEC-BROWSE-001 AC-1: browse and compare routes (REQ-001).
+describe("parseRoute: browse and compare", () => {
+  it.each([
+    ["#/browse", ""],
+    ["#/browse?", ""],
+    ["#/browse?view=platforms&q=x", "view=platforms&q=x"],
+  ])("parses %j as browse with query %j", (hash, query) => {
+    expect(parseRoute(hash)).toEqual({ kind: "browse", query });
+  });
+
+  it.each<[string, string[]]>([
+    ["#/compare/Aand2024/P1,Li2020/P1", ["Aand2024/P1", "Li2020/P1"]],
+    ["#/compare/", []],
+    ["#/compare/Aand%202024/P1,Zed", ["Aand 2024/P1", "Zed"]],
+    ["#/compare/%E0%A4%A/P1,Li2020/P1", ["%E0%A4%A/P1", "Li2020/P1"]],
+    ["#/compare/A%2CB/P1,C/P2", ["A,B/P1", "C/P2"]],
+    ["#/compare/A//P1,/P1", ["A//P1", "/P1"]],
+  ])("parses %j as compare with ids %j", (hash, ids) => {
+    expect(() => parseRoute(hash)).not.toThrow();
+    expect(parseRoute(hash)).toEqual({ kind: "compare", ids });
+  });
+
+  it.each(["#/browse/", "#/browse/x", "#/browsex", "#/compare"])("treats %j as not found", (hash) => {
+    expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+  });
+});
+
+describe("compareHash", () => {
+  it("joins encoded ids with commas and round-trips through parseRoute", () => {
+    expect(compareHash(["Aand2024/P1", "Li2020/P1"])).toBe("#/compare/Aand2024/P1,Li2020/P1");
+    expect(parseRoute(compareHash(["Aand2024/P1", "Li2020/P1"]))).toEqual({ kind: "compare", ids: ["Aand2024/P1", "Li2020/P1"] });
+    expect(compareHash(["A,B/P1", "C D/P2"])).toBe("#/compare/A%2CB/P1,C%20D/P2");
+    expect(parseRoute(compareHash(["A,B/P1", "C D/P2"]))).toEqual({ kind: "compare", ids: ["A,B/P1", "C D/P2"] });
   });
 });

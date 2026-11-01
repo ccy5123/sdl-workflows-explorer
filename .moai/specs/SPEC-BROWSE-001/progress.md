@@ -31,11 +31,91 @@
 
 ## §E.2 Run-phase Evidence
 
-_<pending run-phase>_
+Captured 2026-11-02 against base HEAD 906f261 plus uncommitted run-phase changes (no commit made by manager-develop).
+Raw logs: `.moai/state/verify/browse-*.txt` (local, git-ignored).
+
+| AC | Status | Command | Actual output |
+|----|--------|---------|---------------|
+| AC-1 | PASS | `npx vitest run` (tests/route.test.ts; existing cases unedited, only the import line gained `compareHash`) | `✓ tests/route.test.ts (26 tests)` |
+| AC-2 | PASS | same (tests/filterUrl.test.ts, encode and round trip) | `✓ tests/filterUrl.test.ts (17 tests)` |
+| AC-3 | PASS | same (tests/filterUrl.test.ts, bad input and offered values of the real index) | as above |
+| AC-4 | PASS | same (tests/filterApply.test.ts, fixture) | `✓ tests/filterApply.test.ts (28 tests)` |
+| AC-5 | PASS | same (tests/filterApply.test.ts, 17 real-index counts, Zhang2025b, chemspeed ids) | as above |
+| AC-6 | PASS | same (tests/compare.test.ts, fixture and real Aand2024/P1 + Li2020/P1 [+ Angello2022/P1]) | `✓ tests/compare.test.ts (16 tests)` |
+| AC-7 | PASS | same (tests/compare.test.ts, id check order) | as above |
+| AC-8 | PASS | same (tests/libBoundary.test.ts) + falsifiability probe | `✓ tests/libBoundary.test.ts (5 tests)`; probe: `1 failed` (see below) |
+| AC-9 | PASS | `npm run e2e` | `✓ AC-9: a filtered URL opens the browser` |
+| AC-10 | PASS | `npm run e2e` (4 tests) | `✓ AC-10: filters write the URL without adding history entries`, `… the Browse link resets a filtered browser`, `… year inputs that cannot apply stay out of the URL`, `… Clear filters keeps the table and the selection` |
+| AC-11 | PASS | `npm run e2e` | `✓ AC-11: the match control switches between all and any` |
+| AC-12 | PASS | `npm run e2e` | `✓ AC-12: sorting and the column chooser by keyboard` |
+| AC-13 | PASS | `npm run e2e` | `✓ AC-13: selecting platforms for comparison` |
+| AC-14 | PASS | `npm run e2e` | `✓ AC-14: the comparison page` |
+| AC-15 | PASS | `npm run e2e` (5 tests: ids; HTTP 500, not JSON, file without the platform, aborted request) | `✓ AC-15: comparison errors by id` and 4 × `✓ AC-15: comparison errors when a paper file fails › …` |
+| AC-16 | PASS-WITH-NOTE | see tails below | 375 px test passes; tests, typecheck, `npx vite build` and e2e exit 0; src/lib 100% lines; `package.json` has `"@tanstack/react-table": "9.3.1"`. `npm run build` (fetch-release + build-data + vite build) was not run in the run phase; `npx vite build` used the existing `public/data/` |
+
+Also added: `REQ-003: Back from a platform opened in a filtered browser restores the filters` (e2e, passes).
+
+Orchestrator re-verification before commit (logs `.moai/state/verify/orch-browse-*.txt`): `npx vitest run` 210/210;
+`npm run typecheck` exit 0; `npm run e2e` 22/22; `SDL_RELEASE_ZIP=<local zip> npm run build` exit 0 (zip SHA-256 and
+MANIFEST verified, counts match, `✓ built in 2.60s`), which settles the AC-16 note; `window.__cy=` absent from `dist/`.
+Browser check: `#/browse?view=platforms&years=2018-2024&field=catalysis&mt=flow_reactor` shows "6 of 280 platforms";
+`#/compare/Aand2024/P1,Li2020/P1,Angello2022/P1` shows 8 module-type and 3 transfer-mode rows; at 375 px
+`#/browse?view=platforms` has `scrollWidth` 375. `npm audit`: 3 moderate advisories in packages present before this
+SPEC (vitest's mocker, csv-parse, esbuild via vite), none in the TanStack packages.
+
+Verbatim tails:
+
+```
+$ npx vitest run --coverage
+ Test Files  20 passed (20)
+      Tests  210 passed (210)
+All files          |   96.34 |     97.5 |   98.29 |   96.34 |
+ src/lib           |     100 |    98.96 |     100 |     100 |
+  compare.ts       |     100 |    97.82 |     100 |     100 | 43
+  filterApply.ts   |     100 |      100 |     100 |     100 |
+  filterState.ts   |     100 |      100 |     100 |     100 |
+  filterUrl.ts     |     100 |    98.55 |     100 |     100 | 68
+  route.ts         |     100 |    96.66 |     100 |     100 | 34
+$ npm run typecheck      → exit 0
+$ npm run e2e
+  22 passed (10.5s)        (16 in e2e/browse.spec.ts, 6 in e2e/viewer.spec.ts)
+$ npx vite build         → exit 0, ✓ built in 2.61s
+$ grep -rc "window.__cy=" dist/ | grep -v ":0$"      → (none)
+$ grep -rc "window.__cy=" dist-e2e/ | grep -v ":0$"  → dist-e2e/assets/index-DYl2drik.js:1
+```
+
+RED before GREEN (`.moai/state/verify/browse-red-{filterUrl,filterApply,compare,route,libBoundary}.txt`):
+
+```
+ FAIL  tests/filterUrl.test.ts   Error: Failed to load url ../src/lib/filterState … Does the file exist?
+ FAIL  tests/filterApply.test.ts Error: Failed to load url ../src/lib/filterApply … Does the file exist?
+ FAIL  tests/compare.test.ts     Error: Failed to load url ../src/lib/compare … Does the file exist?
+ FAIL  tests/route.test.ts > parseRoute: browse and compare > parses "#/browse" as browse with query ""
+   AssertionError: expected { kind: 'notFound', hash: '#/browse' } to deeply equal { kind: 'browse', query: '' }   (10 failed)
+ FAIL  tests/libBoundary.test.ts > … src/lib/filterState.ts … Error: ENOENT: no such file or directory   (4 failed)
+```
+
+AC-8 falsifiability (once, `.moai/state/verify/browse-ac8-falsifiability.txt`): with `import { useMemo } from "react";`
+appended to `src/lib/filterApply.ts`, `npx vitest run tests/libBoundary.test.ts` gave
+`AssertionError: expected [ 'import from a UI package' ] to deeply equal []` and `Tests  1 failed | 4 passed (5)`;
+the file was restored and the suite passes (`Tests  5 passed (5)`).
+
+TanStack Table 9.3.1: `useTable` with `tableFeatures({ rowSortingFeature, columnVisibilityFeature, sortedRowModel:
+createSortedRowModel() })`, options `sortDescFirst: false`, `enableMultiSort: false`, per-column `sortFn` and
+`sortUndefined: "last"`; the library's own tie-break (`rowA.index - rowB.index`) keeps `index.json` order. All TanStack
+code is in `src/components/DataTable.tsx`.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
-_<pending run-phase>_
+```yaml
+run_complete_at: 2026-11-02
+run_commit_sha: pending-backfill
+run_status: audit-ready
+ac_pass_count: 16
+ac_fail_count: 0
+new_warnings_or_lints_introduced: "vite chunk-size warning grows from 651 kB to 711 kB (TanStack Table added)"
+total_run_phase_files: 20
+```
 
 ## §E.4 Sync-phase Audit-Ready Signal
 

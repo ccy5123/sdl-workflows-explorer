@@ -1,7 +1,9 @@
-// Hash router of the site (REQ-001 to REQ-004): home, platform viewer, or not found.
+// Hash router of the site (REQ-001 to REQ-004; SPEC-BROWSE-001 REQ-001): home, platform viewer, browser, comparison, or not found.
 import { useEffect, useState } from "react";
 import type { IndexJson } from "./data/types";
 import { parseRoute } from "./lib/route";
+import { Browse } from "./views/Browse";
+import { Compare } from "./views/Compare";
 import { Home } from "./views/Home";
 import { NotFound } from "./views/NotFound";
 import { PlatformView } from "./views/PlatformView";
@@ -41,6 +43,8 @@ export function App() {
         <a href="#/" className="site-title">
           SDL Workflows Explorer
         </a>
+        <a href="#/">Home</a>
+        <a href="#/browse">Browse</a>
       </nav>
       <main>
         {error && <p role="alert">Could not load the data: {error}</p>}
@@ -49,6 +53,8 @@ export function App() {
         {index && route.kind === "platform" && (
           <PlatformView key={route.platformId} index={index} paperId={route.paperId} platformId={route.platformId} hash={hash} />
         )}
+        {index && route.kind === "browse" && <Browse index={index} />}
+        {index && route.kind === "compare" && <Compare key={route.ids.join(",")} index={index} ids={route.ids} />}
         {index && route.kind === "notFound" && <NotFound hash={route.hash} />}
       </main>
       {index && (
