@@ -19,6 +19,7 @@ import {
   linkState,
   offeredSplitValues,
   partialNote,
+  rowCount,
   sampleNote,
   segmentName,
   totalName,
@@ -40,6 +41,7 @@ const OFFERED: Offered = {
   hw: [1, 2, 3],
   mt: ["flow_reactor", "liquid_handler"],
   tm: ["fixed_tubing", "robot_arm_gantry"],
+  uo: ["mix", "sonicate"],
 };
 
 const state = (patch: Partial<FilterState>): FilterState => ({ ...DEFAULT_STATE, ...patch });
@@ -227,8 +229,8 @@ describe("caption and note texts (AC-8)", () => {
       "Papers by first public year and field tag. Each cell is the number of papers matching the filters that were first public in that year and have the field tag; n is the number of matching papers first public in that year. A paper can have several field tags, so a column does not add up to n.",
       "Papers by first public year, split by software autonomy. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total.",
       "Papers by first public year, split by hardware autonomy. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total.",
-      "Papers by first public year and module type. Each cell is the number of papers matching the filters that were first public in that year and have a platform that has the module type and meets the module type and transfer mode filters; n is the number of matching papers first public in that year. A paper can have several module types, so a column does not add up to n.",
-      "Papers by first public year and transfer mode. Each cell is the number of papers matching the filters that were first public in that year and have a platform that has the transfer mode and meets the module type and transfer mode filters; n is the number of matching papers first public in that year. A paper can have several transfer modes, so a column does not add up to n.",
+      "Papers by first public year and module type. Each cell is the number of papers matching the filters that were first public in that year and have a platform that has the module type and meets the module type, transfer mode and unit operation filters; n is the number of matching papers first public in that year. A paper can have several module types, so a column does not add up to n.",
+      "Papers by first public year and transfer mode. Each cell is the number of papers matching the filters that were first public in that year and have a platform that has the transfer mode and meets the module type, transfer mode and unit operation filters; n is the number of matching papers first public in that year. A paper can have several transfer modes, so a column does not add up to n.",
       "No papers match these filters.",
       "Platforms by first public year, split by integration mode. Each bar is the number of platforms matching the filters that were first public in that year; n above the bar is the total.",
       "Platforms by first public year and field tag. Each cell is the number of platforms matching the filters that were first public in that year and have the field tag; n is the number of matching platforms first public in that year. A platform can have several field tags, so a column does not add up to n.",
@@ -368,5 +370,23 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
 
     for (const t of [papers, all, any, im]) expect(t.n.reduce((a, b) => a + b, 0)).toBe(t.total);
     expect([papers.total, all.total, any.total, im.total]).toEqual([11, 19, 176, 115]);
+  });
+});
+
+describe("unit-operation filter on the dashboard (SPEC-TAXO-001 AC-8)", () => {
+  it("decodes uo with a split and encodes it back; uo is not a split", () => {
+    const decoded = decodeTrends("uo=sonicate&split=mt", OFFERED);
+    expect(decoded.state.uo).toEqual(["sonicate"]);
+    expect(decoded.split).toBe("mt");
+    expect(encodeTrends(decoded.state, decoded.split)).toBe("uo=sonicate&split=mt");
+    expect(decodeTrends("split=uo", OFFERED).split).toBe("im");
+    expect(SPLITS).toEqual(["im", "field", "sw", "hw", "mt", "tm"]);
+  });
+
+  it.skipIf(!dataAvailable)("counts 5 of 238 papers for #/trends?uo=sonicate and links the same browse state", () => {
+    const index = readIndex();
+    const { state: s } = decodeTrends("uo=sonicate", offeredValues(index));
+    expect(rowCount(s, index)).toBe(5);
+    expect(browseHash(s)).toBe("#/browse?uo=sonicate");
   });
 });

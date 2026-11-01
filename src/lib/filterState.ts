@@ -1,4 +1,5 @@
-// Filter state of the browser, its defaults and the offered values (REQ-002, REQ-004, REQ-009). Pure: no UI code.
+// Filter state of the browser, its defaults and the offered values (REQ-002, REQ-004, REQ-009; SPEC-TAXO-001 REQ-006,
+// REQ-007: unit operations). Pure: no UI code.
 import type { PaperRow, PlatformRow } from "../data/types";
 
 export type View = "papers" | "platforms";
@@ -21,6 +22,8 @@ export interface FilterState {
   mtMatch: Match;
   tm: string[];
   tmMatch: Match;
+  uo: string[];
+  uoMatch: Match;
   /** Search text as typed; filtering and the URL use it trimmed. */
   q: string;
 }
@@ -36,6 +39,8 @@ export const DEFAULT_STATE: FilterState = {
   mtMatch: "all",
   tm: [],
   tmMatch: "all",
+  uo: [],
+  uoMatch: "all",
   q: "",
 };
 
@@ -47,6 +52,7 @@ export interface Offered {
   hw: number[];
   mt: string[];
   tm: string[];
+  uo: string[];
 }
 
 /** Autonomy category texts of Tom et al. 2024 (release data_dictionary.csv). */
@@ -66,7 +72,7 @@ export const sortedNumbers = (xs: Iterable<number>): number[] => [...new Set(xs)
 
 export function offeredValues(index: {
   papers: readonly Pick<PaperRow, "field_tags" | "integration_mode" | "sw_autonomy" | "hw_autonomy">[];
-  platforms: readonly Pick<PlatformRow, "module_types" | "material_transfer_modes">[];
+  platforms: readonly Pick<PlatformRow, "module_types" | "material_transfer_modes" | "unit_operations">[];
 }): Offered {
   const { papers, platforms } = index;
   return {
@@ -76,6 +82,7 @@ export function offeredValues(index: {
     hw: sortedNumbers(papers.map((p) => p.hw_autonomy)),
     mt: sortedText(platforms.flatMap((l) => l.module_types)),
     tm: sortedText(platforms.flatMap((l) => l.material_transfer_modes)),
+    uo: sortedText(platforms.flatMap((l) => l.unit_operations)),
   };
 }
 
@@ -91,7 +98,7 @@ export function yearsFromInputs(from: string, to: string): { years: YearRange; i
 
 /** Filters that restrict rows, as shown on the filter toggle: the year range once, each non-empty group, a search. */
 export function activeFilterCount(state: FilterState): number {
-  const groups = [state.field, state.im, state.sw, state.hw, state.mt, state.tm].filter((g) => g.length > 0).length;
+  const groups = [state.field, state.im, state.sw, state.hw, state.mt, state.tm, state.uo].filter((g) => g.length > 0).length;
   const years = state.years.from !== null || state.years.to !== null ? 1 : 0;
   return groups + years + (state.q.trim() ? 1 : 0);
 }

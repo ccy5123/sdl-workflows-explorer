@@ -1,7 +1,8 @@
-// Filter controls of the browser (REQ-004): year range, checkbox groups, match controls, search and "Clear filters".
+// Filter controls of the browser (REQ-004; SPEC-TAXO-001 REQ-007): year range, checkbox groups, match controls, search
+// and "Clear filters".
 import { HW_LABELS, SW_LABELS, type FilterState, type Match, type Offered } from "../lib/filterState";
 
-type ListKey = "field" | "im" | "sw" | "hw" | "mt" | "tm";
+type ListKey = "field" | "im" | "sw" | "hw" | "mt" | "tm" | "uo";
 
 function CheckboxGroup<V extends string | number>({
   legend,
@@ -111,6 +112,8 @@ export function FilterPanel({
       <MatchControl legend="Module types match" name="mtMatch" value={state.mtMatch} onChange={(mtMatch) => onState({ ...state, mtMatch })} />
       <CheckboxGroup legend="Transfer modes" options={offered.tm} selected={state.tm} onChange={setList("tm")} />
       <MatchControl legend="Transfer modes match" name="tmMatch" value={state.tmMatch} onChange={(tmMatch) => onState({ ...state, tmMatch })} />
+      <CheckboxGroup legend="Unit operations" options={offered.uo} selected={state.uo} onChange={setList("uo")} />
+      <MatchControl legend="Unit operations match" name="uoMatch" value={state.uoMatch} onChange={(uoMatch) => onState({ ...state, uoMatch })} />
       <button type="button" className="clear-filters" onClick={onClear}>
         Clear filters
       </button>

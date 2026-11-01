@@ -1,4 +1,5 @@
-// Browse URL format of spec §3: encode a filter state to the hash query and decode it back (REQ-002). Pure: never throws.
+// Browse URL format of spec §3: encode a filter state to the hash query and decode it back (REQ-002; SPEC-TAXO-001
+// REQ-006: uo and uoMatch after tmMatch). Pure: never throws.
 import {
   DEFAULT_STATE,
   sortedNumbers,
@@ -34,6 +35,8 @@ export function encodeFilters(state: FilterState): string {
   if (state.mtMatch !== DEFAULT_STATE.mtMatch) add("mtMatch", state.mtMatch);
   if (state.tm.length) add("tm", list(sortedText(state.tm)));
   if (state.tmMatch !== DEFAULT_STATE.tmMatch) add("tmMatch", state.tmMatch);
+  if (state.uo.length) add("uo", list(sortedText(state.uo)));
+  if (state.uoMatch !== DEFAULT_STATE.uoMatch) add("uoMatch", state.uoMatch);
   const q = state.q.trim();
   if (q) add("q", encodeURIComponent(q));
   return parts.join("&");
@@ -95,6 +98,8 @@ export function decodeFilters(query: string, offered: Offered): FilterState {
     mtMatch: read("mtMatch", decodeMatch, DEFAULT_STATE.mtMatch),
     tm: read("tm", (v) => decodeTextList(v, offered.tm), DEFAULT_STATE.tm),
     tmMatch: read("tmMatch", decodeMatch, DEFAULT_STATE.tmMatch),
+    uo: read("uo", (v) => decodeTextList(v, offered.uo), DEFAULT_STATE.uo),
+    uoMatch: read("uoMatch", decodeMatch, DEFAULT_STATE.uoMatch),
     q: read("q", (v) => decode(v)?.trim() || null, DEFAULT_STATE.q),
   };
 }

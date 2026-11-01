@@ -1,4 +1,5 @@
-// Row predicates of the browser (REQ-005 to REQ-007). Pure: the trends dashboard reuses them.
+// Row predicates of the browser (REQ-005 to REQ-007; SPEC-TAXO-001 REQ-007: unit operations as a third platform-level
+// filter). Pure: the trends dashboard reuses them.
 import type { PaperRow, PlatformRow } from "../data/types";
 import type { FilterState, Match } from "./filterState";
 
@@ -17,9 +18,11 @@ const paperLevelOk = (p: PaperRow, s: FilterState) =>
   (s.sw.length === 0 || s.sw.includes(p.sw_autonomy)) &&
   (s.hw.length === 0 || s.hw.includes(p.hw_autonomy));
 
-/** Both platform-level filters (module types, transfer modes) on one platform. */
+/** The three platform-level filters (module types, transfer modes, unit operations) on one platform. */
 const platformLevelOk = (l: PlatformRow, s: FilterState) =>
-  setMatch(l.module_types, s.mt, s.mtMatch) && setMatch(l.material_transfer_modes, s.tm, s.tmMatch);
+  setMatch(l.module_types, s.mt, s.mtMatch) &&
+  setMatch(l.material_transfer_modes, s.tm, s.tmMatch) &&
+  setMatch(l.unit_operations, s.uo, s.uoMatch);
 
 const contains = (text: string | null, q: string) => text !== null && text.toLowerCase().includes(q);
 
@@ -28,7 +31,7 @@ const contains = (text: string | null, q: string) => text !== null && text.toLow
 /** Paper rows passing every active filter; platform-level filters need one platform that passes them all. */
 export function matchingPapers(state: FilterState, papers: readonly PaperRow[], platforms: readonly PlatformRow[]): PaperRow[] {
   const q = state.q.trim().toLowerCase();
-  const platformLevel = state.mt.length > 0 || state.tm.length > 0;
+  const platformLevel = state.mt.length > 0 || state.tm.length > 0 || state.uo.length > 0;
   const passing = new Set(platformLevel ? platforms.filter((l) => platformLevelOk(l, state)).map((l) => l.paper_id) : []);
   return papers.filter(
     (p) =>

@@ -123,6 +123,58 @@ describe("filter rules on the fixture (AC-4)", () => {
   });
 });
 
+describe("unit-operation filter on the fixture (SPEC-TAXO-001 AC-7)", () => {
+  const withUo = (l: PlatformRow, unit_operations: string[]): PlatformRow => ({ ...l, unit_operations });
+  const UO_PLATFORMS = [
+    withUo(PLATFORMS[0]!, ["mix", "sonicate"]),
+    withUo(PLATFORMS[1]!, ["mix"]),
+    withUo(PLATFORMS[2]!, ["sonicate"]),
+  ];
+  const runUo = (patch: Partial<FilterState>) => run(patch, PAPERS, UO_PLATFORMS);
+
+  it("needs every selected unit operation on one platform under 'all', any under 'any'", () => {
+    expect(runUo({ uo: ["sonicate"] })).toEqual({ papers: ["Alpha2020", "Beta2015"], platforms: ["Alpha2020/P1", "Beta2015/P2"] });
+    expect(runUo({ uo: ["mix", "sonicate"] })).toEqual({ papers: ["Alpha2020"], platforms: ["Alpha2020/P1"] });
+    expect(runUo({ uo: ["mix", "sonicate"], uoMatch: "any" })).toEqual({
+      papers: ["Alpha2020", "Beta2015"],
+      platforms: ["Alpha2020/P1", "Beta2015/P1", "Beta2015/P2"],
+    });
+  });
+
+  it("applies uo together with mt and tm on the same platform", () => {
+    expect(runUo({ uo: ["mix"], mt: ["liquid_handler"] })).toEqual({ papers: ["Beta2015"], platforms: ["Beta2015/P1"] });
+    expect(runUo({ uo: ["sonicate"], tm: ["robot_arm_gantry"] })).toEqual({ papers: [], platforms: [] });
+  });
+});
+
+describe.skipIf(!dataAvailable)("unit-operation filter counts on the real index (SPEC-TAXO-001 AC-7)", () => {
+  const index = dataAvailable ? readIndex() : { papers: [], platforms: [] };
+  const count = (patch: Partial<FilterState>) => {
+    const r = run(patch, index.papers, index.platforms);
+    return [r.papers.length, r.platforms.length];
+  };
+
+  it.each<[string, Partial<FilterState>, number, number]>([
+    ["uo sonicate", { uo: ["sonicate"] }, 5, 5],
+    ["uo mix, sonicate, all", { uo: ["mix", "sonicate"] }, 0, 0],
+    ["uo mix, sonicate, any", { uo: ["mix", "sonicate"], uoMatch: "any" }, 98, 111],
+    ["mt liquid_handler and uo dispense_solid", { mt: ["liquid_handler"], uo: ["dispense_solid"] }, 16, 18],
+    ["uo clean_equipment, dispense_liquid", { uo: ["clean_equipment", "dispense_liquid"] }, 61, 74],
+  ])("%s", (_name, patch, papers, platforms) => {
+    expect(count(patch)).toEqual([papers, platforms]);
+  });
+
+  it("counts the remaining browse URLs of AC-7", () => {
+    expect(count({ tm: ["mobile_robot"], uo: ["handle_sample"] })[1]).toBe(4);
+    expect(count({ years: { from: 2018, to: 2024 }, field: ["catalysis"], uo: ["react_thermal"] })[0]).toBe(3);
+  });
+
+  it("needs one platform with both unit operations: Roch2020 is excluded", () => {
+    expect(count({ uo: ["clean_equipment", "dispense_liquid"], q: "Roch2020" })[0]).toBe(0);
+    expect(count({ q: "Roch2020" })[1]).toBe(5);
+  });
+});
+
 describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => {
   const index = dataAvailable ? readIndex() : { papers: [], platforms: [] };
   const count = (patch: Partial<FilterState>) => {

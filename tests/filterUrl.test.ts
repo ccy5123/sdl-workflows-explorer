@@ -21,9 +21,10 @@ const OFFERED: Offered = {
   hw: [1, 2, 3],
   mt: ["flow_reactor", "liquid_handler"],
   tm: ["fixed_tubing", "robot_arm_gantry"],
+  uo: ["mix", "sonicate"],
 };
 
-const state = (patch: Partial<FilterState>): FilterState => ({ ...DEFAULT_STATE, ...patch });
+const state =(patch: Partial<FilterState>): FilterState => ({ ...DEFAULT_STATE, ...patch });
 
 const EXAMPLE = state({
   view: "platforms",
@@ -155,11 +156,64 @@ describe("yearsFromInputs and clearFilters (REQ-004)", () => {
         { field_tags: ["a"], integration_mode: "fixed_tubing", sw_autonomy: 2, hw_autonomy: 9 },
       ],
       platforms: [
-        { module_types: ["z", "y"], material_transfer_modes: ["m"] },
-        { module_types: ["y"], material_transfer_modes: [] },
+        { module_types: ["z", "y"], material_transfer_modes: ["m"], unit_operations: ["u2", "u1"] },
+        { module_types: ["y"], material_transfer_modes: [], unit_operations: ["u1"] },
       ],
     });
-    expect(off).toEqual({ field: ["a", "b"], im: ["fixed_tubing", "mixed"], sw: [2, 3], hw: [9, 10], mt: ["y", "z"], tm: ["m"] });
+    expect(off).toEqual({
+      field: ["a", "b"],
+      im: ["fixed_tubing", "mixed"],
+      sw: [2, 3],
+      hw: [9, 10],
+      mt: ["y", "z"],
+      tm: ["m"],
+      uo: ["u1", "u2"],
+    });
+  });
+});
+
+describe("uo and uoMatch in the URL (SPEC-TAXO-001 AC-6)", () => {
+  it.each<[string, string[], "all" | "any"]>([
+    ["uo=sonicate,mix", ["mix", "sonicate"], "all"],
+    ["uo=mix,xx,mix", ["mix"], "all"],
+    ["uo=xx", [], "all"],
+    ["uo=mix&uo=xx", [], "all"],
+    ["uo=xx&uo=mix", ["mix"], "all"],
+    ["uo=", [], "all"],
+    ["uo=%E0,mix", ["mix"], "all"],
+    ["uoMatch=any", [], "any"],
+    ["uoMatch=some", [], "all"],
+  ])("decodes %s", (query, uo, uoMatch) => {
+    const s = decodeFilters(query, OFFERED);
+    expect({ uo: s.uo, uoMatch: s.uoMatch }).toEqual({ uo, uoMatch });
+  });
+
+  it("encodes uo and uoMatch after tmMatch and before q", () => {
+    expect(
+      encodeFilters(
+        state({ view: "platforms", mt: ["flow_reactor"], tmMatch: "any", uo: ["sonicate", "mix"], uoMatch: "any", q: "pump" }),
+      ),
+    ).toBe("view=platforms&mt=flow_reactor&tmMatch=any&uo=mix,sonicate&uoMatch=any&q=pump");
+  });
+
+  it("round-trips the eleven single-parameter states and the uo states", () => {
+    const states: FilterState[] = [
+      state({ view: "platforms" }),
+      state({ years: { from: 2018, to: 2024 } }),
+      state({ field: ["catalysis"] }),
+      state({ im: ["fixed_tubing", "mixed"] }),
+      state({ sw: [3] }),
+      state({ hw: [1, 3] }),
+      state({ mt: ["flow_reactor", "liquid_handler"] }),
+      state({ mtMatch: "any" }),
+      state({ tm: ["robot_arm_gantry"] }),
+      state({ tmMatch: "any" }),
+      state({ q: "chem speed" }),
+      state({ uo: ["sonicate"] }),
+      state({ uo: ["mix", "sonicate"], uoMatch: "any" }),
+      state({ uoMatch: "any" }),
+    ];
+    for (const s of states) expect(decodeFilters(encodeFilters(s), OFFERED)).toEqual(s);
   });
 });
 
@@ -192,5 +246,12 @@ describe.skipIf(!dataAvailable)("decodeFilters and offeredValues on the real ind
     expect(offered.mt[21]).toBe("unmapped");
     expect(offered.mt).toEqual([...offered.mt].sort());
     expect(offered.tm).toEqual(["fixed_tubing", "human_transfer", "mobile_robot", "robot_arm_gantry", "unmapped"]);
+  });
+
+  it("offers the 31 unit operations in alphabetical order (SPEC-TAXO-001 AC-6)", () => {
+    expect(offered.uo).toHaveLength(31);
+    expect(offered.uo).toEqual([...offered.uo].sort());
+    expect(offered.uo[0]).toBe("analyze_data");
+    expect(offered.uo[30]).toBe("wash_extract");
   });
 });

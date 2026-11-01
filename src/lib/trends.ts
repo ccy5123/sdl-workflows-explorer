@@ -196,7 +196,7 @@ export function caption(split: Split, unit: View): string {
   const has =
     split === "field" || unit === "platforms"
       ? `have the ${name}`
-      : `have a platform that has the ${name} and meets the module type and transfer mode filters`;
+      : `have a platform that has the ${name} and meets the module type, transfer mode and unit operation filters`;
   return `${Unit} by first public year and ${name}. Each cell is the number of ${unit} matching the filters that were first public in that year and ${has}; n is the number of matching ${unit} first public in that year. A ${one} can have several ${plural}, so a column does not add up to n.`;
 }
 

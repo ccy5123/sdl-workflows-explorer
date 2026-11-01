@@ -1,6 +1,6 @@
 // Number of active filters shown on the filter toggle (follow-up to SPEC-BROWSE-001).
 import { describe, expect, it } from "vitest";
-import { activeFilterCount, DEFAULT_STATE } from "../src/lib/filterState";
+import { activeFilterCount, clearFilters, DEFAULT_STATE } from "../src/lib/filterState";
 
 describe("activeFilterCount", () => {
   it("is 0 for the default state, whatever table is shown or match mode is set", () => {
@@ -27,5 +27,25 @@ describe("activeFilterCount", () => {
 
   it("does not count a search of only spaces", () => {
     expect(activeFilterCount({ ...DEFAULT_STATE, q: "   " })).toBe(0);
+  });
+});
+
+describe("unit-operation filter state (SPEC-TAXO-001 AC-7)", () => {
+  it("defaults to no unit operation and match mode all", () => {
+    expect(DEFAULT_STATE.uo).toEqual([]);
+    expect(DEFAULT_STATE.uoMatch).toBe("all");
+  });
+
+  it("counts a non-empty uo as one filter, and uoMatch alone as none", () => {
+    expect(activeFilterCount({ ...DEFAULT_STATE, uo: ["sonicate"] })).toBe(1);
+    expect(activeFilterCount({ ...DEFAULT_STATE, uo: ["mix", "sonicate"], mt: ["flow_reactor"] })).toBe(2);
+    expect(activeFilterCount({ ...DEFAULT_STATE, uoMatch: "any" })).toBe(0);
+  });
+
+  it("clearFilters resets uo and uoMatch and keeps the view", () => {
+    expect(clearFilters({ ...DEFAULT_STATE, view: "platforms", uo: ["mix"], uoMatch: "any" })).toEqual({
+      ...DEFAULT_STATE,
+      view: "platforms",
+    });
   });
 });
