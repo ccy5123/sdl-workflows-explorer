@@ -5,7 +5,15 @@ import { DataTable, type Col } from "../components/DataTable";
 import { FilterPanel } from "../components/FilterPanel";
 import { show } from "../lib/evidence";
 import { matchingPapers, matchingPlatforms } from "../lib/filterApply";
-import { clearFilters, offeredValues, yearsFromInputs, type FilterState, type Offered, type YearRange } from "../lib/filterState";
+import {
+  activeFilterCount,
+  clearFilters,
+  offeredValues,
+  yearsFromInputs,
+  type FilterState,
+  type Offered,
+  type YearRange,
+} from "../lib/filterState";
 import { browseHash, decodeFilters } from "../lib/filterUrl";
 import { compareHash, parseRoute, platformHash } from "../lib/route";
 
@@ -15,6 +23,8 @@ const joined = (xs: readonly string[]) => xs.join(", ");
 const listCell = (xs: readonly string[]) => (xs.length ? joined(xs) : show(null));
 const yearText = (years: YearRange) => ({ from: years.from?.toString() ?? "", to: years.to?.toString() ?? "" });
 const suffixNumber = (platformId: string) => Number(platformId.slice(platformId.lastIndexOf("/") + 1).replace(/^\D+/, ""));
+/** Width from which the filters sit in a sidebar beside the results (matches styles.css). */
+const SIDEBAR_QUERY = "(min-width: 1000px)";
 
 /** Filter state of the current hash; replaces the hash with its canonical form so URL and controls agree. */
 function stateFromLocation(offered: Offered): FilterState | null {
@@ -96,11 +106,13 @@ function platformColumns(selected: string[], toggle: (id: string) => void): Col<
   ];
 }
 
-export function Browse({ index }: { index: IndexJson }) {
+export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (hash: string) => void }) {
   const offered = useMemo(() => offeredValues(index), [index]);
   const [state, setState] = useState<FilterState>(() => stateFromLocation(offered) ?? decodeFilters("", offered));
   const [years, setYears] = useState(() => yearText(state.years));
   const [selected, setSelected] = useState<string[]>([]);
+  // Open beside the results at wide widths; collapsed on narrow screens so the results come first.
+  const [filtersOpen, setFiltersOpen] = useState(() => window.matchMedia(SIDEBAR_QUERY).matches);
 
   // replaceState fires no hashchange, so the router's hash can lag; read the real hash on every navigation (REQ-003).
   useEffect(() => {
@@ -142,49 +154,73 @@ export function Browse({ index }: { index: IndexJson }) {
   );
   const canCompare = selected.length === 2 || selected.length === 3;
 
+  const active = activeFilterCount(state);
+
   return (
     <div className="browse">
       <h1>Browse</h1>
-      <FilterPanel
-        state={state}
-        offered={offered}
-        yearText={years}
-        inverted={yearsFromInputs(years.from, years.to).inverted}
-        onState={apply}
-        onYearText={onYearText}
-        onClear={onClear}
-      />
-      <div className="table-switch" role="group" aria-label="Table shown">
-        {(["papers", "platforms"] as const).map((view) => (
-          <button key={view} type="button" aria-pressed={state.view === view} onClick={() => apply({ ...state, view })}>
-            {view === "papers" ? "Papers" : "Platforms"}
+      <div className="browse-layout">
+        <aside className="browse-filters">
+          <button
+            type="button"
+            className="filter-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls="browse-filter-panel"
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            Filters ({active} active)
           </button>
-        ))}
+          <div id="browse-filter-panel" hidden={!filtersOpen}>
+            <FilterPanel
+              state={state}
+              offered={offered}
+              yearText={years}
+              inverted={yearsFromInputs(years.from, years.to).inverted}
+              onState={apply}
+              onYearText={onYearText}
+              onClear={onClear}
+            />
+          </div>
+        </aside>
+        <div className="browse-results">
+          <div className="table-switch" role="group" aria-label="Table shown">
+            {(["papers", "platforms"] as const).map((view) => (
+              <button key={view} type="button" aria-pressed={state.view === view} onClick={() => apply({ ...state, view })}>
+                {view === "papers" ? "Papers" : "Platforms"}
+              </button>
+            ))}
+          </div>
+          {state.view === "papers" ? (
+            <section aria-label="Papers">
+              <p className="result-count" aria-live="polite">
+                {papers.length} of {index.papers.length} papers
+              </p>
+              <DataTable name="papers" chooserLabel="Paper table columns" columns={paperCols} rows={papers} rowId={paperId} />
+            </section>
+          ) : (
+            <section aria-label="Platforms">
+              <p className="result-count" aria-live="polite">
+                {platforms.length} of {index.platforms.length} platforms
+              </p>
+              <button
+                type="button"
+                className="compare-button"
+                disabled={!canCompare}
+                onClick={() => onNavigate(compareHash(selected))}
+              >
+                Compare ({selected.length})
+              </button>
+              <DataTable
+                name="platforms"
+                chooserLabel="Platform table columns"
+                columns={platformCols}
+                rows={platforms}
+                rowId={platformId}
+              />
+            </section>
+          )}
+        </div>
       </div>
-      {state.view === "papers" ? (
-        <section aria-label="Papers">
-          <p className="result-count" aria-live="polite">
-            {papers.length} of {index.papers.length} papers
-          </p>
-          <DataTable name="papers" chooserLabel="Paper table columns" columns={paperCols} rows={papers} rowId={paperId} />
-        </section>
-      ) : (
-        <section aria-label="Platforms">
-          <p className="result-count" aria-live="polite">
-            {platforms.length} of {index.platforms.length} platforms
-          </p>
-          <button type="button" className="compare-button" disabled={!canCompare} onClick={() => (window.location.hash = compareHash(selected))}>
-            Compare ({selected.length})
-          </button>
-          <DataTable
-            name="platforms"
-            chooserLabel="Platform table columns"
-            columns={platformCols}
-            rows={platforms}
-            rowId={platformId}
-          />
-        </section>
-      )}
     </div>
   );
 }

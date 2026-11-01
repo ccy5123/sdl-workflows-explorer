@@ -89,6 +89,13 @@ export function yearsFromInputs(from: string, to: string): { years: YearRange; i
   return { years: { from: f, to: t }, inverted: false };
 }
 
+/** Filters that restrict rows, as shown on the filter toggle: the year range once, each non-empty group, a search. */
+export function activeFilterCount(state: FilterState): number {
+  const groups = [state.field, state.im, state.sw, state.hw, state.mt, state.tm].filter((g) => g.length > 0).length;
+  const years = state.years.from !== null || state.years.to !== null ? 1 : 0;
+  return groups + years + (state.q.trim() ? 1 : 0);
+}
+
 /** "Clear filters": every filter back to its default; the table shown stays. */
 export function clearFilters(state: FilterState): FilterState {
   return { ...DEFAULT_STATE, view: state.view };

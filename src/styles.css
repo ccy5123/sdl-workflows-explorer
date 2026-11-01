@@ -469,6 +469,49 @@ button {
   gap: 0 0.4rem;
 }
 
+.filter-toggle {
+  margin-bottom: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.browse-results {
+  min-width: 0;
+}
+
+/* From 1000px the filters stand in a sidebar beside the results (SIDEBAR_QUERY in Browse.tsx). */
+@media (min-width: 1000px) {
+  .browse-layout {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .browse-filters {
+    position: sticky;
+    top: 0.5rem;
+    max-height: calc(100vh - 1rem);
+    overflow-y: auto;
+  }
+
+  .browse-filters .filter-panel {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .browse-filters .filter-group:not(.years):not(.match) {
+    flex-direction: column;
+  }
+
+  .browse-filters .filter.search {
+    flex: none;
+  }
+}
+
 /* Comparison */
 .compare-steps {
   display: grid;

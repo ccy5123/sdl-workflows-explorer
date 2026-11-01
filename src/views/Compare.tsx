@@ -89,7 +89,14 @@ export function Compare({ index, ids }: { index: IndexJson; ids: string[] }) {
     return () => controller.abort();
   }, [idsKey, index]);
 
-  if (status.kind === "loading") return <p>Loading…</p>;
+  if (status.kind === "loading") {
+    return (
+      <section className="compare">
+        <h1>Compare platforms</h1>
+        <p role="status">Loading {ids.join(", ")}…</p>
+      </section>
+    );
+  }
   if (status.kind === "error") {
     return (
       <section className="not-found compare-error" role="alert">

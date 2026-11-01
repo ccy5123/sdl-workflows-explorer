@@ -325,3 +325,56 @@ test("AC-16: no page-level horizontal scroll at 375 px", async ({ page }) => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth), url).toBeLessThanOrEqual(375);
   }
 });
+
+test("Follow-up: at desktop width the filters sit beside the results, which are visible without scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/#/browse?view=platforms&field=catalysis");
+  await expect(rows(page, "platforms").first()).toBeVisible();
+  const toggle = page.getByRole("button", { name: /^Filters/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(toggle).toContainText("1 active");
+  for (const target of [countLine(page), rows(page, "platforms").first()]) {
+    const b = (await target.boundingBox())!;
+    expect(b.y + b.height).toBeLessThanOrEqual(720);
+  }
+  await expect(group(page, "Field tag")).toBeVisible();
+  // Collapsing hides the controls but keeps the filtered result and the URL.
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(group(page, "Field tag")).toBeHidden();
+  await expect(countLine(page)).toHaveText("23 of 280 platforms");
+  expect(await hash(page)).toBe("#/browse?view=platforms&field=catalysis");
+  await toggle.press("Enter");
+  await expect(group(page, "Field tag")).toBeVisible();
+});
+
+test("Follow-up: at phone width the filters start collapsed and open with the toggle", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto("/#/browse?field=catalysis&im=mixed");
+  const toggle = page.getByRole("button", { name: /^Filters/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toContainText("2 active");
+  await expect(group(page, "Field tag")).toBeHidden();
+  const b = (await countLine(page).boundingBox())!;
+  expect(b.y + b.height).toBeLessThanOrEqual(800);
+  await toggle.click();
+  await expect(group(page, "Field tag")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+});
+
+test("Follow-up: Compare shows the comparison page at once, before the hashchange event arrives", async ({ page }) => {
+  await page.goto("/#/browse?view=platforms");
+  await selectBox(page, "Aand2024/P1").check();
+  await selectBox(page, "Li2020/P1").check();
+  // hashchange is a queued task, so after the click plus a few microtasks it has not fired yet.
+  const seen = await page.evaluate(async () => {
+    let fired = false;
+    window.addEventListener("hashchange", () => (fired = true), { once: true });
+    const compare = [...document.querySelectorAll("button")].find((b) => b.textContent?.startsWith("Compare ("))!;
+    compare.click();
+    for (let i = 0; i < 5; i++) await new Promise<void>((r) => queueMicrotask(r));
+    return { fired, h1: document.querySelector("main h1")?.textContent ?? "", hash: window.location.hash };
+  });
+  expect(seen).toEqual({ fired: false, h1: "Compare platforms", hash: "#/compare/Aand2024/P1,Li2020/P1" });
+  await expect(page.locator('[data-table="compare-modules"] tbody tr')).toHaveCount(6);
+});

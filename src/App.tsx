@@ -8,7 +8,8 @@ import { Home } from "./views/Home";
 import { NotFound } from "./views/NotFound";
 import { PlatformView } from "./views/PlatformView";
 
-function useHash(): string {
+/** Current hash, and a navigate function that shows the new view in the same render as the click. */
+function useHash(): [string, (next: string) => void] {
   const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
     const onChange = () => {
@@ -18,11 +19,17 @@ function useHash(): string {
     window.addEventListener("hashchange", onChange);
     return () => window.removeEventListener("hashchange", onChange);
   }, []);
-  return hash;
+  // hashchange arrives as a later task; until then the old view would stay on screen under the new URL.
+  const navigate = (next: string) => {
+    window.location.hash = next;
+    setHash(window.location.hash);
+    window.scrollTo(0, 0);
+  };
+  return [hash, navigate];
 }
 
 export function App() {
-  const hash = useHash();
+  const [hash, navigate] = useHash();
   const route = parseRoute(hash);
   const [index, setIndex] = useState<IndexJson | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +60,7 @@ export function App() {
         {index && route.kind === "platform" && (
           <PlatformView key={route.platformId} index={index} paperId={route.paperId} platformId={route.platformId} hash={hash} />
         )}
-        {index && route.kind === "browse" && <Browse index={index} />}
+        {index && route.kind === "browse" && <Browse index={index} onNavigate={navigate} />}
         {index && route.kind === "compare" && <Compare key={route.ids.join(",")} index={index} ids={route.ids} />}
         {index && route.kind === "notFound" && <NotFound hash={route.hash} />}
       </main>

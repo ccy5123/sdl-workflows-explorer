@@ -129,4 +129,15 @@ total_run_phase_files: 20
 - Docs: `.moai/project/` and `docs/plan.md` are current; no README yet (planned for step 7). Step 4 (trends) imports
   `src/lib/filterState.ts`, `filterUrl.ts` and `filterApply.ts`.
 - Also in this commit: `sync_commit_sha` backfilled for SPEC-DATA-001 (d36ea42) and SPEC-VIEW-001 (a8ee3c5).
-- sync_commit_sha: pending-backfill (this sync commit)
+- sync_commit_sha: ebbec07
+
+## §E.5 Post-sync follow-up (2026-11-02, from the researcher review)
+
+- Filter layout: from 1000 px the filters sit in a sticky sidebar beside the results; a "Filters (n active)" toggle
+  (aria-expanded) collapses them, open by default at wide widths and collapsed below. URL filter state unchanged.
+- Compare transition: setting location.hash only queues hashchange, so the browser stayed on screen under the new URL
+  until that task ran. The Compare button now navigates through App (hash set and view rendered in the click), and
+  the comparison shows its heading with a loading line while the paper files load.
+- Evidence: tests/filterState.test.ts (activeFilterCount, 3 tests; RED: not a function); 3 e2e tests (RED: toggle
+  missing; h1 still Browse before hashchange). `npx vitest run` 213/213, `npm run typecheck` exit 0, `npm run e2e`
+  25/25, full `npm run build` exit 0; checked in the browser at 1280 px and 375 px.
