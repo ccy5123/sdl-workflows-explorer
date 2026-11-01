@@ -439,4 +439,22 @@ trends count line with uo, #/trends?uo=sonicate (papers)   5 of 238 papers
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
-_<pending sync-phase>_
+- sync_at: 2026-11-02
+- Implementation commits: 98b04d7..8fcd5a4 (pushed to the private remote github.com/ccy5123/sdl-workflows-explorer,
+  main).
+- Orchestrator verification at sync (HEAD 8fcd5a4): `npm run typecheck` exit 0; `npm test` 25 files / 369 tests
+  passed; `node .moai/specs/SPEC-TAXO-001/expected-counts.mjs` exit 0; `npm run e2e` 47 passed; `public/data/`
+  sizes `taxonomy.json` 94,799 bytes, `index.json` 247,729 bytes.
+- Browser check by the orchestrator (dev server 127.0.0.1:5173):
+  - 1280 px: `#/taxonomy` and `#/taxonomy/module_type/thermal_unit`, scrollWidth 1265, no horizontal scroll.
+  - thermal_unit's "38 platforms" link opened `#/browse?view=platforms&mt=thermal_unit` showing "38 of 280
+    platforms"; unit_operation/sonicate "5 platforms" opened `#/browse?view=platforms&uo=sonicate` showing "5 of 280
+    platforms".
+  - 375 px: `#/taxonomy` and `#/taxonomy/transfer_mode/data_transfer`, scrollWidth 375, no horizontal scroll; tables
+    stacked as labelled blocks; data_transfer showed the unfiltered-list note.
+  - No console errors.
+- Change outside REQ-008's list, accepted by the orchestrator: one existing navigation assertion in
+  `e2e/trends.spec.ts` now includes "Taxonomy", as REQ-009 / AC-11 require.
+- Docs: `.moai/project/` and `docs/plan.md` are current; no changes. Step 5 of `docs/plan.md` (taxonomy explorer) is
+  done with this SPEC; the next step is step 6 (benchmark view), not started.
+- sync_commit_sha: pending-backfill
