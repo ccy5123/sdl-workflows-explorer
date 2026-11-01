@@ -199,4 +199,4 @@ scoping chart links to the SVG and polling for ticks.
   of script output rather than numbers printed by `expected-counts.mjs` (AC-14 row in §E.2).
 - Docs: `.moai/project/` and `docs/plan.md` are current; no README yet (planned for step 7). Next step per
   `docs/plan.md` is step 5 (taxonomy explorer).
-- sync_commit_sha: pending-backfill (this sync commit)
+- sync_commit_sha: c2ac4a8
