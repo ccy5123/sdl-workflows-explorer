@@ -72,10 +72,22 @@ SPEC-DATA-001 suites (config, csv, checksum, counts, derive, extract, fetch-rele
 
 ```yaml
 run_complete_at: 2026-11-01
-run_commit_sha: pending-backfill (orchestrator commits)
+run_commit_sha: d4c3f72
 run_status: audit-ready
 ac_pass_count: 14
 ac_fail_count: 0
 new_warnings_or_lints_introduced: "vite chunk-size warning (651 kB bundle, Cytoscape)"
 total_run_phase_files: 36
 ```
+
+## §E.4 Sync-phase Audit-Ready Signal
+
+- sync_at: 2026-11-01
+- Implementation commit: d4c3f72 (pushed to the private remote github.com/ccy5123/sdl-workflows-explorer, main).
+- Orchestrator re-verification before commit: `npx vitest run` 125/125 passed (15 files), `npm run typecheck`
+  exit 0, `npm run e2e` 5/5 passed. Logs: `.moai/state/verify/sync-view-*.txt` (local, git-ignored).
+- Known follow-ups seen in the browser at `#/platform/Aand2024/P1`: graph drawn small after "Fit to view" (labels
+  hard to read), platform id under the title in an odd small font, page otherwise unstyled default HTML. Decision on
+  timing recorded with the next SPEC.
+- Docs: `.moai/project/` and `docs/plan.md` are current; no README yet (planned for step 7).
+- sync_commit_sha: pending-backfill (this sync commit)
