@@ -355,13 +355,87 @@ class named human (kind)                                   module_type
 trends count line with uo, #/trends?uo=sonicate (papers)   5 of 238 papers
 ```
 
+## §F Phase 4 Mode Selection
+
+- Input parameters: tier M; about 25 files across `scripts/`, `src/`, `tests/`, `e2e/` and the fixture release;
+  domains: data pipeline, filter library, routing, view, tests; TypeScript and CSV/Markdown fixtures; concurrency
+  benefit low (coding-heavy, each unit builds on the types and derive output of the one before).
+- Mode evaluation: direct — not selected (multi-file feature work); serial — selected; fanout — not selected
+  (coding-heavy work, not multi-domain research); sweep — not selected (no uniform mechanical transform over ≥ ~30
+  files); agent-team — not requested.
+- Decision: serial
+- Justification: one implementer works through the plan's units in order (types and derive, filters, routes and
+  library, view and e2e). The units share types and generated data, so parallel writers would collide; fanout and
+  sweep do not apply to coding-heavy work.
+
 ## §E.2 Run-phase Evidence
 
-_<pending run-phase>_
+- Pre-flight (HEAD 3b3397d, branch main): `npm test` → `Test Files 23 passed (23)`, `Tests 281 passed (281)`;
+  `npm run typecheck` → exit 0.
+- Commits (TDD per unit, failing test first):
+  - 98b04d7 M1 derive: `unit_operations`, class counts and examples, structured correspondence, REQ-004 checks;
+    fixture extension; SPEC status draft → in-progress.
+  - 1b0833d M2 `uo`/`uoMatch` filter state, URL, rules, FilterPanel group; trends caption phrase.
+  - 7ed2cf5 M3 taxonomy routes and `taxonomyHash`; `src/lib/taxonomy.ts`; real-data link consistency test.
+  - bb603d4 M4 `src/views/Taxonomy.tsx`, App lazy chunk and nav link, CSS, `e2e/taxonomy.spec.ts`, AC-14 e2e cases.
+- RED evidence (verbatim, captured before each implementation):
+  - derive (`npx vitest run tests/derive.test.ts tests/counts.test.ts`): `Tests 23 failed | 16 passed (39)`, e.g.
+    `AssertionError: expected { 'PaperA2024/P1': undefined, …(2) } to deeply equal { 'PaperA2024/P1': [ …(2) ], …(2) }`.
+  - uo filter (`npx vitest run tests/filterState.test.ts tests/filterUrl.test.ts tests/filterApply.test.ts
+    tests/trends.test.ts`): `Tests 27 failed | 97 passed (124)`.
+  - route (`npx vitest run tests/route.test.ts`): `Tests 2 failed | 40 passed (42)`,
+    `TypeError: taxonomyHash is not a function`.
+  - taxonomy lib (`npx vitest run tests/taxonomy.test.ts tests/libBoundary.test.ts`): `Error: Failed to load url
+    ../src/lib/taxonomy … Does the file exist?` and `ENOENT: … src/lib/taxonomy.ts`.
+  - Written after the code they test: `tests/taxonomy-derive.test.ts` (real-release check of the derive unit that the
+    fixture tests drove) and the Playwright view tests.
+- Fixture release changes (spec §3) and the fixture-derived expected values that changed with them:
+  - `modes/builder/platform_graphs.jsonl`: `PaperA2024/P2` gains connection E3 (data_transfer, M1→M2);
+    `PaperB2025/P1` gains module M2 (fluidics) and connection E1 (data_transfer, M2→M1), so data_transfer is on all
+    three platforms. `core/module.csv` +1 row, `core/connection.csv` +2 rows; `modes/builder/platforms.csv`
+    `PaperB2025/P1`: n_modules 1 → 2, module_types `software` → `software,fluidics`.
+  - `modes/taxonomy/correspondence.csv` rewritten: vocabularies XDL, OntoLab_SAREF (module types only),
+    Gottstein2026; classes fluidics, software, data_transfer, dispense_liquid; relations exact/broader/narrower/none;
+    sources with one or three parts (the relation `broad` and the two-part sources are gone).
+  - New: `core/taxonomy_correspondence.csv` (11 rows), `README.md` (source table, 3 rows), `data_dictionary.csv`
+    (`taxonomy_correspondence.match` row).
+  - `tests/derive.test.ts`: counts modules 5 → 6, connections 3 → 5; usage `module_type:fluidics` 2 → 3,
+    `transfer_mode:data_transfer` 1 → 3; platform-row field list and `index.platforms[1]` gain `unit_operations`;
+    `classes[0]` gains n_platforms/n_papers/examples/correspondence; the raw correspondence-row assertion is replaced
+    by the structured checks. `tests/counts.test.ts` EXPECTED modules 5 → 6, connections 3 → 5.
+- Existing tests edited only as REQ-008 allows: row literals of `tests/{compare,identity,platformFilter}.test.ts` and
+  the row helper of `tests/filterApply.test.ts` gain `unit_operations: []` only; the `offeredValues` input of
+  `tests/filterUrl.test.ts` gains `unit_operations` and its expected value the `uo` group; `OFFERED` literals of
+  `tests/filterUrl.test.ts` and `tests/trends.test.ts` gain `uo`; the two mt/tm paper captions of
+  `tests/trends.test.ts`. One edit outside that list: the navigation assertion of `e2e/trends.spec.ts` (AC-9) lists
+  "Taxonomy" after "Trends", which REQ-009 and AC-11 require.
+- Sizes written by `npm run build-data` on release 1.0.0: `public/data/taxonomy.json` 94,799 bytes (ceiling
+  120,000), `public/data/index.json` 247,729 bytes (ceiling 260,000) — both equal the script's estimates.
+- `node .moai/specs/SPEC-TAXO-001/expected-counts.mjs` after `npm run build-data`: exit 0; its output differs from
+  the §E.1 run only in the two "current" size lines (`[204900,247729]` → `[247729,247729]`, `35742` → `94799`).
+- Final gates (HEAD bb603d4 before this record): `npm test` → `Test Files 25 passed (25)`, `Tests 369 passed (369)`;
+  `npm run typecheck` exit 0; `npm run build` exit 0 (chunk `dist/assets/Taxonomy-gdrOlCvI.js` 8.95 kB);
+  `npm run e2e` → `47 passed` (34 existing + 13 new); `npx vitest run --coverage`: `src/lib` statements 100 %,
+  branches 97.18 %; `src/lib/taxonomy.ts` statements 100 %, branches 89.85 %.
+- Interpretations made in the run phase (no SPEC body edited):
+  - The class route is `{ kind: "taxonomyClass", classKind, cls }`; `kind` is already the route discriminant.
+  - `classLinks` returns no link and no note for a class that is not offered, has platforms and is not on every
+    platform; REQ-004 (g)/(h) make that case unreachable on valid data.
+  - The README parse requires the header row `Key | Vocabulary | Reference` and stops at the next `## ` heading.
+  - A platform row without a graph would get `unit_operations: []` (none in 1.0.0; the count check rejects it).
+  - Wide-table rows whose class is not in `classes.csv` are not checked; REQ-004 (c) names the long table only.
+  - On the class page the kind and family are a definition list (Kind, Family); the example caption is shown only
+    when there are examples.
+  - A duplicated long-table row (AC-4 d) is reported by check (a), which runs first; check (d) stays as a final guard.
+- Not done here: the screenshot check at 1280 px and 375 px (orchestrator, per acceptance.md).
 
 ## §E.3 Run-phase Audit-Ready Signal
 
-_<pending run-phase>_
+- run_status: audit-ready
+- run_complete_at: 2026-11-02
+- AC-1 to AC-16: PASS (unit tests in `tests/{derive,counts,taxonomy-derive,filterState,filterUrl,filterApply,trends,
+  route,taxonomy,libBoundary}.test.ts`, Playwright in `e2e/{taxonomy,browse,trends}.spec.ts`).
+- `public/data/` is built (release 1.0.0) for the orchestrator's browser check.
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
