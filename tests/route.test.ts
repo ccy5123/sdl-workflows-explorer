@@ -1,6 +1,6 @@
 // AC-1: hash route parsing (REQ-001, REQ-002).
 import { describe, expect, it } from "vitest";
-import { compareHash, parseRoute, platformHash } from "../src/lib/route";
+import { compareHash, parseRoute, platformHash, taxonomyHash } from "../src/lib/route";
 
 describe("parseRoute", () => {
   it("parses a complete platform route", () => {
@@ -93,5 +93,28 @@ describe("parseRoute: trends", () => {
   it.each(["#/trends/", "#/trends/x", "#/trendsx"])("treats %j as not found, carrying the hash", (hash) => {
     expect(() => parseRoute(hash)).not.toThrow();
     expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+  });
+});
+
+describe("parseRoute: taxonomy (SPEC-TAXO-001 AC-9)", () => {
+  it("parses the overview and well-formed class pages", () => {
+    expect(parseRoute("#/taxonomy")).toEqual({ kind: "taxonomy" });
+    expect(parseRoute("#/taxonomy/module_type/flow_reactor")).toEqual({ kind: "taxonomyClass", classKind: "module_type", cls: "flow_reactor" });
+    expect(parseRoute("#/taxonomy/a%20b/c")).toEqual({ kind: "taxonomyClass", classKind: "a b", cls: "c" });
+    expect(parseRoute("#/taxonomy/x/y")).toEqual({ kind: "taxonomyClass", classKind: "x", cls: "y" });
+  });
+
+  it.each(["#/taxonomy/", "#/taxonomy/x", "#/taxonomy/a/b/c", "#/taxonomy/a/", "#/taxonomy//b", "#/taxonomy/a/%E0", "#/taxonomy?x", "#/taxonomyx"])(
+    "treats %j as not found, carrying the hash",
+    (hash) => {
+      expect(() => parseRoute(hash)).not.toThrow();
+      expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+    },
+  );
+
+  it("builds class hashes that parse back", () => {
+    expect(taxonomyHash("unit_operation", "sonicate")).toBe("#/taxonomy/unit_operation/sonicate");
+    expect(taxonomyHash("a b", "c/d")).toBe("#/taxonomy/a%20b/c%2Fd");
+    expect(parseRoute(taxonomyHash("a b", "c/d"))).toEqual({ kind: "taxonomyClass", classKind: "a b", cls: "c/d" });
   });
 });

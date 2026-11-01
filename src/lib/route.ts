@@ -1,4 +1,5 @@
-// Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001). Pure: never throws.
+// Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001; SPEC-TAXO-001
+// REQ-009). Pure: never throws.
 
 export type Route =
   | { kind: "home" }
@@ -6,6 +7,8 @@ export type Route =
   | { kind: "browse"; query: string }
   | { kind: "trends"; query: string }
   | { kind: "compare"; ids: string[] }
+  | { kind: "taxonomy" }
+  | { kind: "taxonomyClass"; classKind: string; cls: string }
   | { kind: "notFound"; hash: string };
 
 function decode(segment: string): string | null {
@@ -27,7 +30,8 @@ function compareId(item: string): string {
 
 /**
  * `#/platform/<paper_id>/<platform_suffix>` → platform; `#/browse[?<query>]` → browse; `#/compare/<id>,<id>…` →
- * compare; empty, `#` or `#/` → home; anything else → not found.
+ * compare; `#/taxonomy` → taxonomy; `#/taxonomy/<kind>/<class>` → taxonomy class; empty, `#` or `#/` → home; anything
+ * else → not found.
  */
 export function parseRoute(hash: string): Route {
   if (hash === "" || hash === "#" || hash === "#/") return { kind: "home" };
@@ -41,6 +45,14 @@ export function parseRoute(hash: string): Route {
   if (rest.startsWith("compare/")) {
     const list = rest.slice("compare/".length);
     return { kind: "compare", ids: list === "" ? [] : list.split(",").map(compareId) };
+  }
+  if (rest === "taxonomy") return { kind: "taxonomy" };
+  if (rest.startsWith("taxonomy/")) {
+    const segments = rest.slice("taxonomy/".length).split("/");
+    if (segments.length !== 2) return notFound;
+    const classKind = decode(segments[0]!);
+    const cls = decode(segments[1]!);
+    return classKind && cls ? { kind: "taxonomyClass", classKind, cls } : notFound;
   }
   const parts = rest.split("/");
   if (parts.length !== 3 || parts[0] !== "platform") return notFound;
@@ -60,4 +72,9 @@ export function platformHash(platformId: string): string {
 /** Hash URL of the comparison of the given platform ids, in that order. */
 export function compareHash(platformIds: readonly string[]): string {
   return `#/compare/${platformIds.map(encodeId).join(",")}`;
+}
+
+/** Hash URL of a taxonomy class page, each segment percent-encoded. */
+export function taxonomyHash(kind: string, cls: string): string {
+  return `#/taxonomy/${encodeURIComponent(kind)}/${encodeURIComponent(cls)}`;
 }
