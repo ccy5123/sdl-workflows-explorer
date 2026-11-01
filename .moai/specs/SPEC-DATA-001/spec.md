@@ -2,7 +2,7 @@
 id: SPEC-DATA-001
 title: "Repository scaffold, verified build-time data pipeline and release count test"
 version: "0.2.0"
-status: in-progress
+status: completed
 created: 2026-11-01
 updated: 2026-11-01
 author: cyjoe
