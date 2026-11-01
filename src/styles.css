@@ -688,3 +688,91 @@ table.count-table a {
 .trends-table-details summary {
   cursor: pointer;
 }
+
+/* Taxonomy explorer (SPEC-TAXO-001 REQ-016). No colour of its own: relations and notes are text. Below 800px each
+   table row becomes a stacked block of labelled cells, so no taxonomy page scrolls sideways. */
+.taxonomy {
+  overflow-wrap: anywhere;
+}
+
+.taxo-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.95rem;
+}
+
+.taxo-table th,
+.taxo-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.3rem 0.6rem 0.3rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.taxo-table td.num {
+  white-space: nowrap;
+}
+
+.taxo-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.1rem 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.taxo-facts dt {
+  font-weight: 600;
+}
+
+.taxo-facts dd {
+  margin: 0;
+}
+
+.taxo-label {
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.taxo-ref {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 800px) {
+  .taxo-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .taxo-table,
+  .taxo-table tbody,
+  .taxo-table tr,
+  .taxo-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .taxo-table tr {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .taxo-table td {
+    padding: 0.1rem 0;
+    border: 0;
+  }
+
+  .taxo-table td.num {
+    white-space: normal;
+  }
+
+  .taxo-table td::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+  }
+}

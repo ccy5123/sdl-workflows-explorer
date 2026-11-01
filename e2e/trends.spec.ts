@@ -34,7 +34,7 @@ test("AC-9: route, navigation and split control", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/");
   const nav = page.getByRole("navigation");
-  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends"]);
+  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy"]);
   await nav.getByRole("link", { name: "Trends", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Trends", level: 1 })).toBeVisible();
   await expect(splitRadio(page, "Integration mode")).toBeChecked();
@@ -338,5 +338,15 @@ test("AC-16: narrow screen, keyboard and empty result", async ({ page }) => {
   await page.goto("/#/trends?q=zzzz&view=platforms&split=mt");
   await expect(page.getByText("No platforms match these filters.", { exact: true })).toBeVisible();
   await expect(page.locator(".trends-chart, .trends-legend, table.count-table")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("SPEC-TAXO-001 AC-8, AC-14: the unit-operation filter on the dashboard", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#/trends?uo=sonicate");
+  await expect(group(page, "Unit operations").getByRole("checkbox", { name: "sonicate", exact: true })).toBeChecked();
+  await expect(countLine(page)).toHaveText("5 of 238 papers");
+  await expect(link(page, "Show these in Browse")).toHaveAttribute("href", "#/browse?uo=sonicate");
+  await expect(group(page, "Split by").getByRole("radio")).toHaveCount(6);
   expect(errors).toEqual([]);
 });

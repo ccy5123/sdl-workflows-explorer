@@ -40,6 +40,7 @@ import {
   unfilteredNote,
   isNoneEntry,
 } from "../src/lib/taxonomy";
+import { contrastRatio } from "../src/lib/chartTokens";
 import { BANNED_SUBSTRINGS } from "../src/lib/trends";
 import { dataAvailable, readIndex, readTaxonomy, warnIfMissing } from "./viewer-data";
 
@@ -305,5 +306,33 @@ describe("no reference text of the release in src/ (SPEC-TAXO-001 AC-5)", () => 
       return banned.filter((b) => text.includes(b)).map((b) => `${f}: ${b}`);
     });
     expect(hits).toEqual([]);
+  });
+});
+
+describe("taxonomy colour tokens in styles.css (SPEC-TAXO-001 AC-16)", () => {
+  const css = readFileSync(join(import.meta.dirname, "..", "src", "styles.css"), "utf8");
+  /** `--taxo-*` declarations of every rule block whose selector is exactly `selector`. */
+  const declared = (selector: string): Map<string, string> => {
+    const out = new Map<string, string>();
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (m[1]!.trim() !== selector) continue;
+      for (const d of m[2]!.matchAll(/(--taxo-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})/g)) out.set(d[1]!, d[2]!);
+    }
+    return out;
+  };
+  const named = [...new Set([...css.matchAll(/(--taxo-[\w-]+)\s*:/g)].map((m) => m[1]!))];
+  const asText = new Set([...css.matchAll(/(?:^|[;{\s])color\s*:\s*var\((--taxo-[\w-]+)\)/g)].map((m) => m[1]!));
+
+  it("declares each --taxo-* token in both sets with enough contrast (trivially true without tokens)", () => {
+    const light = declared(":root");
+    const dark = declared(':root[data-theme="dark"]');
+    for (const name of named) {
+      const min = asText.has(name) ? 4.5 : 3;
+      expect(light.get(name), `${name} light`).toBeDefined();
+      expect(dark.get(name), `${name} dark`).toBeDefined();
+      expect(contrastRatio(light.get(name)!, "#ffffff"), `${name} light`).toBeGreaterThanOrEqual(min);
+      expect(contrastRatio(dark.get(name)!, "#1a1a19"), `${name} dark`).toBeGreaterThanOrEqual(min);
+    }
+    console.log(`--taxo-* tokens in styles.css: ${named.length}`);
   });
 });

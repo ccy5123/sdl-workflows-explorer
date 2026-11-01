@@ -378,3 +378,26 @@ test("Follow-up: Compare shows the comparison page at once, before the hashchang
   expect(seen).toEqual({ fired: false, h1: "Compare platforms", hash: "#/compare/Aand2024/P1,Li2020/P1" });
   await expect(page.locator('[data-table="compare-modules"] tbody tr')).toHaveCount(6);
 });
+
+test("SPEC-TAXO-001 AC-14: the unit-operation filter", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#/browse?view=platforms");
+  await expect(group(page, "Unit operations").getByRole("checkbox")).toHaveCount(31);
+  const names = await page.locator(".filter-panel legend").allTextContents();
+  expect(names.indexOf("Unit operations")).toBe(names.indexOf("Transfer modes match") + 1);
+  expect(names.indexOf("Unit operations match")).toBe(names.indexOf("Unit operations") + 1);
+  await expect(group(page, "Unit operations match").getByRole("radio", { name: "all", exact: true })).toBeChecked();
+  await box(page, "Unit operations", "sonicate").check();
+  await expect(countLine(page)).toHaveText("5 of 280 platforms");
+  expect(await hash(page)).toBe("#/browse?view=platforms&uo=sonicate");
+  await box(page, "Unit operations", "mix").check();
+  await expect(countLine(page)).toHaveText("0 of 280 platforms");
+  await group(page, "Unit operations match").getByRole("radio", { name: "any", exact: true }).check();
+  await expect(countLine(page)).toHaveText("111 of 280 platforms");
+  expect(await hash(page)).toBe("#/browse?view=platforms&uo=mix,sonicate&uoMatch=any");
+  await expect(page.getByRole("button", { name: /^Filters/ })).toHaveText("Filters (1 active)");
+  await button(page, "Clear filters").click();
+  await expect(countLine(page)).toHaveText("280 of 280 platforms");
+  expect(await hash(page)).toBe("#/browse?view=platforms");
+  expect(errors).toEqual([]);
+});
