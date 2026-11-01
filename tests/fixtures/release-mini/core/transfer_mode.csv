@@ -1,0 +1,3 @@
+transfer_mode,is_material,definition
+data_transfer,0,Data is passed on.
+fixed_tubing,1,"Tubing, fixed."

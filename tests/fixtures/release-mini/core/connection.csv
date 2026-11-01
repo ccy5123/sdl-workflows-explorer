@@ -1,0 +1,4 @@
+edge_id,platform_id,transfer_mode
+PaperA2024/P1/E1,PaperA2024/P1,data_transfer
+PaperA2024/P2/E1,PaperA2024/P2,fixed_tubing
+PaperA2024/P2/E2,PaperA2024/P2,fixed_tubing

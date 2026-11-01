@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "doi": "10.5281/zenodo.23857126",
+  "record_id": "23857126",
+  "file_name": "sdl-workflows-1.0.0.zip",
+  "url": "https://zenodo.org/api/records/23857126/files/sdl-workflows-1.0.0.zip/content",
+  "sha256": "dd1d18cf2fb7978105d422b2c1e6810c0c35306511fb56491f3d05f6d997e245",
+  "counts": {
+    "papers": 238,
+    "platforms": 280,
+    "modules": 1603,
+    "steps": 2621,
+    "connections": 1687,
+    "material_connections": 1076,
+    "candidates": 2172
+  }
+}

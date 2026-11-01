@@ -1,0 +1,3 @@
+class_kind,class,XDL,XDL_source,Gottstein2026,Gottstein2026_source
+module_type,fluidics,Pump (exact),Mehr2020,none,Gottstein2026 ; pdf p.3
+unit_operation,dispense_liquid,Add (broad),Mehr2020,none,Gottstein2026 ; pdf p.4

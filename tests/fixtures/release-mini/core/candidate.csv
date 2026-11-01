@@ -1,0 +1,4 @@
+cand_id,doi,title
+C0001,10.1/a,A
+C0002,10.1/b,B
+C0003,,"Third, with comma"

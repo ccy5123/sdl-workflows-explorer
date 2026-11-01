@@ -1,0 +1,7 @@
+step_id,platform_id,unit_operation
+PaperA2024/P1/S1,PaperA2024/P1,dispense_liquid
+PaperA2024/P1/S2,PaperA2024/P1,analyze_data
+PaperA2024/P2/S1,PaperA2024/P2,dispense_liquid
+PaperA2024/P2/S2,PaperA2024/P2,measure_optical
+PaperA2024/P2/S3,PaperA2024/P2,analyze_data
+PaperB2025/P1/S1,PaperB2025/P1,analyze_data

@@ -1,0 +1,12 @@
+class_kind,class,family,definition
+field_tag,bio,,Biology.
+field_tag,chem,,Chemistry.
+field_tag,materials,,Materials.
+module_type,fluidics,,Pumps and valves.
+module_type,robot_arm,,A robot arm.
+module_type,software,,Software.
+transfer_mode,data_transfer,,Data is passed on.
+transfer_mode,fixed_tubing,,"Tubing, fixed."
+unit_operation,analyze_data,analyze,Computing the target value.
+unit_operation,dispense_liquid,prepare,Dispensing liquid.
+unit_operation,measure_optical,measure,Optical measurement.
