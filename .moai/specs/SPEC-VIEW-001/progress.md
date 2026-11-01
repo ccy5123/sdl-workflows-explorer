@@ -87,7 +87,16 @@ total_run_phase_files: 36
 - Orchestrator re-verification before commit: `npx vitest run` 125/125 passed (15 files), `npm run typecheck`
   exit 0, `npm run e2e` 5/5 passed. Logs: `.moai/state/verify/sync-view-*.txt` (local, git-ignored).
 - Known follow-ups seen in the browser at `#/platform/Aand2024/P1`: graph drawn small after "Fit to view" (labels
-  hard to read), platform id under the title in an odd small font, page otherwise unstyled default HTML. Decision on
-  timing recorded with the next SPEC.
+  hard to read), platform id under the title in an odd small font, page otherwise unstyled default HTML. The
+  researcher chose (2026-11-02) to fix the first two now and leave the styling to the step-7 design pass.
+
+## §E.5 Post-sync follow-up (2026-11-02)
+
+- Graph fit: `src/lib/viewport.ts` clamps the fitted zoom to [1, 1.5]; a graph wider than the box at zoom 1 is shown
+  from its left end and panned by the reader. Node labels 10 → 12 px, edge labels 9 → 11 px.
+- Platform id: `code` uses an explicit monospace stack instead of the browser default.
+- Evidence: `tests/viewport.test.ts` 5 tests (RED: module missing, then GREEN); `npx vitest run` 130/130;
+  `npm run typecheck` exit 0; `npm run e2e` 6/6 including the new zoom and font check; checked in the browser at
+  `#/platform/Aand2024/P1`.
 - Docs: `.moai/project/` and `docs/plan.md` are current; no README yet (planned for step 7).
 - sync_commit_sha: pending-backfill (this sync commit)

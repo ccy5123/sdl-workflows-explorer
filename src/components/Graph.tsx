@@ -5,8 +5,16 @@ import { useEffect, useRef } from "react";
 import type { PlatformGraph } from "../data/types";
 import { buildElements, buildStylesheet } from "../lib/graphElements";
 import { highlightSet, type Selection } from "../lib/steps";
+import { readableViewport } from "../lib/viewport";
 
 cytoscape.use(dagre);
+
+const PADDING = 24;
+
+function readableFit(cy: Core) {
+  const bb = cy.elements().boundingBox();
+  cy.viewport(readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, cy.width(), cy.height(), PADDING));
+}
 
 declare global {
   interface Window {
@@ -32,7 +40,7 @@ export function Graph({ platform, selection, onSelect }: Props) {
       container: container.current,
       elements: buildElements(platform),
       style: buildStylesheet(),
-      layout: { name: "dagre", rankDir: "LR", fit: true, padding: 24, nodeSep: 30, rankSep: 90 } as cytoscape.LayoutOptions,
+      layout: { name: "dagre", rankDir: "LR", fit: false, nodeSep: 30, rankSep: 90 } as cytoscape.LayoutOptions,
       minZoom: 0.2,
       maxZoom: 3,
       boxSelectionEnabled: false,
@@ -41,6 +49,7 @@ export function Graph({ platform, selection, onSelect }: Props) {
     cy.on("tap", "node.module", (e) => onSelectRef.current({ kind: "module", id: e.target.id() }));
     cy.on("tap", "node.boundary", () => onSelectRef.current({ kind: "platform", id: platform.platform_id }));
     cy.on("tap", "edge", (e) => onSelectRef.current({ kind: "connection", id: e.target.id() }));
+    readableFit(cy);
     cyRef.current = cy;
     // Test hook: only the `vite build --mode e2e` bundle exposes the instance (AC-14 checks dist/ has none).
     if (import.meta.env.MODE === "e2e") window.__cy = cy;
@@ -80,7 +89,7 @@ export function Graph({ platform, selection, onSelect }: Props) {
         role="img"
         aria-label={`Module graph of ${platform.platform_id}: ${platform.modules.length} modules, ${platform.connections.length} connections. The tables below give the same information as text.`}
       />
-      <button type="button" className="graph-fit" onClick={() => cyRef.current?.fit(undefined, 24)}>
+      <button type="button" className="graph-fit" onClick={() => cyRef.current && readableFit(cyRef.current)}>
         Fit to view
       </button>
     </div>

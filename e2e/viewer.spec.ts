@@ -182,3 +182,24 @@ test("AC-13: off-platform modules, dashed inferred edges, ? markers and the lege
   await expect(page.locator('[data-legend="markers"]')).toContainText("Dashed edge");
   await expect(page.locator('[data-legend="markers"]')).toContainText("?");
 });
+
+test("Follow-up: the graph stays readable after Fit to view and the platform id uses the site monospace stack", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  const zoomAtLoad = await page.evaluate(() => (window as Win).__cy!.zoom());
+  expect(zoomAtLoad).toBeGreaterThanOrEqual(1);
+  await page.getByRole("button", { name: "Fit to view" }).click();
+  const after = await page.evaluate(() => {
+    const cy = (window as Win).__cy!;
+    const bb = cy.nodes(".module").renderedBoundingBox();
+    return { zoom: cy.zoom(), x1: bb.x1, y1: bb.y1, y2: bb.y2, height: cy.height() };
+  });
+  expect(after.zoom).toBeGreaterThanOrEqual(1);
+  expect(after.zoom).toBeLessThanOrEqual(1.5);
+  // The first module and the vertical extent of the modules are inside the box.
+  expect(after.x1).toBeGreaterThanOrEqual(0);
+  expect(after.y1).toBeGreaterThanOrEqual(0);
+  expect(after.y2).toBeLessThanOrEqual(after.height);
+  const fontFamily = await page.locator(".platform-id code").evaluate((el) => getComputedStyle(el).fontFamily);
+  expect(fontFamily.startsWith("ui-monospace")).toBe(true);
+});
