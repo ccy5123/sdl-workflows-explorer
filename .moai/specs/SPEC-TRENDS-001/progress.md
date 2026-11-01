@@ -186,4 +186,17 @@ scoping chart links to the SVG and polling for ticks.
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
-_<pending sync phase>_
+- sync_at: 2026-11-02
+- Implementation commit: defec55 (pushed to the private remote github.com/ccy5123/sdl-workflows-explorer, main).
+- Orchestrator verification at sync (HEAD defec55, in sync with origin/main): `npx vitest run` 23 files / 281 tests
+  passed, `npm run typecheck` exit 0, `npm run e2e` 34 passed, browser check at 1280 px and 375 px (recorded in §E.1),
+  `npm audit --omit=dev` only the pre-existing csv-parse advisory.
+- Known follow-ups: (a) the filter panel's open/closed state is set on mount, so resizing without a reload keeps it
+  (same as the browser); (b) the main chunk is 717 kB (Cytoscape and the table), the Trends chunk 255 kB; code
+  splitting of the other views is a step 7 concern; (c) plan-audit optional notes O1 (validator pinned to the Claude
+  Code 2.1.309 skill bundle) and O2 (two dark slots at the upper edge of the dark lightness band); (d) the dark token
+  set is defined but unreachable until the site-wide dark theme of step 7; (e) two AC-14 Playwright numbers are sums
+  of script output rather than numbers printed by `expected-counts.mjs` (AC-14 row in §E.2).
+- Docs: `.moai/project/` and `docs/plan.md` are current; no README yet (planned for step 7). Next step per
+  `docs/plan.md` is step 5 (taxonomy explorer).
+- sync_commit_sha: pending-backfill (this sync commit)

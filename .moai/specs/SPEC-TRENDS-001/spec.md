@@ -2,7 +2,7 @@
 id: SPEC-TRENDS-001
 title: "Trends dashboard: counts by first public year, split by one category, with filters shared with the browser"
 version: "0.3.0"
-status: in-progress
+status: completed
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
