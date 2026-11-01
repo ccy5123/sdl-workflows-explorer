@@ -457,4 +457,4 @@ trends count line with uo, #/trends?uo=sonicate (papers)   5 of 238 papers
   `e2e/trends.spec.ts` now includes "Taxonomy", as REQ-009 / AC-11 require.
 - Docs: `.moai/project/` and `docs/plan.md` are current; no changes. Step 5 of `docs/plan.md` (taxonomy explorer) is
   done with this SPEC; the next step is step 6 (benchmark view), not started.
-- sync_commit_sha: 
+- sync_commit_sha: 6547cc5
