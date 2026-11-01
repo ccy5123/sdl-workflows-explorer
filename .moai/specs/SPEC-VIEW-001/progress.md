@@ -99,4 +99,4 @@ total_run_phase_files: 36
   `npm run typecheck` exit 0; `npm run e2e` 6/6 including the new zoom and font check; checked in the browser at
   `#/platform/Aand2024/P1`.
 - Docs: `.moai/project/` and `docs/plan.md` are current; no README yet (planned for step 7).
-- sync_commit_sha: pending-backfill (this sync commit)
+- sync_commit_sha: a8ee3c5

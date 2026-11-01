@@ -109,7 +109,7 @@ code is in `src/components/DataTable.tsx`.
 
 ```yaml
 run_complete_at: 2026-11-02
-run_commit_sha: pending-backfill
+run_commit_sha: 9ba5553
 run_status: audit-ready
 ac_pass_count: 16
 ac_fail_count: 0
@@ -119,4 +119,14 @@ total_run_phase_files: 20
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
-_<pending sync-phase>_
+- sync_at: 2026-11-02
+- Implementation commit: 9ba5553 (pushed to the private remote github.com/ccy5123/sdl-workflows-explorer, main).
+- Orchestrator re-verification at sync (HEAD 9ba5553, in sync with origin/main): `npx vitest run` 210/210,
+  `npm run typecheck` exit 0; the e2e (22/22) and full build results above were taken on the same tree.
+- Known follow-ups: the duplicate-id compare message says "Listed twice" for any repeat count; 3 moderate
+  `npm audit` advisories in pre-existing dev and build dependencies; sort order, hidden columns and the comparison
+  selection are not kept (out of scope by design).
+- Docs: `.moai/project/` and `docs/plan.md` are current; no README yet (planned for step 7). Step 4 (trends) imports
+  `src/lib/filterState.ts`, `filterUrl.ts` and `filterApply.ts`.
+- Also in this commit: `sync_commit_sha` backfilled for SPEC-DATA-001 (d36ea42) and SPEC-VIEW-001 (a8ee3c5).
+- sync_commit_sha: pending-backfill (this sync commit)

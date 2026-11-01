@@ -99,4 +99,4 @@ TYPECHECK_EXIT=0
 - Orchestrator re-verification before commit: 70/70 tests, count test equal across derived, release and config,
   typecheck 0 errors, scripts/lib 100% lines / 96.41% branches, local build exit 0, built page checked in a browser.
 - Docs: project docs in .moai/project/ and docs/plan.md are current; no README yet (planned for step 7).
-- sync_commit_sha: pending-backfill (this sync commit)
+- sync_commit_sha: d36ea42

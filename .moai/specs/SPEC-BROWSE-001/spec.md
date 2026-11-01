@@ -2,7 +2,7 @@
 id: SPEC-BROWSE-001
 title: "Browser and comparison: filtered paper and platform tables, shareable filter URLs, side-by-side platforms"
 version: "0.2.0"
-status: in-progress
+status: completed
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
