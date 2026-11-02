@@ -2,11 +2,11 @@
 // REQ-009, REQ-010; SPEC-BENCH-001 REQ-005, REQ-015): home, platform viewer, browser, trends dashboard, taxonomy,
 // benchmark, comparison, about (SPEC-SITE-001 REQ-005), or not found. The footer links to the missing-paper issue form
 // (SPEC-CONTRIB-001 REQ-006).
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IssueLink } from "./components/IssueLink";
 import type { IndexJson } from "./data/types";
 import { PAPER_LINK_TEXT, paperUrl } from "./lib/contribute";
-import { parseRoute } from "./lib/route";
+import { navCurrent, parseRoute, routeTitle } from "./lib/route";
 import { About } from "./views/About";
 import { Browse } from "./views/Browse";
 import { Compare } from "./views/Compare";
@@ -57,20 +57,44 @@ export function App() {
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
+  // Title and current nav link per route (SPEC-SITE-001 REQ-010).
+  const title = routeTitle(route);
+  useEffect(() => {
+    document.title = `${title} · SDL Workflows Explorer`;
+  }, [title]);
+  const current = navCurrent(route);
+  const navLink = (href: string, text: string) => (
+    <a href={href} aria-current={current === text ? "page" : undefined}>
+      {text}
+    </a>
+  );
+  const mainRef = useRef<HTMLElement>(null);
+
   return (
     <div className="page">
+      {/* Every hash is a route, so the skip link moves focus itself instead of linking to #main. */}
+      <a
+        href={hash || "#/"}
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault();
+          mainRef.current?.focus();
+        }}
+      >
+        Skip to main content
+      </a>
       <nav className="site-nav">
         <a href="#/" className="site-title">
           SDL Workflows Explorer
         </a>
-        <a href="#/">Home</a>
-        <a href="#/browse">Browse</a>
-        <a href="#/trends">Trends</a>
-        <a href="#/taxonomy">Taxonomy</a>
-        <a href="#/benchmark">Benchmark</a>
-        <a href="#/about">About</a>
+        {navLink("#/", "Home")}
+        {navLink("#/browse", "Browse")}
+        {navLink("#/trends", "Trends")}
+        {navLink("#/taxonomy", "Taxonomy")}
+        {navLink("#/benchmark", "Benchmark")}
+        {navLink("#/about", "About")}
       </nav>
-      <main>
+      <main id="main" ref={mainRef} tabIndex={-1}>
         {error && <p role="alert">Could not load the data: {error}</p>}
         {!index && !error && <p>Loading…</p>}
         {index && route.kind === "home" && <Home index={index} />}

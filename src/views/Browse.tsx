@@ -40,13 +40,13 @@ function stateFromLocation(offered: Offered): FilterState | null {
 function paperColumns(links: Map<string, PlatformRow[]>): Col<PaperRow>[] {
   return [
     { id: "paper", header: "Paper", fixed: true, sort: { kind: "text", value: (p) => p.paper_id }, cell: (p) => p.paper_id },
-    { id: "year", header: "Year", sort: { kind: "number", value: (p) => p.first_public_year }, cell: (p) => p.first_public_year },
+    { id: "year", header: "Year", num: true, sort: { kind: "number", value: (p) => p.first_public_year }, cell: (p) => p.first_public_year },
     { id: "title", header: "Title", sort: { kind: "text", value: (p) => p.title }, cell: (p) => p.title },
     { id: "venue", header: "Venue", sort: { kind: "text", value: (p) => p.venue }, cell: (p) => show(p.venue) },
     { id: "field", header: "Field tags", sort: { kind: "text", value: (p) => joined(p.field_tags) }, cell: (p) => listCell(p.field_tags) },
     { id: "im", header: "Integration mode", sort: { kind: "text", value: (p) => p.integration_mode }, cell: (p) => p.integration_mode },
-    { id: "sw", header: "SW autonomy", sort: { kind: "number", value: (p) => p.sw_autonomy }, cell: (p) => p.sw_autonomy },
-    { id: "hw", header: "HW autonomy", sort: { kind: "number", value: (p) => p.hw_autonomy }, cell: (p) => p.hw_autonomy },
+    { id: "sw", header: "SW autonomy", num: true, sort: { kind: "number", value: (p) => p.sw_autonomy }, cell: (p) => p.sw_autonomy },
+    { id: "hw", header: "HW autonomy", num: true, sort: { kind: "number", value: (p) => p.hw_autonomy }, cell: (p) => p.hw_autonomy },
     {
       id: "platforms",
       header: "Platforms",
@@ -93,10 +93,10 @@ function platformColumns(selected: string[], toggle: (id: string) => void): Col<
     },
     { id: "name", header: "Name", sort: { kind: "text", value: (l) => l.platform_name ?? undefined }, cell: (l) => show(l.platform_name) },
     { id: "paper", header: "Paper", sort: { kind: "text", value: (l) => l.paper_id }, cell: (l) => l.paper_id },
-    { id: "year", header: "Year", sort: { kind: "number", value: (l) => l.first_public_year }, cell: (l) => l.first_public_year },
+    { id: "year", header: "Year", num: true, sort: { kind: "number", value: (l) => l.first_public_year }, cell: (l) => l.first_public_year },
     { id: "field", header: "Field tags", sort: { kind: "text", value: (l) => joined(l.field_tags) }, cell: (l) => listCell(l.field_tags) },
-    { id: "modules", header: "Modules", sort: { kind: "number", value: (l) => l.n_modules }, cell: (l) => l.n_modules },
-    { id: "steps", header: "Steps", sort: { kind: "number", value: (l) => l.n_steps }, cell: (l) => l.n_steps },
+    { id: "modules", header: "Modules", num: true, sort: { kind: "number", value: (l) => l.n_modules }, cell: (l) => l.n_modules },
+    { id: "steps", header: "Steps", num: true, sort: { kind: "number", value: (l) => l.n_steps }, cell: (l) => l.n_steps },
     { id: "mt", header: "Module types", sort: { kind: "text", value: (l) => joined(l.module_types) }, cell: (l) => listCell(l.module_types) },
     {
       id: "tm",

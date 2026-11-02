@@ -97,3 +97,53 @@ export function taxonomyHash(kind: string, cls: string): string {
 export function taxonomySourceHash(key: string): string {
   return `#/taxonomy?source=${encodeURIComponent(key)}`;
 }
+
+/** Name of a route in the document title, "<name> · SDL Workflows Explorer" (SPEC-SITE-001 REQ-010). */
+export function routeTitle(route: Route): string {
+  switch (route.kind) {
+    case "home":
+      return "Home";
+    case "about":
+      return "About";
+    case "platform":
+      return `Platform ${route.platformId}`;
+    case "browse":
+      return "Browse";
+    case "compare":
+      return "Compare";
+    case "trends":
+      return "Trends";
+    case "taxonomy":
+      return "Taxonomy";
+    case "taxonomyClass":
+      return `Taxonomy: ${route.cls}`;
+    case "benchmark":
+      return "Benchmark";
+    case "benchmarkItems":
+      return "Benchmark items";
+    case "notFound":
+      return "Not found";
+  }
+}
+
+/** Nav link text marked as the current page for a route; null where no nav link is current (SPEC-SITE-001 REQ-010). */
+export function navCurrent(route: Route): string | null {
+  switch (route.kind) {
+    case "home":
+      return "Home";
+    case "about":
+      return "About";
+    case "browse":
+      return "Browse";
+    case "trends":
+      return "Trends";
+    case "taxonomy":
+    case "taxonomyClass":
+      return "Taxonomy";
+    case "benchmark":
+    case "benchmarkItems":
+      return "Benchmark";
+    default:
+      return null;
+  }
+}

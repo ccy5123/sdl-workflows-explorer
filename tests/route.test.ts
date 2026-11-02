@@ -1,6 +1,14 @@
 // AC-1: hash route parsing (REQ-001, REQ-002).
 import { describe, expect, it } from "vitest";
-import { compareHash, parseRoute, platformHash, taxonomyHash, taxonomySourceHash } from "../src/lib/route";
+import {
+  compareHash,
+  navCurrent,
+  parseRoute,
+  platformHash,
+  routeTitle,
+  taxonomyHash,
+  taxonomySourceHash,
+} from "../src/lib/route";
 
 describe("parseRoute", () => {
   it("parses a complete platform route", () => {
@@ -168,6 +176,27 @@ describe("parseRoute: benchmark (SPEC-BENCH-001 AC-5)", () => {
       expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
     },
   );
+});
+
+// SPEC-SITE-001 REQ-010: document title and current nav link per route.
+describe("routeTitle and navCurrent (SPEC-SITE-001)", () => {
+  it.each([
+    ["#/", "Home", "Home"],
+    ["#/about", "About", "About"],
+    ["#/platform/Aand2024/P1", "Platform Aand2024/P1", null],
+    ["#/browse?view=platforms", "Browse", "Browse"],
+    ["#/compare/Aand2024/P1,Li2020/P1", "Compare", null],
+    ["#/trends", "Trends", "Trends"],
+    ["#/taxonomy", "Taxonomy", "Taxonomy"],
+    ["#/taxonomy/module_type/flow_reactor", "Taxonomy: flow_reactor", "Taxonomy"],
+    ["#/benchmark", "Benchmark", "Benchmark"],
+    ["#/benchmark/items?task=x", "Benchmark items", "Benchmark"],
+    ["#/nope", "Not found", null],
+  ])("%s → %s, current %s", (hash, title, current) => {
+    const route = parseRoute(hash);
+    expect(routeTitle(route)).toBe(title);
+    expect(navCurrent(route)).toBe(current);
+  });
 });
 
 // SPEC-SITE-001 REQ-005: the about page.

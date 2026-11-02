@@ -11,6 +11,12 @@
   --warn: #b35900;
   --danger: #cf222e;
   --unmapped: #000000;
+  /* Shared table and spacing values (SPEC-SITE-001 REQ-012). */
+  --table-border: var(--line);
+  --cell-pad-y: 0.3rem;
+  --cell-pad-x: 0.5rem;
+  --th-weight: 600;
+  --section-gap: 1.5rem;
   color-scheme: light;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
@@ -63,6 +69,35 @@ code {
   padding: 1rem;
 }
 
+/* Skip link: off screen until it receives focus (SPEC-SITE-001 REQ-010). */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -10rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  z-index: 10;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+main:focus {
+  outline: none;
+}
+
+main:focus-visible {
+  outline: 3px solid var(--accent);
+}
+
+.site-nav a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .site-nav {
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--line);
@@ -91,7 +126,7 @@ h1 {
 
 h2 {
   font-size: 1.1rem;
-  margin: 0 0 0.5rem;
+  margin: 0 0 calc(var(--section-gap) / 3);
 }
 
 h3 {
@@ -114,24 +149,19 @@ h3 {
 
 .counts th,
 .counts td {
-  padding: 0.3rem 0.75rem;
-  border-bottom: 1px solid var(--line);
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  border-bottom: 1px solid var(--table-border);
 }
 
 .counts th {
   text-align: left;
-  font-weight: 400;
-}
-
-.counts td {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+  font-weight: var(--th-weight);
 }
 
 /* Home and about (SPEC-SITE-001). Verbatim release files wrap instead of scrolling sideways. */
 .home section,
 .about section {
-  margin-top: 1.5rem;
+  margin-top: var(--section-gap);
 }
 
 .home-intro,
@@ -211,9 +241,20 @@ table.data {
 table.data th,
 table.data td {
   text-align: left;
-  padding: 0.3rem 0.5rem;
-  border-bottom: 1px solid var(--line);
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  border-bottom: 1px solid var(--table-border);
   vertical-align: top;
+}
+
+table.data th {
+  font-weight: var(--th-weight);
+}
+
+/* Numeric cells of every table kind (SPEC-SITE-001 REQ-012). */
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 table.data tbody tr[tabindex] {
@@ -741,15 +782,17 @@ table.count-table {
 
 table.count-table th,
 table.count-table td {
-  padding: 0.2rem 0.45rem;
-  border: 1px solid var(--chart-grid);
-  text-align: right;
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  border: 1px solid var(--table-border);
   white-space: nowrap;
+}
+
+table.count-table th {
+  font-weight: var(--th-weight);
 }
 
 table.count-table th[scope="row"] {
   text-align: left;
-  font-weight: 600;
 }
 
 /* A cell link takes the cell text colour, not the site link accent (REQ-011). */
@@ -782,8 +825,17 @@ table.count-table a {
 .bench-table td {
   text-align: left;
   vertical-align: top;
-  padding: 0.3rem 0.6rem 0.3rem 0;
-  border-bottom: 1px solid var(--line);
+  padding: var(--cell-pad-y) var(--cell-pad-x) var(--cell-pad-y) 0;
+  border-bottom: 1px solid var(--table-border);
+  /* Words never break mid-word; ids and class names break at the <wbr> after "_" or "/" (SPEC-SITE-001 REQ-014;
+     the taxonomy pages set overflow-wrap: anywhere for their text, which split "Relation" in narrow columns). */
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.taxo-table th,
+.bench-table th {
+  font-weight: var(--th-weight);
 }
 
 .taxo-table td.num,
@@ -862,12 +914,12 @@ table.count-table a {
   .taxo-table tr,
   .bench-table tr {
     padding: 0.4rem 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--table-border);
   }
 
   .taxo-table td,
   .bench-table td {
-    padding: 0.1rem 0;
+    padding: 0;
     border: 0;
   }
 
@@ -886,13 +938,6 @@ table.count-table a {
 /* Benchmark view (SPEC-BENCH-001 REQ-015, REQ-016). No colour encodes data; tables share the taxonomy rules above. */
 .benchmark {
   overflow-wrap: anywhere;
-}
-
-/* Table words never break mid-word; ids and class names break at the <wbr> after "_" or "/" instead. */
-.benchmark .bench-table th,
-.benchmark .bench-table td {
-  overflow-wrap: normal;
-  word-break: normal;
 }
 
 .benchmark pre {

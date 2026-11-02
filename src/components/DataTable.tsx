@@ -22,6 +22,8 @@ export interface Col<T> {
   cell: (row: T) => ReactNode;
   /** Cannot be hidden (id and Select columns). */
   fixed?: boolean;
+  /** Numeric cells: right-aligned with tabular figures by the shared `.num` rule (SPEC-SITE-001 REQ-012). */
+  num?: boolean;
 }
 
 const features = tableFeatures({ rowSortingFeature, columnVisibilityFeature, sortedRowModel: createSortedRowModel() });
@@ -117,7 +119,9 @@ export function DataTable<T extends RowData>({
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>{byId.get(cell.column.id)?.cell(row.original)}</td>
+                  <td key={cell.id} className={byId.get(cell.column.id)?.num ? "num" : undefined}>
+                    {byId.get(cell.column.id)?.cell(row.original)}
+                  </td>
                 ))}
               </tr>
             ))}

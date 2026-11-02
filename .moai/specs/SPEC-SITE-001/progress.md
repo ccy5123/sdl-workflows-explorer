@@ -41,6 +41,20 @@
   `useTheme`, `buildStylesheet(theme = "light")`, `Graph` re-style and the legend's `var(--unmapped)`. One test fix:
   Cytoscape reports `rgb(r,g,b)` without spaces, normalised in the spec. Full Vitest 32 files / 499 passed; full
   Playwright 86 passed (72 + 14); typecheck exit 0.
+- M4 keyboard and layout: `e2e/a11y.spec.ts` (AC-9, AC-10, AC-12, AC-13), `tests/tableStyles.test.ts` (AC-19) and the
+  `routeTitle`/`navCurrent` cases in `tests/route.test.ts` written first. Screen check before the fix (built-in
+  browser, e2e build): at 800 px the taxonomy tables are stacked and nothing breaks; at 820 px (table layout, just
+  above the 800 px breakpoint) "Relation", "narrower" and "OntoVapourtec:VapourtecR4Reactor" broke mid-word, caused by
+  `.taxonomy { overflow-wrap: anywhere }` reaching the table cells. AC-13 therefore also runs at 820 px.
+  RED: tableStyles 5 failed (no shared properties, literal borders/padding, `font-weight: 400` on `.counts th`, no
+  `.num` rule, `h2` margin); route.test 11 failed (no `routeTitle`); a11y 18 failed of 66 — AC-9 on all 12 routes (no
+  skip link) and AC-13 at every width (mid-word breaks; number cells without `num`). AC-10 (visible focus, no trap)
+  and AC-12 (375 px) already passed on every route in both themes. One test-definition fix during RED: a line break
+  after a hyphen ("self-|optimizing") is a normal break opportunity, so a word runs up to and including a hyphen.
+  GREEN after: shared `--table-border`, `--cell-pad-y/x`, `--th-weight`, `--section-gap`; one `td.num, th.num` rule
+  and `num` on numeric cells (Browse via `Col.num`, Compare, CountTable, Home); `overflow-wrap: normal` in taxonomy
+  and benchmark table cells; skip link, `main#main`, `aria-current`, `document.title` via `routeTitle`. Full Vitest
+  33 files / 516 passed; full Playwright 152 passed (86 + 66); typecheck exit 0.
 - Baseline re-measured 2026-11-02 at 69d2dc7: `npx tsc --noEmit` exit 0; `npx vitest run` 28 files, 459 passed;
   `npm run e2e` 68 passed.
 - Derived-file hashes at 69d2dc7 (`sha256sum` of `public/data/` after build-data; AC-1):

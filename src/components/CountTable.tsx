@@ -32,7 +32,7 @@ export function CountTable({
           <tr>
             <td />
             {table.bins.map((b) => (
-              <th key={b.label} scope="col">
+              <th key={b.label} scope="col" className="num">
                 {b.label}
               </th>
             ))}
@@ -42,7 +42,7 @@ export function CountTable({
           <tr>
             <th scope="row">n</th>
             {table.bins.map((b, i) => (
-              <td key={b.label}>
+              <td key={b.label} className="num">
                 <a href={browseHash(linkState(state, b, split))} aria-label={totalName(b.label, table.n[i]!, unit)}>
                   {table.n[i]}
                 </a>
@@ -55,7 +55,7 @@ export function CountTable({
               {table.bins.map((b, i) => {
                 const count = table.counts[v]![i]!;
                 return (
-                  <td key={b.label} style={cellStyle(count)}>
+                  <td key={b.label} className="num" style={cellStyle(count)}>
                     <a
                       href={browseHash(linkState(state, b, split, value))}
                       aria-label={segmentName(b.label, valueLabel(split, value), count, table.n[i]!, unit)}

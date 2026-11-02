@@ -236,6 +236,7 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
               </td>
               <td data-label={MODEL_HEADS[1]}>{m.baseline}</td>
               <td data-label={MODEL_HEADS[2]}>{m.referenceModel}</td>
+              {/* Model names, not numbers: no `num` class (SPEC-SITE-001 REQ-012). */}
             </tr>
           ))}
         </tbody>
