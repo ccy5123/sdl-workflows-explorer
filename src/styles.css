@@ -197,6 +197,24 @@ table.views th[scope="row"] {
   vertical-align: top;
 }
 
+/* On a phone each view's description goes under its name instead of in a narrow second column. */
+@media (max-width: 600px) {
+  table.views thead {
+    display: none;
+  }
+
+  table.views tr,
+  table.views th[scope="row"],
+  table.views td {
+    display: block;
+  }
+
+  table.views th[scope="row"] {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
 /* A button that reads as a link: an in-page action, not a navigation. */
 .link-button {
   font: inherit;
@@ -250,9 +268,10 @@ table.data th {
   font-weight: var(--th-weight);
 }
 
-/* Numeric cells of every table kind (SPEC-SITE-001 REQ-012). */
-td.num,
-th.num {
+/* Numeric cells of every table kind (SPEC-SITE-001 REQ-012). "table" lifts the rule over `table.data td` and
+   `.taxo-table td`, which set text-align: left. */
+table td.num,
+table th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -626,6 +645,11 @@ button {
 }
 
 /* Comparison */
+/* Each comparison table starts a section of its own. */
+.compare h2 {
+  margin: var(--section-gap) 0 calc(var(--section-gap) / 3);
+}
+
 .compare-steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));

@@ -105,7 +105,12 @@ export function DataTable<T extends RowData>({
                   }
                   const sorted = column.getIsSorted();
                   return (
-                    <th key={header.id} scope="col" aria-sort={sorted ? ARIA_SORT[sorted] : "none"}>
+                    <th
+                      key={header.id}
+                      scope="col"
+                      aria-sort={sorted ? ARIA_SORT[sorted] : "none"}
+                      className={byId.get(column.id)?.num ? "num" : undefined}
+                    >
                       <button type="button" className="sort-button" onClick={column.getToggleSortingHandler()}>
                         {label}
                       </button>

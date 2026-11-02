@@ -79,6 +79,15 @@ test("AC-6: the platform-viewer button moves focus to the platform filter", asyn
   await expect(filter).toBeFocused();
 });
 
+test("screen check: at 375 px each view's description sits under its name, not in a narrow column", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#/");
+  const row = page.locator("table.views tbody tr").nth(1);
+  const [name, text] = await Promise.all([row.locator("th").boundingBox(), row.locator("td").boundingBox()]);
+  expect(text!.y).toBeGreaterThanOrEqual(name!.y + name!.height - 1);
+  expect(text!.width).toBeGreaterThan(300);
+});
+
 test("AC-7: about page summary, limits and full data card", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/");

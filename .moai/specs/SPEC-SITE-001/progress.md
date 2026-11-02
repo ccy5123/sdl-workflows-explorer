@@ -63,6 +63,28 @@
   `docs/deploy.md`: pages.test 6 passed; `dist-pages/index.html` loads `/sdl-workflows-explorer/assets/index-*.js`;
   `npm run e2e` exit 0, 161 passed (152 + 9); full Vitest 34 files / 522 passed; typecheck exit 0. Also removed a JSX
   comment left in `Benchmark.tsx` by M4.
+- M6 verification: `npm run build` exit 0 (zip and MANIFEST verified, 79 files; counts match; `dist/index.html` loads
+  `/sdl-workflows-explorer/assets/index-*.js`; `dist/data/` holds release-docs.json beside the other files). The
+  production build served by `vite preview --mode production` under `/sdl-workflows-explorer/` was opened in the
+  built-in browser (AC-18):
+  - Scripted pass over the 12 routes at 1280 px light, 1280 px dark, 375 px light and 375 px dark: every route shows
+    its `h1` and the REQ-010 title, `data-theme` and the body background follow the scheme, `scrollWidth` equals
+    `clientWidth`, no page error; in dark, no element in `main` has a white background.
+  - Seen in screenshots: home (1280 light: intro, views table, counts, DOI, download link, citation, collapsed
+    CITATION.cff, platform list; 375 dark), about (1280 dark), platform viewer (1280 dark: light labels, dark edge-label
+    backgrounds; 375 dark: the graph is cut at the right edge at its readable zoom, as since SPEC-VIEW-001 — pan or
+    "Fit to view"), trends (1280 dark: dark chart tokens, dark form controls), taxonomy overview (1280 dark), class page
+    (820 px light: "Relation" and "narrower" whole; 375 px light: stacked cells), comparison (1280 dark), benchmark
+    (375 dark), browse (375 dark: wide table scrolls inside its container).
+  - Three findings fixed, each test first: (1) at 375 px the views table kept a nowrap name column, leaving the
+    descriptions in a narrow column — RED in `e2e/site.spec.ts` "screen check" (description top 754 < name bottom
+    915), GREEN after stacking the table below 600 px; (2) `.num` cells inside `table.data` stayed left-aligned
+    because `table.data td { text-align: left }` is more specific — RED in AC-13 ("not right-aligned: 2024" …), GREEN
+    with `table td.num, table th.num`; numeric column headers (Browse, comparison counts and step order) carry `num`
+    too, and the comparison's identity table (name, paper, year in one column) is a record card, so its year is not a
+    number column and AC-13 exempts it; (3) comparison headings sat directly under the previous table — `.compare h2`
+    takes `--section-gap`.
+  - After the fixes: full Vitest 34 files / 522 passed; `npm run e2e` exit 0, 162 passed; typecheck exit 0.
 - Baseline re-measured 2026-11-02 at 69d2dc7: `npx tsc --noEmit` exit 0; `npx vitest run` 28 files, 459 passed;
   `npm run e2e` 68 passed.
 - Derived-file hashes at 69d2dc7 (`sha256sum` of `public/data/` after build-data; AC-1):

@@ -106,8 +106,14 @@ const tableProblems = (page: Page) =>
     const unclassed: string[] = [];
     for (const cell of document.querySelectorAll<HTMLElement>("main table th, main table td")) {
       if (cell.getClientRects().length === 0) continue;
-      if (cell.tagName === "TD" && /^[\d.,]+$/.test((cell.textContent ?? "").trim()) && !cell.classList.contains("num")) {
+      // The comparison's identity table is a record card (name, paper and year in one column), not a number column.
+      const recordCard = cell.closest('[data-table="compare-platforms"]') !== null;
+      if (cell.tagName === "TD" && !recordCard && /^[\d.,]+$/.test((cell.textContent ?? "").trim()) && !cell.classList.contains("num")) {
         unclassed.push((cell.textContent ?? "").trim());
+      }
+      // A num cell must actually be right-aligned (a more specific table rule must not win over the shared rule).
+      if (cell.classList.contains("num") && cell.closest("table.counts, table.data") && getComputedStyle(cell).textAlign !== "right") {
+        unclassed.push(`not right-aligned: ${(cell.textContent ?? "").trim()}`);
       }
       const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
       for (let node = walker.nextNode(); node; node = walker.nextNode()) {

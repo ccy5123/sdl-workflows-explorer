@@ -41,7 +41,7 @@ function CountTable({ name, label, ids, rows }: { name: string; label: string; i
           <tr>
             <th scope="col">{label}</th>
             {ids.map((id) => (
-              <th key={id} scope="col">
+              <th key={id} scope="col" className="num">
                 {id}
               </th>
             ))}
@@ -146,9 +146,7 @@ export function Compare({ index, ids }: { index: IndexJson; ids: string[] }) {
             <tr>
               <th scope="row">Year</th>
               {c.columns.map((col) => (
-                <td key={col.platformId} className="num">
-                  {col.year}
-                </td>
+                <td key={col.platformId}>{col.year}</td>
               ))}
             </tr>
           </tbody>
@@ -169,7 +167,9 @@ export function Compare({ index, ids }: { index: IndexJson; ids: string[] }) {
               <caption>{platformIds[i]}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Order</th>
+                  <th scope="col" className="num">
+                    Order
+                  </th>
                   <th scope="col">Unit operation</th>
                   <th scope="col">Performer</th>
                 </tr>
