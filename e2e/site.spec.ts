@@ -2,7 +2,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { IndexJson, ReleaseDocs } from "../src/data/types";
 import { formatCitation } from "../src/lib/citation";
-import { PLATFORM_LIST_BUTTON } from "../src/lib/siteText";
+import { ABOUT_AUTHOR_LEAD, AUTHOR, PLATFORM_LIST_BUTTON } from "../src/lib/siteText";
 
 const fetchJson = <T>(page: Page, path: string) =>
   page.evaluate((p) => fetch(p).then((r) => r.json()), path) as Promise<T>;
@@ -159,4 +159,21 @@ test("AC-7: home and about text draw no conclusion about the field", async ({ pa
     const text = (await ownText(page)).toLowerCase();
     for (const phrase of NO_CONCLUSIONS) expect(text, `${route}: ${phrase}`).not.toContain(phrase);
   }
+});
+
+// The author's name links to the personal site: in the footer right after the DOI, and on the about page.
+test("author link: footer after the DOI on every view, and one line on the about page", async ({ page }) => {
+  for (const hash of ["#/", "#/browse", "#/about", "#/platform/Aand2024/P1"]) {
+    await page.goto(`/${hash}`);
+    const footer = page.locator("footer.site-footer");
+    const author = footer.getByRole("link", { name: AUTHOR.name, exact: true });
+    await expect(author, hash).toHaveAttribute("href", AUTHOR.url);
+    const hrefs = await footer.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
+    const doi = hrefs.findIndex((h) => h.startsWith("https://doi.org/"));
+    expect(hrefs.indexOf(AUTHOR.url), hash).toBe(doi + 1);
+  }
+  await page.goto("/#/about");
+  const line = page.locator("main p", { hasText: ABOUT_AUTHOR_LEAD });
+  await expect(line).toHaveText(`${ABOUT_AUTHOR_LEAD} ${AUTHOR.name}.`);
+  await expect(line.getByRole("link", { name: AUTHOR.name, exact: true })).toHaveAttribute("href", AUTHOR.url);
 });

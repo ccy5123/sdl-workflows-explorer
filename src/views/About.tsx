@@ -1,7 +1,7 @@
 // About the data: a summary of the release's data card and its full text (SPEC-SITE-001 REQ-005, REQ-006).
 import { useReleaseDocs } from "../components/useReleaseDocs";
 import type { IndexJson } from "../data/types";
-import { ABOUT_SECTIONS, aboutIntro } from "../lib/siteText";
+import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, aboutIntro } from "../lib/siteText";
 
 export function About({ index }: { index: IndexJson }) {
   const { docs, error } = useReleaseDocs();
@@ -10,6 +10,9 @@ export function About({ index }: { index: IndexJson }) {
     <article className="about">
       <h1>About the data</h1>
       <p>{aboutIntro(index.release.version)}</p>
+      <p>
+        {ABOUT_AUTHOR_LEAD} <a href={AUTHOR.url}>{AUTHOR.name}</a>.
+      </p>
       {ABOUT_SECTIONS.map((s) => (
         <section key={s.heading} aria-labelledby={`about-${s.heading}`}>
           <h2 id={`about-${s.heading}`}>{s.heading}</h2>

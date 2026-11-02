@@ -55,6 +55,10 @@ export const VIEWS: readonly ViewEntry[] = [
 
 export const PLATFORM_LIST_BUTTON = "Go to the platform list";
 
+/** Author of the dataset and the site, linked from the footer and the about page. */
+export const AUTHOR = { name: "Chan Young Joe", url: "https://ccy5123.github.io/" } as const;
+export const ABOUT_AUTHOR_LEAD = "The dataset and this site are by";
+
 export const aboutIntro = (version: string): string =>
   `This page summarises the data card (DATA_CARD.md) of release ${version}. Its full text is at the end of the page ` +
   "and in the release files on Zenodo.";

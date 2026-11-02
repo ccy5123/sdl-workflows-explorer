@@ -5,7 +5,23 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { IndexJson, ReleaseDocs } from "../src/data/types";
-import { ABOUT_SECTIONS, VIEWS, aboutIntro, homeIntro, numbersIn, unsourcedNumbers } from "../src/lib/siteText";
+import {
+  ABOUT_AUTHOR_LEAD,
+  ABOUT_SECTIONS,
+  AUTHOR,
+  VIEWS,
+  aboutIntro,
+  homeIntro,
+  numbersIn,
+  unsourcedNumbers,
+} from "../src/lib/siteText";
+
+describe("author link (footer and about page)", () => {
+  it("names the author and links the personal site", () => {
+    expect(AUTHOR).toEqual({ name: "Chan Young Joe", url: "https://ccy5123.github.io/" });
+    expect(`${ABOUT_AUTHOR_LEAD} ${AUTHOR.name}.`).toBe("The dataset and this site are by Chan Young Joe.");
+  });
+});
 
 describe("numbersIn and unsourcedNumbers", () => {
   it("reads whole number tokens", () => {
@@ -45,6 +61,10 @@ describe.skipIf(!built)("home and about text against the pinned release (AC-4)",
 
   it("has no number outside index.json and the data card", () => {
     expect(texts.flatMap((t) => unsourcedNumbers(t, docs.data_card, filled))).toEqual([]);
+  });
+
+  it("names the release's only author", () => {
+    expect(docs.citation.authors.map((a) => `${a.given} ${a.family}`)).toEqual([AUTHOR.name]);
   });
 
   it("reports a planted stale figure", () => {
