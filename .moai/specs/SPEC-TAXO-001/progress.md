@@ -501,3 +501,24 @@ trends count line with uo, #/trends?uo=sonicate (papers)   5 of 238 papers
   (new cases only), `tests/taxonomy.test.ts`, `e2e/taxonomy.spec.ts`. `src/App.tsx` unchanged: it already passes the
   whole route, which now carries `source`. `BANNED_SUBSTRINGS` in `src/lib/trends.ts` unchanged; the AC-10 test checks
   more texts against it.
+
+### Sync
+
+- Closed 2026-11-02 on implementation commit 2b11b2c (amendment commit 14351ab). spec.md status `in-progress` →
+  `completed`; `updated` stays 2026-11-02.
+- Orchestrator verification at 2b11b2c: `npm run typecheck` exit 0; `npm test` 25 files / 389 tests passed;
+  `npm run e2e` 52 passed.
+- Browser check (built-in browser, dev server 127.0.0.1:5173):
+  - 1280 px: overview h2 order Field tags, Module types, Transfer modes, Unit operations, Sources of the
+    correspondence, Relations; jump list buttons present; scrollWidth 1265 ≤ 1280. flow_reactor correspondence is one
+    table (XDL none "searched: Mehr2020", MAP (Leong2022) two terms with one spanning source, OntoLab/SAREF,
+    Gottstein2026 orchestration levels). Two class names (generate_instructions, plan_next_experiment) wrap at the
+    underscore in the unit-operations table, which the rule allows.
+  - 800 px: no class name wraps; scrollWidth 785 ≤ 800; `#/taxonomy?source=Bai2024` scrolls to and bolds the Bai2024
+    row; Relations show exact = "the same concept" and none = "no counterpart in that vocabulary; the listed source
+    was searched".
+  - 375 px: overview, thermal_unit and flow_reactor scrollWidth 375; correspondence stacks as labelled blocks; no class
+    name wraps.
+  - Console: only stale hot-reload errors from the implementer's mid-edit state (NO_COUNTERPART_TEXT, no longer in
+    src/); the current page renders without error.
+- amendment_close_sha: pending-backfill
