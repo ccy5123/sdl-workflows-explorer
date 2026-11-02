@@ -4,7 +4,7 @@
 
 export function homeIntro(version: string, platforms: number, papers: number): string {
   return (
-    "sdl-workflows records which modules published closed-loop self-driving laboratories use, in what order one " +
+    "sdl-workflows records which modules published closed-loop self-driving laboratories (SDLs) use, in what order one " +
     "experimental cycle runs its steps on them, and how material moves between the modules. " +
     `Release ${version} codes ${platforms} platforms described in ${papers} papers that one literature search found. ` +
     "It also holds the times, batch sizes, throughput and cost that the papers state, and what each paper states " +
@@ -94,8 +94,8 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
       "A second coding of every paper by the same model with the same instructions was compared with the released " +
       "coding item by item; items without a counterpart of the same class are marked uncertain (340 of 2621 steps " +
       "and 156 of 1687 connections). For 30 papers, a different model, Claude Fable 5.1, coded the papers under the " +
-      "same instructions as a reference. Against it, the released coding reached a field-wise strict micro-F1 of " +
-      "0.905 for the unit operation of steps, 0.898 for module type and 0.891 for transfer mode; the lower bounds of " +
+      "same instructions as a reference. Against it, the released coding reached a field-wise strict micro-F1 (an " +
+      "item counts when it pairs with a reference item and has the same class) of 0.905 for the unit operation of steps, 0.898 for module type and 0.891 for transfer mode; the lower bounds of " +
       "the 95% intervals were 0.862, 0.858 and 0.847. These figures are agreement between two language models, not " +
       "accuracy against human coding; the release contains no human coding.",
   },

@@ -43,6 +43,33 @@
   "Timing data" and "Human-intervention reporting" sections; the new not-included sentence; the home intro sentence)
   and the `src/lib/trends.ts:50` comment (no release number): Vitest 34 files / 544 passed; site.spec 6 passed;
   `git grep -n "1\.0\.0" -- src` prints nothing; typecheck 0.
+- M3 plain-language fixes. Tests first: caption strings and `SPLIT_LABELS` in `tests/trends.test.ts`, split labels in
+  `e2e/trends.spec.ts`, the Browse note test in `e2e/browse.spec.ts`, the module-table test in `e2e/viewer.spec.ts`,
+  the benchmark intro in `tests/benchmark.test.ts` and `e2e/benchmark.spec.ts`. RED: Vitest 3 failed (captions,
+  split labels, benchmark intro); Playwright 4 failed (benchmark page, trends split control, Browse note, module
+  table). GREEN after `INTEGRATION_MODE_TEXT` and `PAPER_TABLE_NOTE` in `src/lib/filterState.ts` (level texts from
+  `SW_LABELS`/`HW_LABELS`, equal to the data dictionary), the labels and exclusive-caption sentences in
+  `src/lib/trends.ts`, the intro in `src/lib/benchmark.ts`, the headers and note in `src/views/Browse.tsx`, the header
+  and note in `src/views/PlatformView.tsx`, and `.table-note` in `src/styles.css`: Vitest 545 passed; the four specs
+  49 passed; typecheck 0.
+- REQ-008 review of every source of visible text (string literals and JSX text of `src/lib`, `src/views`,
+  `src/components`, read in full as a list of 266 strings):
+  - `src/lib/siteText.ts`: "then frozen" → "not changed afterwards" (M2); "self-driving laboratories" → "…
+    laboratories (SDLs)" (SDL is in the site title); "micro-F1" now followed by its definition from the card ("an item
+    counts when it pairs with a reference item and has the same class").
+  - `src/lib/trends.ts`: "SW autonomy" / "HW autonomy" → "Software autonomy" / "Hardware autonomy"; captions of the
+    integration-mode and autonomy splits end with their definitions.
+  - `src/lib/filterState.ts`: new integration-mode definition and paper-table note.
+  - `src/lib/benchmark.ts`: "the release's model codings" → "the codings in the release, made by a language model".
+  - `src/views/Browse.tsx`: headers as above; note under the paper table.
+  - `src/views/PlatformView.tsx`: "On platform" → "Part of the platform"; note under the module table.
+  - `src/lib/taxonomy.ts`, `src/lib/contribute.ts`, `src/lib/compare.ts`, `src/lib/moduleGroups.ts`,
+    `src/lib/citation.ts`, `src/lib/route.ts`, `src/views/About.tsx`, `src/views/Home.tsx`, `src/views/Compare.tsx`,
+    `src/views/Taxonomy.tsx`, `src/views/Trends.tsx`, `src/views/Benchmark.tsx`, `src/views/NotFound.tsx`, all
+    `src/components/*.tsx`: none found. File names on the benchmark page (`reference_results.json`,
+    `modes/benchmark/evaluate.py`, `my_predictions.csv`) name release files as files, which the rule allows; "CSV" and
+    "DOI" on the home page are left unexpanded (field vocabulary of the site's readers; `Home.tsx` is outside this
+    SPEC's change set by AC-5).
 - Dependencies: SPEC-SITE-001 completed (main at aa10af8).
 - Source of the brief: the orchestrating session of 2026-11-02 relayed the researcher's decision to publish the site
   with release 1.1.0 (Zenodo record 23875743, draft on that day), the pin values, the local bundle path and SHA-256,

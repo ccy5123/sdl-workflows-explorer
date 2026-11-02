@@ -41,7 +41,7 @@ test("AC-9: route, navigation and split control", async ({ page }) => {
   await expect(splitRadio(page, "Integration mode")).toBeChecked();
   await expect(group(page, "Split by").getByRole("radio")).toHaveCount(6);
   expect(await group(page, "Split by").getByRole("radio").evaluateAll((rs) => rs.map((r) => r.parentElement!.textContent))).toEqual([
-    "Integration mode", "Field tag", "SW autonomy", "HW autonomy", "Module types", "Transfer modes",
+    "Integration mode", "Field tag", "Software autonomy", "Hardware autonomy", "Module types", "Transfer modes",
   ]);
   await expect(unitButton(page, "Papers")).toHaveAttribute("aria-pressed", "true");
   await expect(countLine(page)).toHaveText("238 of 238 papers");
@@ -60,7 +60,7 @@ test("AC-9: route, navigation and split control", async ({ page }) => {
   expect(await hash(page)).toBe("#/trends");
 
   await page.goto("/#/trends?split=hw");
-  await expect(splitRadio(page, "HW autonomy")).toBeChecked();
+  await expect(splitRadio(page, "Hardware autonomy")).toBeChecked();
   await nav.getByRole("link", { name: "Trends", exact: true }).click();
   await expect(splitRadio(page, "Integration mode")).toBeChecked();
   expect(await hash(page)).toBe("#/trends");

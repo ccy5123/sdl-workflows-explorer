@@ -107,7 +107,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
                 <th scope="col">Id</th>
                 <th scope="col">Type</th>
                 <th scope="col">Name in paper</th>
-                <th scope="col">On platform</th>
+                <th scope="col">Part of the platform</th>
               </tr>
             </thead>
             <tbody>
@@ -130,6 +130,10 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
             </tbody>
           </table>
         </div>
+        {/* What the yes/no column means (release data_dictionary.csv, module.on_platform; SPEC-RELEASE-001 REQ-011). */}
+        <p className="table-note">
+          Part of the platform: yes for modules of the platform, no for equipment outside it that the loop uses.
+        </p>
       </section>
       <section className="panel" aria-labelledby="connections-heading">
         <h2 id="connections-heading">Connections</h2>

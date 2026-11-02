@@ -67,6 +67,21 @@ export const HW_LABELS: Record<number, string> = {
   3: "a fully automated laboratory running varied experiments without human intervention",
 };
 
+/** What integration mode means (release data_dictionary.csv; SPEC-RELEASE-001 REQ-010). */
+export const INTEGRATION_MODE_TEXT =
+  "Integration mode is how material moves between the modules of a paper's platforms: the one material transfer mode " +
+  "used (which may be unmapped), mixed when several are used, none when no material connection is coded.";
+
+const levels = (labels: Record<number, string>) =>
+  Object.entries(labels)
+    .map(([level, text]) => `${level}, ${text}`)
+    .join("; ");
+
+/** Note under the browser's paper table: integration mode and the autonomy levels (SPEC-RELEASE-001 REQ-009). */
+export const PAPER_TABLE_NOTE =
+  `${INTEGRATION_MODE_TEXT} Software and hardware autonomy are the categories of Tom et al. (2024). ` +
+  `Software autonomy: ${levels(SW_LABELS)}. Hardware autonomy: ${levels(HW_LABELS)}.`;
+
 export const sortedText = (xs: Iterable<string>): string[] => [...new Set(xs)].sort();
 export const sortedNumbers = (xs: Iterable<number>): number[] => [...new Set(xs)].sort((a, b) => a - b);
 

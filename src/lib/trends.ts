@@ -2,7 +2,7 @@
 // offered split values, link states, count tables and the caption texts. Pure: no UI code, no chart library.
 import type { PaperRow, PlatformRow } from "../data/types";
 import { matchingPapers, matchingPlatforms } from "./filterApply";
-import { HW_LABELS, SW_LABELS, offeredValues, sortedText, type FilterState, type Offered, type View, type YearRange } from "./filterState";
+import { HW_LABELS, INTEGRATION_MODE_TEXT, SW_LABELS, offeredValues, sortedText, type FilterState, type Offered, type View, type YearRange } from "./filterState";
 import { decodeFilters, encodeFilters } from "./filterUrl";
 
 /** Category a dashboard splits the counts by; each is also a filter group of the browser. */
@@ -14,8 +14,8 @@ export const SPLITS: readonly Split[] = ["im", "field", "sw", "hw", "mt", "tm"];
 export const SPLIT_LABELS: Record<Split, string> = {
   im: "Integration mode",
   field: "Field tag",
-  sw: "SW autonomy",
-  hw: "HW autonomy",
+  sw: "Software autonomy",
+  hw: "Hardware autonomy",
   mt: "Module types",
   tm: "Transfer modes",
 };
@@ -178,6 +178,12 @@ export const BANNED_SUBSTRINGS = [
 ] as const;
 
 const EXCLUSIVE_NAMES: Partial<Record<Split, string>> = { im: "integration mode", sw: "software autonomy", hw: "hardware autonomy" };
+/** Sentence each exclusive caption ends with, saying what the split's values mean (SPEC-RELEASE-001 REQ-009, REQ-010). */
+const EXCLUSIVE_DEFINITIONS: Partial<Record<Split, string>> = {
+  im: INTEGRATION_MODE_TEXT,
+  sw: "The levels are the software autonomy categories of Tom et al. (2024).",
+  hw: "The levels are the hardware autonomy categories of Tom et al. (2024).",
+};
 const MULTI_NAMES: Partial<Record<Split, [string, string]>> = {
   field: ["field tag", "field tags"],
   mt: ["module type", "module types"],
@@ -190,7 +196,7 @@ export function caption(split: Split, unit: View): string {
   const one = unit === "papers" ? "paper" : "platform";
   const exclusive = EXCLUSIVE_NAMES[split];
   if (exclusive) {
-    return `${Unit} by first public year, split by ${exclusive}. Each bar is the number of ${unit} matching the filters that were first public in that year; n above the bar is the total.`;
+    return `${Unit} by first public year, split by ${exclusive}. Each bar is the number of ${unit} matching the filters that were first public in that year; n above the bar is the total. ${EXCLUSIVE_DEFINITIONS[split]}`;
   }
   const [name, plural] = MULTI_NAMES[split]!;
   const has =

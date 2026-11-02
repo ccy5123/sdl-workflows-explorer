@@ -342,7 +342,7 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
     expect(benchmarkCaption(b)).toBe(
       "Benchmark chrono2023 has 2 tasks over 238 papers. The data dictionary describes the split as: “Benchmark: " +
         "chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.” " +
-        "The labels are the release's model codings, so top-1 accuracy measures agreement with those codings.",
+        "The labels are the codings in the release, made by a language model, so top-1 accuracy measures agreement with those codings.",
     );
     // Amendment 0.4.0: one metric line for the shared metric; models grouped by task with the working label removed.
     expect(metricLines(b.tasks)).toEqual([

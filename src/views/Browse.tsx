@@ -6,6 +6,7 @@ import { FilterPanel } from "../components/FilterPanel";
 import { show } from "../lib/evidence";
 import { matchingPapers, matchingPlatforms } from "../lib/filterApply";
 import {
+  PAPER_TABLE_NOTE,
   activeFilterCount,
   clearFilters,
   offeredValues,
@@ -45,8 +46,8 @@ function paperColumns(links: Map<string, PlatformRow[]>): Col<PaperRow>[] {
     { id: "venue", header: "Venue", sort: { kind: "text", value: (p) => p.venue }, cell: (p) => show(p.venue) },
     { id: "field", header: "Field tags", sort: { kind: "text", value: (p) => joined(p.field_tags) }, cell: (p) => listCell(p.field_tags) },
     { id: "im", header: "Integration mode", sort: { kind: "text", value: (p) => p.integration_mode }, cell: (p) => p.integration_mode },
-    { id: "sw", header: "SW autonomy", num: true, sort: { kind: "number", value: (p) => p.sw_autonomy }, cell: (p) => p.sw_autonomy },
-    { id: "hw", header: "HW autonomy", num: true, sort: { kind: "number", value: (p) => p.hw_autonomy }, cell: (p) => p.hw_autonomy },
+    { id: "sw", header: "Software autonomy", num: true, sort: { kind: "number", value: (p) => p.sw_autonomy }, cell: (p) => p.sw_autonomy },
+    { id: "hw", header: "Hardware autonomy", num: true, sort: { kind: "number", value: (p) => p.hw_autonomy }, cell: (p) => p.hw_autonomy },
     {
       id: "platforms",
       header: "Platforms",
@@ -200,6 +201,7 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
                 {papers.length} of {index.papers.length} papers
               </p>
               <DataTable name="papers" chooserLabel="Paper table columns" columns={paperCols} rows={papers} rowId={paperId} />
+              <p className="table-note">{PAPER_TABLE_NOTE}</p>
             </section>
           ) : (
             <section aria-label="Platforms">

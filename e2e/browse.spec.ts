@@ -401,3 +401,28 @@ test("SPEC-TAXO-001 AC-14: the unit-operation filter", async ({ page }) => {
   expect(await hash(page)).toBe("#/browse?view=platforms");
   expect(errors).toEqual([]);
 });
+
+// SPEC-RELEASE-001 REQ-009, REQ-010: autonomy headers written out; one note defines integration mode and the levels.
+test("plain language: autonomy headers and the note under the paper table", async ({ page }) => {
+  await page.goto("/#/browse");
+  const headers = page.locator('[data-table="papers"] thead th');
+  await expect(headers.filter({ hasText: /^Software autonomy$/ })).toHaveCount(1);
+  await expect(headers.filter({ hasText: /^Hardware autonomy$/ })).toHaveCount(1);
+  await expect(headers.filter({ hasText: /autonomy/ })).toHaveCount(2);
+  const note = page.locator(".browse .table-note");
+  await expect(note).toHaveCount(1);
+  for (const phrase of [
+    "Integration mode is how material moves between the modules of a paper's platforms",
+    "mixed when several are used",
+    "none when no material connection is coded",
+    "Tom et al. (2024)",
+    "one experiment from a data-driven design",
+    "closed-loop iteration in which results choose the next experiment",
+    "closed-loop iteration over an algorithm-generated search space",
+    "a device doing one kind of task",
+    "a workflow joining several tasks",
+    "a fully automated laboratory running varied experiments without human intervention",
+  ]) {
+    await expect(note, phrase).toContainText(phrase);
+  }
+});

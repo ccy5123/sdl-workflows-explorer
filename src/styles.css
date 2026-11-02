@@ -245,6 +245,14 @@ table.views th[scope="row"] {
   font-size: 0.9rem;
 }
 
+/* A note under a table that says what its columns mean (SPEC-RELEASE-001 REQ-009 to REQ-011). */
+.table-note {
+  max-width: 60rem;
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 /* Tables */
 .table-scroll {
   overflow-x: auto;

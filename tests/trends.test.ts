@@ -10,6 +10,7 @@ import {
   PLATFORMS_LINE,
   RELEASE_SEARCH_DATE,
   SPLITS,
+  SPLIT_LABELS,
   caption,
   countTable,
   decodeTrends,
@@ -225,17 +226,17 @@ describe("caption and note texts (AC-8)", () => {
       sampleNote(238, 280),
     ];
     expect(texts).toEqual([
-      "Papers by first public year, split by integration mode. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total.",
+      "Papers by first public year, split by integration mode. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total. Integration mode is how material moves between the modules of a paper's platforms: the one material transfer mode used (which may be unmapped), mixed when several are used, none when no material connection is coded.",
       "Papers by first public year and field tag. Each cell is the number of papers matching the filters that were first public in that year and have the field tag; n is the number of matching papers first public in that year. A paper can have several field tags, so a column does not add up to n.",
-      "Papers by first public year, split by software autonomy. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total.",
-      "Papers by first public year, split by hardware autonomy. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total.",
+      "Papers by first public year, split by software autonomy. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total. The levels are the software autonomy categories of Tom et al. (2024).",
+      "Papers by first public year, split by hardware autonomy. Each bar is the number of papers matching the filters that were first public in that year; n above the bar is the total. The levels are the hardware autonomy categories of Tom et al. (2024).",
       "Papers by first public year and module type. Each cell is the number of papers matching the filters that were first public in that year and have a platform that has the module type and meets the module type, transfer mode and unit operation filters; n is the number of matching papers first public in that year. A paper can have several module types, so a column does not add up to n.",
       "Papers by first public year and transfer mode. Each cell is the number of papers matching the filters that were first public in that year and have a platform that has the transfer mode and meets the module type, transfer mode and unit operation filters; n is the number of matching papers first public in that year. A paper can have several transfer modes, so a column does not add up to n.",
       "No papers match these filters.",
-      "Platforms by first public year, split by integration mode. Each bar is the number of platforms matching the filters that were first public in that year; n above the bar is the total.",
+      "Platforms by first public year, split by integration mode. Each bar is the number of platforms matching the filters that were first public in that year; n above the bar is the total. Integration mode is how material moves between the modules of a paper's platforms: the one material transfer mode used (which may be unmapped), mixed when several are used, none when no material connection is coded.",
       "Platforms by first public year and field tag. Each cell is the number of platforms matching the filters that were first public in that year and have the field tag; n is the number of matching platforms first public in that year. A platform can have several field tags, so a column does not add up to n.",
-      "Platforms by first public year, split by software autonomy. Each bar is the number of platforms matching the filters that were first public in that year; n above the bar is the total.",
-      "Platforms by first public year, split by hardware autonomy. Each bar is the number of platforms matching the filters that were first public in that year; n above the bar is the total.",
+      "Platforms by first public year, split by software autonomy. Each bar is the number of platforms matching the filters that were first public in that year; n above the bar is the total. The levels are the software autonomy categories of Tom et al. (2024).",
+      "Platforms by first public year, split by hardware autonomy. Each bar is the number of platforms matching the filters that were first public in that year; n above the bar is the total. The levels are the hardware autonomy categories of Tom et al. (2024).",
       "Platforms by first public year and module type. Each cell is the number of platforms matching the filters that were first public in that year and have the module type; n is the number of matching platforms first public in that year. A platform can have several module types, so a column does not add up to n.",
       "Platforms by first public year and transfer mode. Each cell is the number of platforms matching the filters that were first public in that year and have the transfer mode; n is the number of matching platforms first public in that year. A platform can have several transfer modes, so a column does not add up to n.",
       "No platforms match these filters.",
@@ -388,5 +389,13 @@ describe("unit-operation filter on the dashboard (SPEC-TAXO-001 AC-8)", () => {
     const { state: s } = decodeTrends("uo=sonicate", offeredValues(index));
     expect(rowCount(s, index)).toBe(5);
     expect(browseHash(s)).toBe("#/browse?uo=sonicate");
+  });
+});
+
+// SPEC-RELEASE-001 REQ-009: autonomy written out in the split labels.
+describe("split labels (SPEC-RELEASE-001)", () => {
+  it("writes software and hardware autonomy in full", () => {
+    expect(SPLIT_LABELS.sw).toBe("Software autonomy");
+    expect(SPLIT_LABELS.hw).toBe("Hardware autonomy");
   });
 });

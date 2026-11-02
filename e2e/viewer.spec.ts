@@ -203,3 +203,13 @@ test("Follow-up: the graph stays readable after Fit to view and the platform id 
   const fontFamily = await page.locator(".platform-id code").evaluate((el) => getComputedStyle(el).fontFamily);
   expect(fontFamily.startsWith("ui-monospace")).toBe(true);
 });
+
+// SPEC-RELEASE-001 REQ-011: the module table says what its yes/no column means.
+test("plain language: the module table's Part of the platform column and its note", async ({ page }) => {
+  await page.goto("/#/platform/Aand2024/P1");
+  const table = page.locator('[data-table="modules"]');
+  await expect(table.locator("thead th")).toHaveText(["Id", "Type", "Name in paper", "Part of the platform"]);
+  await expect(page.locator('[aria-labelledby="modules-heading"] .table-note')).toHaveText(
+    "Part of the platform: yes for modules of the platform, no for equipment outside it that the loop uses.",
+  );
+});

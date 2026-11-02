@@ -257,7 +257,7 @@ export function benchmarkCaption(b: BenchmarkJson): string {
   return (
     `Benchmark ${b.benchmark_id} has ${b.tasks.length} tasks over ${papers} papers. ` +
     `The data dictionary describes the split as: “${b.split_rule}” ` +
-    "The labels are the release's model codings, so top-1 accuracy measures agreement with those codings."
+    "The labels are the codings in the release, made by a language model, so top-1 accuracy measures agreement with those codings."
   );
 }
 
