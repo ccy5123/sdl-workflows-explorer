@@ -108,7 +108,7 @@
 ## §E.4 Sync-phase Audit-Ready Signal
 
 - sync_at: 2026-11-02
-- sync_commit_sha: pending-backfill
+- sync_commit_sha: e67a53d
 - Verification at sync (HEAD 4f06584): `npx tsc --noEmit` exit 0; `npx vitest run` 34 files / 522 passed (459
   before); `npm run e2e` exit 0, 162 passed (68 before).
 - Project docs: `.moai/project/tech.md` deployment section updated (base per mode, workflow, deploy.md) and a theme
