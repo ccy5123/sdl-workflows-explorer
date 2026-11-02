@@ -106,7 +106,7 @@
 ## §E.4 Sync-phase Audit-Ready Signal
 
 - sync_at: 2026-11-02
-- sync_commit_sha: pending-backfill
+- sync_commit_sha: 9f8dd51
 - Verification at sync: as in §E.2 "Final verification" (typecheck 0; Vitest 545; `npm run build` exit 0; `npm run e2e`
   166; bundle 98ea319b… checked in the same run).
 - Branch only: `release-1.1.0` pushed to the private origin; not merged into `main`; no deployment, Pages off, no
