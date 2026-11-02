@@ -2,7 +2,7 @@
 id: SPEC-RELEASE-001
 title: "Pin the explorer to data release 1.1.0 on a branch, with a plain-language pass over the site text"
 version: "0.4.0"
-status: draft
+status: completed
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe

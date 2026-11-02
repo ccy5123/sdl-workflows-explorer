@@ -92,6 +92,32 @@
   and synthetic files; the two fixture cases in `tests/release-docs.test.ts`); `git grep -n "1\.0\.0" -- src` prints
   nothing; `git diff main -- scripts src/App.tsx src/lib/route.ts src/views/About.tsx src/views/Home.tsx` is empty;
   `public/data/` holds the same six names as a build of `main`.
+
+## §E.3 Run-phase Audit-Ready Signal
+
+- run_status: audit-ready
+- run_complete_at: 2026-11-02
+- Run commits on `release-1.1.0`: 194e656 (pin, `release.config.json` only, provisional), 04b7413 (M1), 3d8fd43 (M2),
+  e5abc27 (M3), b6b5059 (M4).
+- AC-1 to AC-7: PASS (evidence in §E.2). Deviations recorded in §E.2: `tests/taxonomy.test.ts` changed though not in
+  spec §2's list (two real-data rows printing a Gottstein2026 locator; literals moved to the 1.1.0 values rather than
+  read from the release, which would compare the rows with themselves).
+
+## §E.4 Sync-phase Audit-Ready Signal
+
+- sync_at: 2026-11-02
+- sync_commit_sha: pending-backfill
+- Verification at sync: as in §E.2 "Final verification" (typecheck 0; Vitest 545; `npm run build` exit 0; `npm run e2e`
+  166; bundle 98ea319b… checked in the same run).
+- Branch only: `release-1.1.0` pushed to the private origin; not merged into `main`; no deployment, Pages off, no
+  workflow run. Project docs unchanged; `docs/deploy.md` carries the remaining steps.
+
+## §F Phase 4 Mode Selection
+
+- Inputs: Tier M; about 25 files; TypeScript, CSS and Markdown; one domain; concurrency benefit low.
+- Decision: direct
+- Justification: four short test-first milestones on shared test and text files in one worktree, run in order by the
+  orchestrating session, as in SPEC-SITE-001 (subagent worktree isolation fails on this WSL UNC path).
 - Dependencies: SPEC-SITE-001 completed (main at aa10af8).
 - Source of the brief: the orchestrating session of 2026-11-02 relayed the researcher's decision to publish the site
   with release 1.1.0 (Zenodo record 23875743, draft on that day), the pin values, the local bundle path and SHA-256,
