@@ -1,5 +1,6 @@
 // Hash router of the site (REQ-001 to REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001, REQ-015; SPEC-TAXO-001
-// REQ-009, REQ-010): home, platform viewer, browser, trends dashboard, taxonomy, comparison, or not found.
+// REQ-009, REQ-010; SPEC-BENCH-001 REQ-005, REQ-015): home, platform viewer, browser, trends dashboard, taxonomy,
+// benchmark, comparison, or not found.
 import { Suspense, lazy, useEffect, useState } from "react";
 import type { IndexJson } from "./data/types";
 import { parseRoute } from "./lib/route";
@@ -13,6 +14,8 @@ import { PlatformView } from "./views/PlatformView";
 const Trends = lazy(() => import("./views/Trends").then((m) => ({ default: m.Trends })));
 // The taxonomy views load in their own chunk; they fetch data/taxonomy.json themselves (SPEC-TAXO-001 REQ-010).
 const Taxonomy = lazy(() => import("./views/Taxonomy").then((m) => ({ default: m.Taxonomy })));
+// The benchmark page and item explorer load in their own chunk and fetch their data themselves (SPEC-BENCH-001 REQ-015).
+const Benchmark = lazy(() => import("./views/Benchmark").then((m) => ({ default: m.Benchmark })));
 
 /** Current hash, and a navigate function that shows the new view in the same render as the click. */
 function useHash(): [string, (next: string) => void] {
@@ -60,6 +63,7 @@ export function App() {
         <a href="#/browse">Browse</a>
         <a href="#/trends">Trends</a>
         <a href="#/taxonomy">Taxonomy</a>
+        <a href="#/benchmark">Benchmark</a>
       </nav>
       <main>
         {error && <p role="alert">Could not load the data: {error}</p>}
@@ -77,6 +81,11 @@ export function App() {
         {index && (route.kind === "taxonomy" || route.kind === "taxonomyClass") && (
           <Suspense fallback={<p>Loading…</p>}>
             <Taxonomy index={index} route={route} />
+          </Suspense>
+        )}
+        {index && (route.kind === "benchmark" || route.kind === "benchmarkItems") && (
+          <Suspense fallback={<p>Loading…</p>}>
+            <Benchmark key={route.kind} index={index} route={route} />
           </Suspense>
         )}
         {index && route.kind === "compare" && <Compare key={route.ids.join(",")} index={index} ids={route.ids} />}

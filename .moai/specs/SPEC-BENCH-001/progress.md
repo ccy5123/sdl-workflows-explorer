@@ -167,6 +167,16 @@ problems                                                   0
   - `tests/derive.test.ts` "writes index.json, taxonomy.json, benchmark.json and one platform file per paper": the
     output-directory listing gains `benchmark-items.json`.
   - `tests/release.test.ts` AC-10 benchmark test: no edit was needed; it passes unchanged on the typed shape.
+  - `tests/libBoundary.test.ts`: `FILES` gains `benchmark.ts`.
+  - Navigation-link enumerations gain "Benchmark" after "Taxonomy": `e2e/taxonomy.spec.ts` (AC-11 test, line 92) and
+    `e2e/trends.spec.ts` (AC-9 test, line 37).
+  - `tests/route.test.ts`: new cases only (a new `describe` block for AC-5); no existing case changed.
+- New test files: `tests/benchmark-derive.test.ts` (AC-1 to AC-4 on the real release), `tests/benchmark.test.ts`
+  (AC-6 to AC-8), `e2e/benchmark.spec.ts` (AC-10 to AC-15). The e2e tests were written after `src/views/Benchmark.tsx`
+  (the RED step of the view unit was the library tests and the REQ-016 scan of the view file); they passed on their
+  first run.
+- Vitest 389 → 445 tests, all passing; Playwright 52 → 61 tests, all passing. The lazy chunk is
+  `dist-e2e/assets/Benchmark-<hash>.js` (14.92 kB).
 - Build after the change (`npm run build-data`, exit 0): `benchmark.json` 22,561 bytes, `benchmark-items.json` 418,205
   bytes (both equal to the plan estimates); `index.json` sha256 6b644e3c…ca5db4d, `taxonomy.json` e33f52e3…80acdc9 and
   the 238 platform files concatenated 9001ca64…99889a8, equal to the §E.1 baseline.

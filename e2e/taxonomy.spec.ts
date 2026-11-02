@@ -89,7 +89,7 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   const errors = trackErrors(page);
   await page.goto("/");
   const nav = page.getByRole("navigation");
-  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy"]);
+  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy", "Benchmark"]);
   await nav.getByRole("link", { name: "Taxonomy", exact: true }).click();
   expect(await hash(page)).toBe("#/taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
