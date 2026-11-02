@@ -199,8 +199,8 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   await expect(page.locator(".taxo-facts")).toContainText("Module type");
   const counts = region(page, "Counts");
   await expect(counts).toContainText("139 modules");
-  expect(await followCount(page, "127 platforms")).toBe("127 of 280 platforms");
-  expect(await followCount(page, "99 papers")).toBe("99 of 238 papers");
+  expect(await followCount(page, "127 platforms")).toBe("127 of 279 platforms");
+  expect(await followCount(page, "99 papers")).toBe("99 of 237 papers");
   const first = region(page, "Example platforms").getByRole("listitem").first();
   await expect(first.getByRole("link")).toHaveText("Bedard2018/P11");
   await expect(first).toContainText("(3 modules)");
@@ -213,8 +213,8 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   await page.goto("/#/taxonomy/field_tag/catalysis");
   await expect(h1(page, "catalysis")).toBeVisible();
   await expect(region(page, "Counts").getByRole("listitem")).toHaveText(["23 platforms", "23 papers"]);
-  expect(await followCount(page, "23 platforms")).toBe("23 of 280 platforms");
-  expect(await followCount(page, "23 papers")).toBe("23 of 238 papers");
+  expect(await followCount(page, "23 platforms")).toBe("23 of 279 platforms");
+  expect(await followCount(page, "23 papers")).toBe("23 of 237 papers");
   const examples = region(page, "Example platforms");
   await expect(examples.getByRole("link")).toHaveText(["Amara2015/P1", "Bai2023a/P1", "Baumgartner2019/P1", "Bennett2024/P1", "Brody2026/P1"]);
   const items = await examples.getByRole("listitem").allTextContents();
@@ -222,14 +222,14 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   await expect(examples).toContainText("The first five platforms with this field tag, in platform id order.");
 
   await page.goto("/#/taxonomy/transfer_mode/data_transfer");
-  await expect(region(page, "Counts")).toContainText("611 connections");
-  await expect(link(page, "280 platforms")).toHaveAttribute("href", "#/browse?view=platforms");
-  await expect(link(page, "238 papers")).toHaveAttribute("href", "#/browse");
+  await expect(region(page, "Counts")).toContainText("607 connections");
+  await expect(link(page, "279 platforms")).toHaveAttribute("href", "#/browse?view=platforms");
+  await expect(link(page, "237 papers")).toHaveAttribute("href", "#/browse");
   await expect(region(page, "Counts")).toContainText(
-    "data_transfer is not offered by the browser's filters. It is recorded on all 280 platforms, so these links open the full lists.",
+    "data_transfer is not offered by the browser's filters. It is recorded on all 279 platforms, so these links open the full lists.",
   );
-  expect(await followCount(page, "280 platforms")).toBe("280 of 280 platforms");
-  expect(await followCount(page, "238 papers")).toBe("238 of 238 papers");
+  expect(await followCount(page, "279 platforms")).toBe("279 of 279 platforms");
+  expect(await followCount(page, "237 papers")).toBe("237 of 237 papers");
   expect(errors).toEqual([]);
 });
 
@@ -239,8 +239,8 @@ test("AC-12: unit operation, unused field tag and four-example pages", async ({ 
   await expect(page.locator(".taxo-facts")).toContainText("Unit operation");
   await expect(page.locator(".taxo-facts")).toContainText("mix");
   await expect(region(page, "Counts")).toContainText("11 steps");
-  expect(await followCount(page, "5 platforms")).toBe("5 of 280 platforms");
-  expect(await followCount(page, "5 papers")).toBe("5 of 238 papers");
+  expect(await followCount(page, "5 platforms")).toBe("5 of 279 platforms");
+  expect(await followCount(page, "5 papers")).toBe("5 of 237 papers");
   const first = region(page, "Example platforms").getByRole("listitem").first();
   await expect(first.getByRole("link")).toHaveText("Zhao2026/P1");
   await expect(first).toContainText("(6 steps)");

@@ -42,12 +42,12 @@ describe.skipIf(!available)("real pinned release", () => {
       );
     }
     expect(fromDerived).toEqual({
-      papers: 238,
-      platforms: 280,
-      modules: 1603,
-      steps: 2621,
-      connections: 1687,
-      material_connections: 1076,
+      papers: 237,
+      platforms: 279,
+      modules: 1597,
+      steps: 2610,
+      connections: 1681,
+      material_connections: 1074,
       candidates: 2172,
     });
     expect(fromDerived).toEqual(config.counts);
@@ -55,29 +55,29 @@ describe.skipIf(!available)("real pinned release", () => {
     expect(checkCounts(config.counts, derived, releaseDir)).toEqual([]);
   });
 
-  it("AC-2 on the real release: removing one platform names platforms 280 -> 279", () => {
+  it("AC-2 on the real release: removing one platform names platforms 279 -> 278", () => {
     const copy = structuredClone(derived);
     const removed = copy.index.platforms.pop()!;
     const file = copy.platformFiles[removed.paper_id]!;
     file.platforms = file.platforms.filter((p) => p.platform_id !== removed.platform_id);
     expect(checkCounts(config.counts, copy, releaseDir)).toContainEqual({
       name: "platforms",
-      expected: 280,
-      actual: 279,
+      expected: 279,
+      actual: 278,
       source: "index.json platforms rows",
     });
   });
 
   it("AC-10: index rows, platform files and evidence objects", () => {
-    expect(derived.index.papers).toHaveLength(238);
-    expect(derived.index.platforms).toHaveLength(280);
+    expect(derived.index.papers).toHaveLength(237);
+    expect(derived.index.platforms).toHaveLength(279);
     const out = join(tempDir(), "data");
     writeDerived(derived, out);
-    expect(readdirSync(join(out, "platforms"))).toHaveLength(238);
+    expect(readdirSync(join(out, "platforms"))).toHaveLength(237);
     const items = Object.values(derived.platformFiles)
       .flatMap((f) => f.platforms)
       .flatMap((p) => [...p.modules, ...p.steps, ...p.connections]);
-    expect(items).toHaveLength(1603 + 2621 + 1687);
+    expect(items).toHaveLength(1597 + 2610 + 1681);
     expect(items.every((item) => typeof item.evidence.doc === "string" && item.evidence.doc !== "")).toBe(true);
   });
 
@@ -91,11 +91,11 @@ describe.skipIf(!available)("real pinned release", () => {
     expect(byKind("transfer_mode")).toHaveLength(6);
     expect(byKind("unit_operation")).toHaveLength(31);
     const fieldTagRows = readCsv(join(releaseDir, "core/paper_field_tag.csv")).length;
-    expect(fieldTagRows).toBe(270);
+    expect(fieldTagRows).toBe(269);
     expect(sum("field_tag")).toBe(fieldTagRows);
-    expect(sum("module_type")).toBe(1603);
-    expect(sum("transfer_mode")).toBe(1687);
-    expect(sum("unit_operation")).toBe(2621);
+    expect(sum("module_type")).toBe(1597);
+    expect(sum("transfer_mode")).toBe(1681);
+    expect(sum("unit_operation")).toBe(2610);
     console.log(
       `taxonomy usage sums: field_tag ${sum("field_tag")}, module_type ${sum("module_type")}, ` +
         `transfer_mode ${sum("transfer_mode")}, unit_operation ${sum("unit_operation")}`,
@@ -105,10 +105,10 @@ describe.skipIf(!available)("real pinned release", () => {
   it("AC-10: benchmark tasks, split counts and reference results", () => {
     const b = derived.benchmark;
     expect(b.tasks).toHaveLength(2);
-    expect(b.split_counts).toEqual({ train: 135, test: 99, excluded: 4 });
+    expect(b.split_counts).toEqual({ train: 135, test: 98, excluded: 4 });
     const ref = b.reference_results as Record<string, { n_test_papers: number; n_test_items: number }>;
-    expect(ref["chrono2023-module_type"]!.n_test_papers).toBe(99);
-    expect(ref["chrono2023-transfer_mode"]!.n_test_papers).toBe(93);
-    console.log(`benchmark split ${JSON.stringify(b.split_counts)}; n_test_papers 99 / 93`);
+    expect(ref["chrono2023-module_type"]!.n_test_papers).toBe(98);
+    expect(ref["chrono2023-transfer_mode"]!.n_test_papers).toBe(92);
+    console.log(`benchmark split ${JSON.stringify(b.split_counts)}; n_test_papers 98 / 92`);
   });
 });

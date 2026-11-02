@@ -33,8 +33,8 @@ test("AC-6: home page order, links, citation and platform list", async ({ page }
   await expect(main.locator("h1")).toHaveText("SDL Workflows Explorer");
   const intro = main.locator(".home-intro");
   await expect(intro).toContainText(`Release ${index.release.version}`);
-  await expect(intro).toContainText("280 platforms");
-  await expect(intro).toContainText("238 papers");
+  await expect(intro).toContainText("279 platforms");
+  await expect(intro).toContainText("237 papers");
 
   const views = main.locator("table.views tbody tr");
   await expect(views).toHaveCount(5);
@@ -52,7 +52,7 @@ test("AC-6: home page order, links, citation and platform list", async ({ page }
   const cff = main.locator("details.citation-cff");
   await expect(cff).not.toHaveAttribute("open", "");
   expect(await cff.locator("pre").textContent()).toBe(docs.citation_cff);
-  await expect(main.locator('[data-table="platforms"] tbody tr')).toHaveCount(280);
+  await expect(main.locator('[data-table="platforms"] tbody tr')).toHaveCount(279);
 
   // Document order: intro, views, counts, download, citation, CITATION.cff block, platform list.
   const tops = await Promise.all(
@@ -111,7 +111,7 @@ test("AC-7: about page summary, limits and full data card", async ({ page }) => 
   const text = await ownText(page);
   for (const phrase of [
     "agreement between two language models", "not accuracy against human coding", "no human coding", "not every",
-    "3240 of the 3298", "isolated manual steps", "preprint", "Paper text and abstracts", "notes",
+    "3239 were made by a language model", "isolated manual steps", "preprint", "Paper text and abstracts", "notes",
   ]) {
     expect(text, phrase).toContain(phrase);
   }
@@ -133,12 +133,12 @@ test("release 1.1.0: About sections in order, timing and human-intervention text
   ]);
   const text = await ownText(page);
   for (const phrase of [
-    "455 step durations",
-    "229 of the 238 papers have at least one value",
+    "454 step durations",
+    "228 of the 237 papers have at least one value",
     "0.870 for step duration",
     "agreement between two models, not accuracy",
     "reference values are not released",
-    "26 papers state a number",
+    "25 papers state a number",
     "88 state none of these",
     "No second reading exists",
     "free-text qualifiers",

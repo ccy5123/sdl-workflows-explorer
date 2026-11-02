@@ -34,12 +34,12 @@ describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
     d = deriveAll(releaseDir);
   });
 
-  it("AC-1: every platform row has 4 to 15 unit operations, 2155 in all, covering the 31 classes", () => {
+  it("AC-1: every platform row has 4 to 15 unit operations, 2147 in all, covering the 31 classes", () => {
     const lists = d.index.platforms.map((l) => l.unit_operations);
-    expect(lists).toHaveLength(280);
+    expect(lists).toHaveLength(279);
     expect(Math.min(...lists.map((l) => l.length))).toBe(4);
     expect(Math.max(...lists.map((l) => l.length))).toBe(15);
-    expect(lists.reduce((n, l) => n + l.length, 0)).toBe(2155);
+    expect(lists.reduce((n, l) => n + l.length, 0)).toBe(2147);
     expect(d.index.platforms.find((l) => l.platform_id === "Aand2024/P1")!.unit_operations).toEqual([
       "analyze_data", "dispense_liquid", "handle_sample", "measure_optical", "plan_next_experiment", "react_photo_electro",
     ]);
@@ -65,7 +65,7 @@ describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
       10, 22, 6, 31,
     ]);
     const sum = (kind: string) => byKind(kind).reduce((n, c) => n + c.n_items, 0);
-    expect([sum("field_tag"), sum("module_type"), sum("transfer_mode"), sum("unit_operation")]).toEqual([270, 1603, 1687, 2621]);
+    expect([sum("field_tag"), sum("module_type"), sum("transfer_mode"), sum("unit_operation")]).toEqual([269, 1597, 1681, 2610]);
   });
 
   it("AC-2: n_items / n_platforms / n_papers of the chosen classes", () => {
@@ -74,14 +74,14 @@ describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
       ["field_tag", "chemistry_synthesis", 85, 123, 85],
       ["field_tag", "unmapped", 0, 0, 0],
       ["module_type", "flow_reactor", 139, 127, 99],
-      ["module_type", "software", 358, 280, 238],
+      ["module_type", "software", 357, 279, 237],
       ["module_type", "assembly_unit", 4, 4, 4],
-      ["transfer_mode", "data_transfer", 611, 280, 238],
+      ["transfer_mode", "data_transfer", 607, 279, 237],
       ["transfer_mode", "mobile_robot", 42, 9, 9],
       ["transfer_mode", "unmapped", 7, 6, 6],
       ["unit_operation", "sonicate", 11, 5, 5],
       ["unit_operation", "dispense_liquid", 427, 248, 209],
-      ["unit_operation", "unmapped", 45, 39, 37],
+      ["unit_operation", "unmapped", 44, 38, 36],
     ];
     for (const [kind, name, items, platforms, papers] of table) {
       const c = cls(kind, name);

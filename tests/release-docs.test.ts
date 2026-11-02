@@ -94,26 +94,88 @@ describe.skipIf(!built)("release-docs.json of the pinned release (AC-1)", () => 
     expect(docs.data_card.startsWith(`# Data card: sdl-workflows ${PINNED_VERSION}`)).toBe(true);
   });
 
-  // Release 1.1.0 against the previous release (SPEC-RELEASE-001 REQ-003, AC-3); the previous release's hashes are
-  // those of SPEC-SITE-001 progress.md §E.1.
+  // Release 1.1.0 against the previous release (SPEC-RELEASE-001 REQ-003, AC-3). Each case pins the 1.1.0 file, then
+  // reverts the changes the 1.1.0 CHANGELOG names and compares the result with the previous release's file without the
+  // rows of Snapp2023, the paper 1.1.0 removes. Those previous-release hashes were computed from the 1.0.0 build
+  // (SPEC-RELEASE-001 progress.md §E.2). Fields the release recomputes after the removal (usage counts and examples,
+  // split counts, item summaries, reference results) are left out of that comparison and pinned by the derive tests.
   const sha = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
   const file = (rel: string) => sha(readFileSync(join(DATA_DIR, rel)));
   const json = (rel: string) => JSON.parse(readFileSync(join(DATA_DIR, rel), "utf8")) as Record<string, unknown>;
+  // The seven papers whose paper.doi moved from the preprint to the published version, with their 1.0.0 DOI.
+  const PREPRINT_DOI: Record<string, string> = {
+    Christensen2021: "10.26434/chemrxiv.13146404.v1",
+    Emery2024: "10.48550/arxiv.2407.06051",
+    Ginsburg2023: "10.48550/arxiv.2310.00510",
+    Sheng2023: "10.26434/chemrxiv-2023-psqxj",
+    Tamasi2022: "10.26434/chemrxiv-2022-x2qdz",
+    Vescovi2023: "10.48550/arxiv.2308.09793",
+    Zhang2023: "10.26434/chemrxiv-2023-dlkgl",
+  };
+  type Row = { paper_id: string; doi?: string; first_public_year?: number };
+  const revertPaper = (r: Row) => {
+    if (r.paper_id in PREPRINT_DOI && "doi" in r) {
+      expect(r.doi, r.paper_id).not.toBe(PREPRINT_DOI[r.paper_id]);
+      r.doi = PREPRINT_DOI[r.paper_id];
+    }
+    if (r.paper_id === "Snapp2024") {
+      expect(r.first_public_year).toBe(2023);
+      r.first_public_year = 2024;
+    }
+  };
 
-  it("leaves benchmark-items.json and the platform files byte-identical to the previous release", () => {
-    expect(file("benchmark-items.json")).toBe("7a709c166912e849597d17302fb4fc09c3befc98b01f3265a8365deb19bb9aeb");
+  it("removes Snapp2023 from the platform files and changes only the named values", () => {
     const dir = join(DATA_DIR, "platforms");
     const names = readdirSync(dir).sort();
-    expect(names).toHaveLength(238);
+    expect(names).toHaveLength(237);
+    expect(names).not.toContain("Snapp2023.json");
     expect(sha(Buffer.concat(names.map((n) => readFileSync(join(dir, n)))))).toBe(
-      "9001ca64126b7bb996076a0b8b172d5c3d5b293171529dcf9aca08d8599889a8",
+      "b4212f2b4b91640dbdfeb66b0d69d8c944e0f2836a9e8f321d1f3829e50d841e",
     );
+    const files = names.map((n) => JSON.parse(readFileSync(join(dir, n), "utf8")) as { platforms: (Row & { identity_id: string | null; shared_with: string[] })[] });
+    for (const p of files.flatMap((f) => f.platforms)) {
+      revertPaper(p);
+      // Snapp2023's platform shared identity I010 with these three.
+      if (p.identity_id === "I010") p.shared_with = [...p.shared_with, "Snapp2023"].sort();
+    }
+    expect(sha(JSON.stringify(files))).toBe("8935ce45100043f6c370c7313465e7426d20eae36d926e5ba9779b928e04d0de");
   });
 
-  it("changes index.json only in the release object", () => {
-    expect(file("index.json")).toBe("464b1c6dce9f30f39a89c2f3ac5f32b9d7d0d688d0e9c926a4c7715543a21064");
-    const { release, ...rest } = json("index.json");
-    expect(sha(JSON.stringify(rest))).toBe("76908d5a24205c4878684f109585156fdfd394db0e6540478ec3df14a3a4b856");
+  it("removes Snapp2023's rows from benchmark-items.json and moves Snapp2024 to the training split", () => {
+    expect(file("benchmark-items.json")).toBe("0f12de153f14285d8ac5b7abe8ab2de2f3dd6dce8a8159317f0e5f336994950d");
+    const items = json("benchmark-items.json") as Record<string, { rows: (string | number)[][] }>;
+    let moved = 0;
+    for (const task of Object.values(items)) {
+      expect(task.rows.some((r) => String(r[0]).startsWith("Snapp2023/"))).toBe(false);
+      for (const row of task.rows) {
+        if (String(row[0]).startsWith("Snapp2024/")) {
+          expect(row[1]).toBe("train");
+          row[1] = "test";
+          moved++;
+        }
+      }
+    }
+    expect(moved).toBe(12);
+    expect(sha(JSON.stringify(items))).toBe("9b4d87abc1209fd3045af9faaf60949550e77debda6e46dbf484ac5632527d55");
+  });
+
+  it("changes index.json only in the release object, the counts and the named papers", () => {
+    expect(file("index.json")).toBe("a452131e2fc31e3b8c39dd4aa42c00dbd910712ac2034f0f89b1d19adbca8174");
+    const { release, counts, ...rest } = json("index.json") as { release: unknown; counts: unknown; papers: Row[]; platforms: Row[] };
+    expect(rest.papers.some((r) => r.paper_id === "Snapp2023")).toBe(false);
+    expect(rest.platforms.some((r) => r.paper_id === "Snapp2023")).toBe(false);
+    for (const r of [...rest.papers, ...rest.platforms]) revertPaper(r);
+    expect(sha(JSON.stringify(rest))).toBe("20dc3a0d475520d6bb274750d6132be76a604e7af6549fd5726cbda3c3dd5a7a");
+    // One paper less, with its platform's 6 modules, 11 steps and 6 connections (2 of them material).
+    expect(counts).toEqual({
+      papers: 237,
+      platforms: 279,
+      modules: 1597,
+      steps: 2610,
+      connections: 1681,
+      material_connections: 1074,
+      candidates: 2172,
+    });
     expect(release).toEqual({
       version: "1.1.0",
       released_on: "2026-11-02",
@@ -123,10 +185,10 @@ describe.skipIf(!built)("release-docs.json of the pinned release (AC-1)", () => 
     });
   });
 
-  it("changes taxonomy.json only in the Gottstein2026 page locators and the Leong2022 reference", () => {
-    expect(file("taxonomy.json")).toBe("f4b111b046402fcb332050a67bc19ff9126dc82003b1e5c1e71e9fbdcd392537");
+  it("changes taxonomy.json only in the Gottstein2026 page locators, the Leong2022 reference and the usage counts", () => {
+    expect(file("taxonomy.json")).toBe("677615d0272c7a7dd8c297ccf482c0d4ba743dbb9748bdc1bd6766ba98e7ab47");
     const t = json("taxonomy.json") as {
-      classes: { correspondence: { sources: { key: string; page: string }[] }[] | null }[];
+      classes: ({ correspondence: { sources: { key: string; page: string }[] }[] | null } & Record<string, unknown>)[];
       sources: { keys: string[]; reference: string }[];
     };
     let pages = 0;
@@ -147,14 +209,31 @@ describe.skipIf(!built)("release-docs.json of the pinned release (AC-1)", () => 
       "studies and future-work examples";
     expect(leong.reference.endsWith(added)).toBe(true);
     leong.reference = leong.reference.slice(0, -added.length);
-    expect(sha(JSON.stringify(t))).toBe("e33f52e3398e1d411f1522c1e3953c41165828a7693e9582c90c6fd9880acdc9");
+    // Usage counts and examples follow from the removed paper; tests/taxonomy-derive.test.ts pins them.
+    for (const c of t.classes) for (const k of ["n_items", "n_platforms", "n_papers", "examples"]) delete c[k];
+    expect(sha(JSON.stringify(t))).toBe("2dcc668d48eb606e89d38e3ae8fb0a3c652a7e90659796e0be7bfc01c8509738");
   });
 
-  it("changes benchmark.json only in the exclusion reason", () => {
-    expect(file("benchmark.json")).toBe("bbf945aa945885c420729fc76518040994d72ee8900931af4ae120209b39828e");
-    const b = json("benchmark.json") as { exclusion_reasons: { reason: string }[] };
+  it("changes benchmark.json only in the exclusion reason, Snapp2024's split and the recomputed results", () => {
+    expect(file("benchmark.json")).toBe("585ca40067f3d1d42091c70c8f69d6b0c4e936edbe5ae1e05aad9cc4d6395474");
+    const b = json("benchmark.json") as {
+      exclusion_reasons: { reason: string }[];
+      platforms: { platform_id: string; split: string }[];
+      tasks: Record<string, unknown>[];
+    } & Record<string, unknown>;
     expect(b.exclusion_reasons[0]!.reason).toBe("one of the 10 development papers of the coding instructions");
     b.exclusion_reasons[0]!.reason = "used to develop the extraction instructions";
-    expect(sha(JSON.stringify(b))).toBe("4ca73f0e6d4674debc39dadfdcc6749a5c79709824d2bd7f7b38416ba95ad80d");
+    expect(b.platforms.some((p) => p.platform_id.startsWith("Snapp2023/"))).toBe(false);
+    const snapp = b.platforms.find((p) => p.platform_id === "Snapp2024/P1")!;
+    expect(snapp.split).toBe("train");
+    snapp.split = "test";
+    // Recomputed on the corrected database; tests/benchmark-derive.test.ts pins them.
+    for (const k of ["split_counts", "summaries", "reference_results", "reference_results_text"]) delete b[k];
+    for (const task of b.tasks) {
+      for (const k of ["baseline_top1", "reference_model_top1", "diff_ci95_low", "diff_ci95_high", "n_test_items", "n_test_papers", "recorded_in"]) {
+        delete task[k];
+      }
+    }
+    expect(sha(JSON.stringify(b))).toBe("21de595d2b9bcfbc802de4eefff68b79b7942c9c8ad8b927777ab8a85e7404a7");
   });
 });

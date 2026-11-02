@@ -115,7 +115,7 @@ test("AC-12: not-found routes, home list and back navigation", async ({ page }) 
   }
 
   await page.goto("/");
-  await expect(page.locator('[data-table="platforms"] tbody tr')).toHaveCount(280);
+  await expect(page.locator('[data-table="platforms"] tbody tr')).toHaveCount(279);
   await tabUntil(page, 'input[type="search"]');
   await page.keyboard.type("Aand2024");
   await expect(page.locator('[data-table="platforms"] tbody tr')).toHaveCount(1);

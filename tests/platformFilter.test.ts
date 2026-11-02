@@ -47,8 +47,8 @@ describe("filterPlatforms (AC-7)", () => {
 describe.skipIf(!dataAvailable)("filterPlatforms on the real index (AC-8)", () => {
   const platforms = dataAvailable ? readIndex().platforms : [];
 
-  it("returns all 280 platform rows for an empty filter", () => {
-    expect(filterPlatforms(platforms, "")).toHaveLength(280);
+  it("returns all 279 platform rows for an empty filter", () => {
+    expect(filterPlatforms(platforms, "")).toHaveLength(279);
   });
 
   it("returns Aand2024/P1 for 'aand2024'", () => {

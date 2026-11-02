@@ -287,7 +287,7 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
   it.each<[string, string, string | number, number, number, string]>([
     ["", "2021", "fixed_tubing", 9, 17, "#/browse?years=2021-2021&im=fixed_tubing"],
     ["", "before 2015", "fixed_tubing", 15, 27, "#/browse?years=-2014&im=fixed_tubing"],
-    ["view=platforms", "2024", "robot_arm_gantry", 3, 37, "#/browse?view=platforms&years=2024-2024&im=robot_arm_gantry"],
+    ["view=platforms", "2024", "robot_arm_gantry", 2, 36, "#/browse?view=platforms&years=2024-2024&im=robot_arm_gantry"],
     ["split=sw", "2021", 2, 17, 17, "#/browse?years=2021-2021&sw=2"],
     ["split=field", "2021", "catalysis", 1, 17, "#/browse?years=2021-2021&field=catalysis"],
     ["split=field", "2025", "nanomaterials", 16, 39, "#/browse?years=2025-2025&field=nanomaterials"],
@@ -314,8 +314,8 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
   });
 
   it("gives the unfiltered bin totals and the full im table (AC-6)", () => {
-    expect(table("").n).toEqual([27, 4, 5, 3, 12, 7, 16, 17, 18, 26, 28, 39, 36]);
-    expect(table("view=platforms").n).toEqual([28, 4, 6, 4, 24, 8, 22, 17, 20, 27, 37, 41, 42]);
+    expect(table("").n).toEqual([27, 4, 5, 3, 12, 7, 16, 17, 18, 26, 27, 39, 36]);
+    expect(table("view=platforms").n).toEqual([28, 4, 6, 4, 24, 8, 22, 17, 20, 27, 36, 41, 42]);
     const t = table("");
     expect(t.values).toEqual(["fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped"]);
     expect(t.counts).toEqual([
@@ -324,7 +324,7 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
       [2, 2, 1, 2, 1, 2, 3, 3, 5, 7, 14, 13, 10],
       [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 3],
       [2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2],
-      [7, 0, 0, 0, 0, 1, 4, 4, 1, 7, 3, 12, 11],
+      [7, 0, 0, 0, 0, 1, 4, 4, 1, 7, 2, 12, 11],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
     ]);
   });
@@ -367,10 +367,10 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
     const im = table("im=mixed,robot_arm_gantry");
     expect(im.values).toEqual(["mixed", "robot_arm_gantry"]);
     expect(im.n[0]).toBe(9);
-    expect(countLine(S("im=mixed,robot_arm_gantry").state)).toBe(115);
+    expect(countLine(S("im=mixed,robot_arm_gantry").state)).toBe(114);
 
     for (const t of [papers, all, any, im]) expect(t.n.reduce((a, b) => a + b, 0)).toBe(t.total);
-    expect([papers.total, all.total, any.total, im.total]).toEqual([11, 19, 176, 115]);
+    expect([papers.total, all.total, any.total, im.total]).toEqual([11, 19, 176, 114]);
   });
 });
 
@@ -384,7 +384,7 @@ describe("unit-operation filter on the dashboard (SPEC-TAXO-001 AC-8)", () => {
     expect(SPLITS).toEqual(["im", "field", "sw", "hw", "mt", "tm"]);
   });
 
-  it.skipIf(!dataAvailable)("counts 5 of 238 papers for #/trends?uo=sonicate and links the same browse state", () => {
+  it.skipIf(!dataAvailable)("counts 5 papers for #/trends?uo=sonicate and links the same browse state", () => {
     const index = readIndex();
     const { state: s } = decodeTrends("uo=sonicate", offeredValues(index));
     expect(rowCount(s, index)).toBe(5);

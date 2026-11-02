@@ -311,24 +311,24 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
     expect(labelRows(b, 0).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(56);
     expect(labelRows(b, 1).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(13);
     expect(labelCells.filter((c) => c.href === null)).toHaveLength(12);
-    expect(platformCells.filter((c, i) => i % 2 === 0 && c.href !== null)).toHaveLength(280);
-    expect(platformCells.filter((c, i) => i % 2 === 1 && c.href !== null)).toHaveLength(270);
-    expect(cells).toHaveLength(6 + 2 + 69 + 280 + 270);
+    expect(platformCells.filter((c, i) => i % 2 === 0 && c.href !== null)).toHaveLength(279);
+    expect(platformCells.filter((c, i) => i % 2 === 1 && c.href !== null)).toHaveLength(269);
+    expect(cells).toHaveLength(6 + 2 + 69 + 279 + 269);
     const wrong = cells.filter((c) => count(decode(queryOf(c.href!))) !== c.n).map((c) => `${c.href}: ${c.n}`);
     expect(wrong).toEqual([]);
-    expect(count({ task: MT, split: "test", label: null, platform: null })).toBe(1199);
+    expect(count({ task: MT, split: "test", label: null, platform: null })).toBe(1189);
     expect(count({ task: TM, split: "test", label: "mobile_robot", platform: null })).toBe(29);
     expect(count({ task: MT, split: null, label: null, platform: "Aand2024/P1" })).toBe(6);
     expect(count({ task: TM, split: "excluded", label: null, platform: null })).toBe(15);
-    expect([items[MT]!.rows.length, items[TM]!.rows.length]).toEqual([2621, 983]);
-    expect(platformRows(b, "test")).toHaveLength(116);
+    expect([items[MT]!.rows.length, items[TM]!.rows.length]).toEqual([2610, 981]);
+    expect(platformRows(b, "test")).toHaveLength(115);
   });
 
   it("AC-8: the reference rows of the pinned release", () => {
     const rows = Object.values(b.reference_results).map(referenceRow);
     expect(rows.map((r) => [r.testItems, r.baseline, r.reference, r.difference, r.interval, r.replicates])).toEqual([
-      ["1199 (99)", "0.6681", "0.6881", "+0.0200", "[-0.0097, +0.0529]", "2000"],
-      ["426 (93)", "0.4413", "0.5117", "+0.0704", "[+0.0172, +0.1255]", "2000"],
+      ["1189 (98)", "0.6669", "0.6863", "+0.0193", "[-0.0111, +0.0530]", "2000"],
+      ["424 (92)", "0.4410", "0.5118", "+0.0708", "[+0.0163, +0.1253]", "2000"],
     ]);
     expect(rows.map((r) => r.task)).toEqual([MT, TM]);
   });
@@ -340,7 +340,7 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
       "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 1 excluded.",
     ]);
     expect(benchmarkCaption(b)).toBe(
-      "Benchmark chrono2023 has 2 tasks over 238 papers. The data dictionary describes the split as: “Benchmark: " +
+      "Benchmark chrono2023 has 2 tasks over 237 papers. The data dictionary describes the split as: “Benchmark: " +
         "chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.” " +
         "The labels are the codings in the release, made by a language model, so top-1 accuracy measures agreement with those codings.",
     );
@@ -382,8 +382,8 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
       `python modes/benchmark/evaluate.py modes/benchmark --task ${MT} --predictions my_predictions.csv`,
       `python modes/benchmark/evaluate.py modes/benchmark --task ${TM} --predictions my_predictions.csv`,
       "item_id,prediction",
-      "1199",
-      "426",
+      "1189",
+      "424",
       "header row",
       "unpacked release folder",
     ]) {

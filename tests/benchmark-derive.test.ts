@@ -51,7 +51,7 @@ describe.skipIf(!available)("SPEC-BENCH-001 on the real pinned release", () => {
     expect(b.split_rule).toBe(
       "Benchmark: chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.",
     );
-    expect(b.split_counts).toEqual({ train: 135, test: 99, excluded: 4 });
+    expect(b.split_counts).toEqual({ train: 135, test: 98, excluded: 4 });
     expect(b.exclusion_reasons).toEqual([{ reason: pinnedExclusionReason(releaseDir), n: 4 }]);
   });
 
@@ -66,56 +66,56 @@ describe.skipIf(!available)("SPEC-BENCH-001 on the real pinned release", () => {
   it("AC-1: summaries of items, uncertain items and labels", () => {
     const [mt, tm] = d.benchmark.summaries;
     expect(mt!.task_id).toBe(MT);
-    expect(mt!.items).toEqual({ train: 1384, test: 1199, excluded: 38 });
+    expect(mt!.items).toEqual({ train: 1383, test: 1189, excluded: 38 });
     expect(mt!.uncertain).toEqual({ train: 171, test: 163, excluded: 6 });
     expect(mt!.labels).toHaveLength(22);
-    expect(mt!.labels[0]).toEqual({ label: "software", train: 362, test: 281, excluded: 9 });
+    expect(mt!.labels[0]).toEqual({ label: "software", train: 362, test: 278, excluded: 9 });
     expect(mt!.labels[21]).toEqual({ label: "assembly_unit", train: 0, test: 4, excluded: 0 });
     expect(tm!.task_id).toBe(TM);
-    expect(tm!.items).toEqual({ train: 542, test: 426, excluded: 15 });
+    expect(tm!.items).toEqual({ train: 542, test: 424, excluded: 15 });
     expect(tm!.uncertain).toEqual({ train: 47, test: 51, excluded: 1 });
     expect(tm!.labels).toEqual([
       { label: "fixed_tubing", train: 298, test: 120, excluded: 3 },
-      { label: "robot_arm_gantry", train: 175, test: 189, excluded: 11 },
+      { label: "robot_arm_gantry", train: 175, test: 187, excluded: 11 },
       { label: "human_transfer", train: 58, test: 83, excluded: 0 },
       { label: "mobile_robot", train: 10, test: 29, excluded: 1 },
       { label: "unmapped", train: 1, test: 5, excluded: 0 },
     ]);
   });
 
-  it("AC-1: 280 platforms in id order with splits and per-task item counts", () => {
+  it("AC-1: 279 platforms in id order with splits and per-task item counts", () => {
     const p = d.benchmark.platforms;
-    expect(p).toHaveLength(280);
+    expect(p).toHaveLength(279);
     const ids = p.map((x) => x.platform_id);
     expect(ids).toEqual([...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
     const bySplit = (s: string) => p.filter((x) => x.split === s).length;
-    expect([bySplit("train"), bySplit("test"), bySplit("excluded")]).toEqual([160, 116, 4]);
+    expect([bySplit("train"), bySplit("test"), bySplit("excluded")]).toEqual([160, 115, 4]);
     expect(p.find((x) => x.platform_id === "Aand2024/P1")).toEqual({ platform_id: "Aand2024/P1", split: "test", n: [6, 3] });
     expect(p.find((x) => x.platform_id === "Zhu2024/P1")).toEqual({ platform_id: "Zhu2024/P1", split: "test", n: [14, 7] });
     expect(p.filter((x) => x.n[1] === 0)).toHaveLength(10);
-    expect(p.reduce((s, x) => s + x.n[0]!, 0)).toBe(2621);
-    expect(p.reduce((s, x) => s + x.n[1]!, 0)).toBe(983);
+    expect(p.reduce((s, x) => s + x.n[0]!, 0)).toBe(2610);
+    expect(p.reduce((s, x) => s + x.n[1]!, 0)).toBe(981);
   });
 
-  it("AC-1: reference_results keyed in file order with 8 fields; the text byte for byte (619 bytes)", () => {
+  it("AC-1: reference_results keyed in file order with 8 fields; the text byte for byte (620 bytes)", () => {
     const ref = d.benchmark.reference_results;
     expect(Object.keys(ref)).toEqual([MT, TM]);
     for (const entry of Object.values(ref)) expect(Object.keys(entry)).toHaveLength(8);
     expect(ref).toEqual(JSON.parse(read("reference_results.json")));
     expect(d.benchmark.reference_results_text).toBe(read("reference_results.json"));
-    expect(Buffer.byteLength(d.benchmark.reference_results_text)).toBe(619);
+    expect(Buffer.byteLength(d.benchmark.reference_results_text)).toBe(620);
   });
 
   it("AC-2: benchmark-items.json columns, rows, first rows and uncertain sums", () => {
     const items = d.benchmarkItems;
     expect(Object.keys(items)).toEqual([MT, TM]);
     expect(items[MT]!.columns).toHaveLength(8);
-    expect(items[MT]!.rows).toHaveLength(2621);
+    expect(items[MT]!.rows).toHaveLength(2610);
     expect(items[MT]!.rows[0]).toEqual([
       "Aand2024/P1/S1", "test", "fluidics", "chemistry_synthesis", "dispense_liquid", "START", "react_photo_electro", 0,
     ]);
     expect(items[TM]!.columns).toHaveLength(9);
-    expect(items[TM]!.rows).toHaveLength(983);
+    expect(items[TM]!.rows).toHaveLength(981);
     expect(items[TM]!.rows[0]).toEqual([
       "Aand2024/P1/E1", "test", "fixed_tubing", "chemistry_synthesis", "dispense_liquid", "react_photo_electro", "prepare", "react", 0,
     ]);
@@ -146,10 +146,10 @@ describe.skipIf(!built)("files after build-data (SPEC-BENCH-001 AC-4)", () => {
   it("keeps index.json, taxonomy.json and the platform files at the baseline of the pinned release", () => {
     const dir = join(DATA_DIR, "platforms");
     const names = readdirSync(dir).sort();
-    expect(names).toHaveLength(238);
+    expect(names).toHaveLength(237);
     const platforms = sha256(Buffer.concat(names.map((n) => readFileSync(join(dir, n)))));
-    expect(sha256(readFileSync(join(DATA_DIR, "index.json")))).toBe("464b1c6dce9f30f39a89c2f3ac5f32b9d7d0d688d0e9c926a4c7715543a21064");
-    expect(sha256(readFileSync(join(DATA_DIR, "taxonomy.json")))).toBe("f4b111b046402fcb332050a67bc19ff9126dc82003b1e5c1e71e9fbdcd392537");
-    expect(platforms).toBe("9001ca64126b7bb996076a0b8b172d5c3d5b293171529dcf9aca08d8599889a8");
+    expect(sha256(readFileSync(join(DATA_DIR, "index.json")))).toBe("a452131e2fc31e3b8c39dd4aa42c00dbd910712ac2034f0f89b1d19adbca8174");
+    expect(sha256(readFileSync(join(DATA_DIR, "taxonomy.json")))).toBe("677615d0272c7a7dd8c297ccf482c0d4ba743dbb9748bdc1bd6766ba98e7ab47");
+    expect(platforms).toBe("b4212f2b4b91640dbdfeb66b0d69d8c944e0f2836a9e8f321d1f3829e50d841e");
   });
 });

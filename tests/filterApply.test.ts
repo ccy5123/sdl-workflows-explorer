@@ -183,8 +183,8 @@ describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => 
   };
 
   it.each<[string, Partial<FilterState>, number, number]>([
-    ["default", {}, 238, 280],
-    ["years 2018-2024", { years: { from: 2018, to: 2024 } }, 124, 155],
+    ["default", {}, 237, 279],
+    ["years 2018-2024", { years: { from: 2018, to: 2024 } }, 123, 154],
     ["years from 2026", { years: { from: 2026, to: null } }, 36, 42],
     ["years to 2014", { years: { from: null, to: 2014 } }, 27, 28],
     ["field catalysis, nanomaterials", { field: ["catalysis", "nanomaterials"] }, 66, 68],
@@ -196,7 +196,7 @@ describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => 
     ["mt flow_reactor, liquid_handler, all", { mt: ["flow_reactor", "liquid_handler"] }, 19, 25],
     ["mt flow_reactor, liquid_handler, any", { mt: ["flow_reactor", "liquid_handler"], mtMatch: "any" }, 176, 209],
     ["tm fixed_tubing, robot_arm_gantry, all", { tm: ["fixed_tubing", "robot_arm_gantry"] }, 21, 24],
-    ["tm fixed_tubing, robot_arm_gantry, any", { tm: ["fixed_tubing", "robot_arm_gantry"], tmMatch: "any" }, 214, 254],
+    ["tm fixed_tubing, robot_arm_gantry, any", { tm: ["fixed_tubing", "robot_arm_gantry"], tmMatch: "any" }, 213, 253],
     ["mt flow_reactor and tm robot_arm_gantry", { mt: ["flow_reactor"], tm: ["robot_arm_gantry"] }, 9, 9],
     ["q chemspeed", { q: "chemspeed" }, 0, 3],
     ["years 2018-2024, field catalysis, mt flow_reactor", { years: { from: 2018, to: 2024 }, field: ["catalysis"], mt: ["flow_reactor"] }, 6, 6],

@@ -54,26 +54,36 @@ describe.skipIf(!built)("home and about text against the pinned release (AC-4)",
     expect(unsourcedNumbers(`${limits} 999`, docs.data_card, filled)).toEqual(["999"]);
   });
 
-  // SPEC-RELEASE-001 AC-4: each figure travels with its own words, so a figure paired with the wrong words fails.
+  // SPEC-RELEASE-001 AC-4: each figure travels with its own words, so a figure paired with the wrong words fails. The
+  // list covers every count of the about summary that the data card states in the same words.
   const norm = (s: string) => s.replace(/\s+/g, " ");
   const about = norm(ABOUT_SECTIONS.map((s) => s.text).join(" "));
   it.each([
-    "455 step durations",
-    "186 numbers of samples one device handles in one run of a step",
-    "234 batch sizes",
-    "136 throughputs (92 measured in a campaign, 44 nominal)",
+    "237 papers were eligible",
+    "Of the 3298 screening decisions",
+    "3239 were made by a language model working from the written criteria",
+    "59 by the researcher",
+    "340 of 2610 steps and 155 of 1681 connections",
+    "0.905 for the unit operation of steps, 0.898 for module type and 0.891 for transfer mode",
+    "0.862, 0.858 and 0.847",
+    "454 step durations",
+    "185 numbers of samples one device handles in one run of a step",
+    "233 batch sizes",
+    "135 throughputs (91 measured in a campaign, 44 nominal)",
     "13 costs",
-    "229 of the 238 papers have at least one value",
+    "228 of the 237 papers have at least one value",
     "(57 rows)",
     "For the same 30 papers as above",
     "1.000 for throughput (15 platforms)",
     "0.870 for step duration (54 steps",
     "95% interval 0.755 to 0.957",
-    "26 papers state a number",
+    "25 papers state a number",
     "73 name tasks people performed without a number",
     "51 state that the campaign ran without human intervention",
     "88 state none of these",
     "48 papers state a stretch of the campaign that ran without a person",
+    "The 237 papers are the eligible candidates that this search found",
+    "29 main texts are preprints, and 19 of them belong to papers with a journal version whose pages differ",
     "settled on 10 development papers and not changed afterwards",
     "midpoint of a stated range",
   ])("states %j as the data card does", (phrase) => {

@@ -15,14 +15,14 @@ describe("release config", () => {
   it("loads the repository config with version, pinned hash and the seven counts", () => {
     const cfg = loadConfig("release.config.json");
     expect(cfg.version).toBe("1.1.0");
-    expect(cfg.sha256).toBe("98ea319bb1884c2b2404a818504580a529fc4b8dd02d01f7712c84ee60a2d357");
+    expect(cfg.sha256).toBe("673b2dbb4c79ef4eb8f7af8c298d640c1cf4e393ab78359bbce0b4cff7c897f6");
     expect(cfg.counts).toEqual({
-      papers: 238,
-      platforms: 280,
-      modules: 1603,
-      steps: 2621,
-      connections: 1687,
-      material_connections: 1076,
+      papers: 237,
+      platforms: 279,
+      modules: 1597,
+      steps: 2610,
+      connections: 1681,
+      material_connections: 1074,
       candidates: 2172,
     });
     expect(cfg.doi).toBe("10.5281/zenodo.23875743");
