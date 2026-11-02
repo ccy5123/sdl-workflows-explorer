@@ -29,8 +29,8 @@
   817c6ab (a fast-forward of `release-1.1.0`, adding cef56f7, 76ad63d and 817c6ab after the plan commits), the final
   bundle SHA-256 673b2dbb…, 237 papers, 279 platforms, 2610 steps, the repository public and Pages live, and asked
   for a rebase onto `origin/main` and a recheck of the plan's counts.
-- Rebased (not merged, as the orchestrating session asked) onto `origin/main` 817c6ab; plan commits now 85c0bd2 and
-  cbb652f. `origin/release-1.1.0` is also at 817c6ab.
+- Rebased (not merged, as the orchestrating session asked) onto `origin/main` 817c6ab; plan commits now 5b78b4c and
+  65c4b35. `origin/release-1.1.0` is also at 817c6ab.
 - Pin changed (98ea319b… to 673b2dbb…): research.md §§1-3, design.md and acceptance.md counts re-measured on the
   published file (454 durations, 397 single-step, 135 throughputs with 126 per-day, 1660 boundaries, 279 platforms);
   spec 0.3.1. The react_flow and react_thermal figures of AC-11 and AC-12 did not change.
@@ -50,13 +50,19 @@
 
 ### Run phase (plan §B.1-6), 2026-11-02
 
-Commits on `feat/workflow-simulation` after the start gate (b1b1b61): a54dd34 data, 62675c8 builder and URL,
-4c0d798 similar platforms, 90dd7c0 cycle-time range, f558753 simulation, then the About section, screen-check fixes
-and this record. Each milestone was reported to the orchestrating session when it was committed.
+Commits on `feat/workflow-simulation` after the start gate (78c1830): dc6383c data, b1d24ef builder and URL,
+28e8841 similar platforms, 6be5220 cycle-time range, f96f138 simulation, then the About section, screen-check fixes
+and this record. Each milestone was reported to the orchestrating session when it was committed. On 2026-11-03,
+at the researcher's choice, the branch was rebased again onto `origin/main` d02a73c (the author's site link in the
+footer and About page, pushed and deployed by another session after the start gate); the commit ids in this file
+are those after that rebase. Conflicts: the App.tsx header comment and the siteText imports in About.tsx and
+tests/siteText.test.ts, both changes kept. After it, the keyboard check on `#/workflow` failed because the view
+showed its heading before data/simulation.json had loaded (the test counts controls once the heading appears and
+the footer had gained a link); the heading now appears with the builder.
 
-Final checks, one shell, `SDL_RELEASE_ZIP=/home/cyjoe/research/sdl-db/release/out/sdl-workflows-1.1.0.zip`
+Final checks after the second rebase, one shell, `SDL_RELEASE_ZIP=/home/cyjoe/research/sdl-db/release/out/sdl-workflows-1.1.0.zip`
 (`sha256sum` 673b2dbb4c79ef4eb8f7af8c298d640c1cf4e393ab78359bbce0b4cff7c897f6, equal to the pin): typecheck exit 0;
-Vitest 644 passed (555 at the start gate); `npm run build` exit 0; `npm run e2e` exit 0, 186 passed. The AC-2 hash
+Vitest 646 passed (555 at the start gate); `npm run build` exit 0; `npm run e2e` exit 0, 187 passed. The AC-2 hash
 check (tests/simulation-data.test.ts) passes: the existing derived files keep their start-gate hashes.
 `simulation.json` is 923 KB (113 KB gzipped) and loads only on `#/workflow`.
 

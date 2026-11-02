@@ -54,13 +54,14 @@ export function Workflow() {
       .then(setSim)
       .catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)));
   }, []);
+  // The heading appears with the builder, so a page that shows its heading has its controls too.
+  if (loadError) return <p role="alert">Could not load the data: {loadError}</p>;
+  if (!sim) return <p>Loading…</p>;
   return (
     <article className="workflow">
       <h1>Workflow builder</h1>
       <p>{WORKFLOW_INTRO}</p>
-      {loadError && <p role="alert">Could not load the data: {loadError}</p>}
-      {!sim && !loadError && <p>Loading…</p>}
-      {sim && <Builder sim={sim} />}
+      <Builder sim={sim} />
     </article>
   );
 }
