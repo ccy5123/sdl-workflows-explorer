@@ -2,7 +2,7 @@
 id: SPEC-BENCH-001
 title: "Benchmark view: chrono2023 tasks, split, item counts and labels, reference results as published, how to run the evaluation, items by platform and an item explorer"
 version: "0.4.0"
-status: in-progress
+status: completed
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
@@ -60,6 +60,8 @@ amendment_of: SPEC-BENCH-001
   - Unchanged: the derived data, the split and label tables, every number of the reference-results table, the two
     notes, the published JSON block, "Run the evaluation yourself", the explorer, loading and routing. Tests added by
     this SPEC that assert the 0.3.0 texts are updated to the 0.4.0 texts; tests that predate this SPEC are not touched.
+  - Closed: run commit a893de0 (tests first); Vitest 446 and Playwright 63 passing; screen check at 1280 and 375 px
+    recorded in progress.md §G; amendment_close_sha pending-backfill.
 
 ## 1. Why
 
