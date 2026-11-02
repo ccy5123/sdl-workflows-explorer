@@ -169,3 +169,14 @@ describe("parseRoute: benchmark (SPEC-BENCH-001 AC-5)", () => {
     },
   );
 });
+
+// SPEC-SITE-001 REQ-005: the about page.
+describe("parseRoute: about (SPEC-SITE-001)", () => {
+  it("parses the about page", () => {
+    expect(parseRoute("#/about")).toEqual({ kind: "about" });
+  });
+
+  it.each(["#/about/", "#/about?x", "#/abouts", "#/about/x"])("treats %j as not found, carrying the hash", (hash) => {
+    expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+  });
+});

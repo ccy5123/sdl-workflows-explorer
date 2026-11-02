@@ -34,7 +34,7 @@ test("AC-9: route, navigation and split control", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/");
   const nav = page.getByRole("navigation");
-  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy", "Benchmark"]);
+  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy", "Benchmark", "About"]);
   await nav.getByRole("link", { name: "Trends", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Trends", level: 1 })).toBeVisible();
   await expect(splitRadio(page, "Integration mode")).toBeChecked();

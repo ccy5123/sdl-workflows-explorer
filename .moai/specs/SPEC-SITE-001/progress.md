@@ -26,6 +26,13 @@
   suite 30 files / 479 passed, with `npm run build-data` run first, so the real-data cases (release-docs.json against
   index.json; the five derived-file hashes equal to §E.1) ran and passed. Typecheck exit 0. Two test expectations were
   corrected during GREEN: the unsupported-line case is line 3 of the CFF, not line 4.
+- M2 home and about: `e2e/site.spec.ts` (AC-6, AC-7) written first; the nav lists of `e2e/taxonomy.spec.ts` and
+  `e2e/trends.spec.ts` gain "About" (REQ-018). RED against `vite build --mode e2e`: 4 failed (h1 text, missing About
+  link, missing button — timeout, missing `main h1`). `src/lib/siteText.ts` was written from design.md §3 together with
+  `tests/siteText.test.ts` (the strings are the approved draft; the number checker `unsourcedNumbers` had no separate
+  RED run — recorded as a gap). GREEN after `route.ts` `about`, `useReleaseDocs`, `Home.tsx`, `About.tsx`, the nav
+  link and styles: site.spec 4 passed; full Vitest 31 files / 490 passed; full Playwright 72 passed (68 + 4);
+  typecheck exit 0.
 - Baseline re-measured 2026-11-02 at 69d2dc7: `npx tsc --noEmit` exit 0; `npx vitest run` 28 files, 459 passed;
   `npm run e2e` 68 passed.
 - Derived-file hashes at 69d2dc7 (`sha256sum` of `public/data/` after build-data; AC-1):

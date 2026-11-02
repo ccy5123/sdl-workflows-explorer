@@ -1,8 +1,9 @@
 // Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001; SPEC-TAXO-001
-// REQ-009; SPEC-BENCH-001 REQ-005). Pure: never throws.
+// REQ-009; SPEC-BENCH-001 REQ-005; SPEC-SITE-001 REQ-005). Pure: never throws.
 
 export type Route =
   | { kind: "home" }
+  | { kind: "about" }
   | { kind: "platform"; paperId: string; platformId: string }
   | { kind: "browse"; query: string }
   | { kind: "trends"; query: string }
@@ -34,13 +35,14 @@ function compareId(item: string): string {
  * `#/platform/<paper_id>/<platform_suffix>` → platform; `#/browse[?<query>]` → browse; `#/compare/<id>,<id>…` →
  * compare; `#/taxonomy` → taxonomy; `#/taxonomy?source=<key>` → taxonomy with a target source;
  * `#/taxonomy/<kind>/<class>` → taxonomy class; `#/benchmark` → benchmark; `#/benchmark/items[?<query>]` → benchmark
- * items; empty, `#` or `#/` → home; anything else → not found.
+ * items; `#/about` → about; empty, `#` or `#/` → home; anything else → not found.
  */
 export function parseRoute(hash: string): Route {
   if (hash === "" || hash === "#" || hash === "#/") return { kind: "home" };
   const notFound: Route = { kind: "notFound", hash };
   if (!hash.startsWith("#/")) return notFound;
   const rest = hash.slice(2);
+  if (rest === "about") return { kind: "about" };
   if (rest === "browse") return { kind: "browse", query: "" };
   if (rest.startsWith("browse?")) return { kind: "browse", query: rest.slice("browse?".length) };
   if (rest === "trends") return { kind: "trends", query: "" };
