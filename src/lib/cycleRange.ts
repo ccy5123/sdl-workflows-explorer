@@ -53,6 +53,8 @@ export interface StepSource {
   joint: { id: string; first: number; last: number } | null;
 }
 
+// @MX:ANCHOR: [AUTO] stepSources — one duration source per step, shared by the range and the simulation
+// @MX:REASON: the range and the simulation must count joint, entered and recorded durations alike (REQ-012, REQ-018)
 export function stepSources(
   s: WorkflowState,
   c: Catalog,

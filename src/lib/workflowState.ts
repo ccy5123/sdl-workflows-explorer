@@ -415,6 +415,8 @@ export function setOption(
 const enc = (field: string) => encodeURIComponent(field).replace(/~/g, "%7E");
 const item = (...fields: (string | number)[]) => fields.map((f) => enc(String(f))).join("~");
 
+// @MX:ANCHOR: [AUTO] encodeWorkflow / decodeWorkflow — the shareable-URL contract of the builder (design §3)
+// @MX:REASON: links people share must keep decoding; a grammar change needs a round-trip test over generated states
 /** Hash query of a state, holding only values that differ from their default (REQ-007). */
 export function encodeWorkflow(s: WorkflowState): string {
   const parts: [string, string][] = [];

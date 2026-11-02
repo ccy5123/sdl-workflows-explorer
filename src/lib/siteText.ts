@@ -145,6 +145,28 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
   },
 ];
 
+/**
+ * About section on the workflow builder (SPEC-SIM-001 REQ-021): what each of its three outputs shows and does not
+ * show. Its figures ("10", "4") are checked against simulation.json by tests/siteText.test.ts.
+ */
+export const WORKFLOW_ABOUT = {
+  heading: "Workflow builder",
+  paragraphs: [
+    "The workflow builder lets you lay out the steps of an experiment, the modules that perform them and how " +
+      "material moves between modules, and gives three outputs from that one layout.",
+    "Similar platforms lists the coded platforms whose step order, module types and transfer modes are closest to " +
+      "yours. It compares the coded structure only and says nothing about how well any platform worked.",
+    "Cycle time and throughput adds up the step durations that papers state for each type of step, as the lowest, " +
+      "median and highest recorded value, with the number of values and their sources. Most step types have fewer " +
+      "than 10 recorded durations, measured on different chemistries, scales and devices; a step with no recorded " +
+      "duration uses the time you enter. The per-day figure assumes the parallel units never wait for a shared module.",
+    "The simulation runs your layout on a timeline with shared devices, queues and transfers. Transfer times, " +
+      "transfer agents, the queue rule, how durations are drawn and the random seed are your inputs, not data; the " +
+      "release holds 4 recorded transfer times. The results show what follows from those inputs, not how a real " +
+      "platform performs.",
+  ],
+} as const;
+
 /** Whole number tokens of a text: maximal runs of digits with "." or "," between digits. */
 export const numbersIn = (text: string): string[] => text.match(/\d+(?:[.,]\d+)*/g) ?? [];
 

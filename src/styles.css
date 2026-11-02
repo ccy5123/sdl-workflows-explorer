@@ -1208,3 +1208,8 @@ table.count-table a {
 .wf-events summary {
   cursor: pointer;
 }
+
+.wf-sim-results .table-scroll + .table-note,
+.wf-sim-results .table-scroll + .table-scroll {
+  margin-top: 1rem;
+}

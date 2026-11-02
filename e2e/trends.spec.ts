@@ -296,7 +296,12 @@ test("AC-15: the dashboard and Plot load in a lazy chunk", async ({ page }) => {
   await expect(chart(page)).toBeVisible();
   const chunks = requested.filter((p) => /\/assets\/Trends[^/]*\.js$/.test(p));
   expect(chunks).toHaveLength(1);
-  expect(await (await page.request.get(chunks[0]!)).text()).toContain("plot-d6a7b5");
+  // Plot sits in the Trends chunk or, since the workflow builder also draws with it (SPEC-SIM-001), in a shared chunk
+  // that only the lazy chunks import; the home page above loaded none of it.
+  const trends = await (await page.request.get(chunks[0]!)).text();
+  const imported = [...trends.matchAll(/from"\.\/([^"]+\.js)"/g)].map((m) => `/assets/${m[1]}`);
+  const texts = [trends, ...(await Promise.all(imported.map(async (p) => (await page.request.get(p)).text())))];
+  expect(texts.some((t) => t.includes("plot-d6a7b5"))).toBe(true);
 });
 
 test("AC-16: narrow screen, keyboard and empty result", async ({ page }) => {

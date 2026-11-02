@@ -1,7 +1,8 @@
-// About the data: a summary of the release's data card and its full text (SPEC-SITE-001 REQ-005, REQ-006).
+// About the data: a summary of the release's data card and its full text (SPEC-SITE-001 REQ-005, REQ-006), and what
+// the workflow builder's outputs show (SPEC-SIM-001 REQ-021).
 import { useReleaseDocs } from "../components/useReleaseDocs";
 import type { IndexJson } from "../data/types";
-import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, aboutIntro } from "../lib/siteText";
+import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
 
 export function About({ index }: { index: IndexJson }) {
   const { docs, error } = useReleaseDocs();
@@ -31,6 +32,15 @@ export function About({ index }: { index: IndexJson }) {
             <pre>{docs.data_card}</pre>
           </details>
         )}
+      </section>
+      <section aria-labelledby="about-workflow">
+        <h2 id="about-workflow">{WORKFLOW_ABOUT.heading}</h2>
+        {WORKFLOW_ABOUT.paragraphs.map((p) => (
+          <p key={p}>{p}</p>
+        ))}
+        <p>
+          <a href="#/workflow">Open the workflow builder</a>.
+        </p>
       </section>
     </article>
   );

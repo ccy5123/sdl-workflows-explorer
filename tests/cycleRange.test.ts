@@ -16,6 +16,7 @@ import {
   stepSources,
   throughputGroups,
 } from "../src/lib/cycleRange";
+import { WORKFLOW_ABOUT } from "../src/lib/siteText";
 import { catalogOf, DEFAULT_STATE, type Catalog, type WorkflowState } from "../src/lib/workflowState";
 import { tempDir } from "./fixtures/zip";
 
@@ -121,6 +122,10 @@ describe("AC-13: no verdict words in the text the builder writes", () => {
   it.each(NEW_SOURCES.filter((f) => existsSync(f)))("%s", (file) => {
     const hits = readFileSync(file, "utf8").split("\n").filter((l) => VERDICT_WORDS.test(l));
     expect(hits).toEqual([]);
+  });
+
+  it("the About section on the workflow builder", () => {
+    expect([WORKFLOW_ABOUT.heading, ...WORKFLOW_ABOUT.paragraphs].filter((p) => VERDICT_WORDS.test(p))).toEqual([]);
   });
 
   it("checks every new source file that exists", () => {

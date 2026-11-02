@@ -51,24 +51,27 @@ export function Timeline({ state, events, makespan }: { state: WorkflowState; ev
     const el = ref.current!;
     if (width === 0) return;
     const [size, unit] = UNITS.find(([u]) => makespan >= 2 * u) ?? [1, "s"];
+    const narrow = width < 640;
+    const marginLeft = narrow ? 8 : 280;
+    // a bar is drawn at least 3 px wide so short steps and transfers stay visible; its title gives the exact times
+    const minWidth = ((makespan / size) * 3) / Math.max(1, width - marginLeft - 12);
     const bars = drawn.map((e) => ({
       row: rowName(state, e)!,
       x1: e.start / size,
-      x2: e.end / size,
+      x2: Math.max(e.end / size, e.start / size + minWidth),
       fill: e.kind === "transfer" ? "var(--chart-ink-secondary)" : `var(--chart-im-${((e.step - 1) % 7) + 1})`,
       title: `Batch ${e.batch}, ${e.kind === "transfer" ? `transfer after step ${e.step}` : `step ${e.step}`}: ${e.start} s to ${e.end} s`,
     }));
-    const narrow = width < 640;
     const svg = Plot.plot({
       width,
       height: rows.length * (narrow ? 38 : 24) + 50,
-      marginLeft: narrow ? 8 : 230,
+      marginLeft,
       marginRight: 12,
       style: { background: "transparent", color: "var(--chart-ink-secondary)", fontSize: "12px" },
       x: { label: `Time (${unit})`, labelAnchor: "center", grid: true, domain: [0, makespan / size] },
       y: { domain: rows, label: null, axis: narrow ? null : "left" },
       marks: [
-        Plot.barX(bars, { x1: "x1", x2: "x2", y: "row", fill: "fill", title: "title", inset: 1 }),
+        Plot.barX(bars, { x1: "x1", x2: "x2", y: "row", fill: "fill", title: "title", insetTop: narrow ? 17 : 2, insetBottom: 2 }),
         narrow ? Plot.text(rows, { x: 0, y: (d: string) => d, text: (d: string) => d, dy: -13, textAnchor: "start", fill: "var(--chart-ink)" }) : null,
       ],
     });

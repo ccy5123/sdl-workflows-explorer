@@ -4,12 +4,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { IndexJson, ReleaseDocs } from "../src/data/types";
+import type { IndexJson, ReleaseDocs, SimulationJson } from "../src/data/types";
 import {
   ABOUT_AUTHOR_LEAD,
   ABOUT_SECTIONS,
   AUTHOR,
   VIEWS,
+  WORKFLOW_ABOUT,
   aboutIntro,
   homeIntro,
   numbersIn,
@@ -128,5 +129,27 @@ describe.skipIf(!built)("home and about text against the pinned release (AC-4)",
       expect(text).not.toMatch(/extraction/i);
       expect(text).not.toMatch(/frozen/i);
     }
+  });
+});
+
+// SPEC-SIM-001 AC-17: the About section on the workflow builder, its figures checked against simulation.json.
+describe("About section on the workflow builder", () => {
+  it("has at most four paragraphs whose only figures are 10 and 4", () => {
+    expect(WORKFLOW_ABOUT.heading).toBe("Workflow builder");
+    expect(WORKFLOW_ABOUT.paragraphs.length).toBeLessThanOrEqual(4);
+    expect(WORKFLOW_ABOUT.paragraphs.flatMap(numbersIn)).toEqual(["10", "4"]);
+  });
+
+  const path = join(DATA_DIR, "simulation.json");
+  it.skipIf(!existsSync(path))("matches simulation.json: most unit operations have fewer than 10 values; 4 transfer times", () => {
+    const sim = JSON.parse(readFileSync(path, "utf8")) as SimulationJson;
+    const n = new Map(sim.unit_operations.map((u) => [u.id, 0]));
+    for (const d of sim.durations) if (!d.joint) n.set(d.unit_operation, (n.get(d.unit_operation) ?? 0) + 1);
+    const under = [...n.values()].filter((v) => v < 10).length;
+    expect(under).toBeGreaterThan(n.size / 2);
+    const text = WORKFLOW_ABOUT.paragraphs.join(" ");
+    expect(text).toContain("fewer than 10 recorded durations");
+    expect(text).toContain(`holds ${sim.transfer_times.length} recorded transfer times`);
+    expect(sim.transfer_times).toHaveLength(4);
   });
 });

@@ -47,10 +47,11 @@ export function compareReason(selected: number): string | null {
 
 export const RANGE_INTRO =
   "For each step: the lowest, median and highest single-step duration that papers state for its unit operation, " +
-  "with the number of values and their sources, times the runs the step needs per batch. The cycle time per batch " +
-  "adds these and the transfer times you set. Most unit operations have fewer than 10 recorded durations, measured " +
-  "on different chemistries, scales and devices. Durations stated for several consecutive steps together are kept " +
-  "apart and offered where your steps match them.";
+  "with the number of values and their sources, times the runs the step needs per batch (batch size × samples per " +
+  "experiment / samples per run, rounded up). The cycle time per batch adds these and the transfer times you set. " +
+  "Most unit operations have fewer than 10 recorded durations, measured on different chemistries, scales and " +
+  "devices. A joint duration is a time a paper states for several consecutive steps together; joint durations are " +
+  "kept apart from the single-step values and offered where a run of your steps matches one.";
 
 export const BOUNDS_LABEL = "Include recorded bounds (≤ or ≥ values) in the lowest, median and highest values";
 

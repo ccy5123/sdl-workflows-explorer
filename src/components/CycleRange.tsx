@@ -6,7 +6,7 @@ import { formatDuration, formatNumber, type CycleResult, type StepRange } from "
 import { platformHash } from "../lib/route";
 import { chooseJoint, setEntered, setOption, type Catalog, type EditResult, type WorkflowState } from "../lib/workflowState";
 import { BOUNDS_LABEL, MARKER_KEY, NO_WAITING, RANGE_INTRO, SOURCE_LABELS } from "../lib/workflowText";
-import { StripPlot, type StripPoint } from "./DurationStrip";
+import { DURATION_TICKS, StripPlot, type StripPoint } from "./DurationStrip";
 import { CommitField } from "./WorkflowEditor";
 import { ThroughputPanel } from "./ThroughputPanel";
 
@@ -118,6 +118,7 @@ function StepDetail({
           label="Recorded duration (log scale)"
           ariaLabel={`Recorded single-step durations of ${step.uo}: ${n} values from ${formatDuration(step.recorded[0]!.seconds)} to ${formatDuration(step.recorded.at(-1)!.seconds)}`}
           format={formatDuration}
+          ticks={DURATION_TICKS}
         />
       )}
       {n > 0 && <Sources rows={step.recorded} caption={`Sources of the ${n} recorded value${n > 1 ? "s" : ""}`} />}
