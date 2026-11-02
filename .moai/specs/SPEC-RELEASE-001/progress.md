@@ -112,6 +112,56 @@
 - Branch only: `release-1.1.0` pushed to the private origin; not merged into `main`; no deployment, Pages off, no
   workflow run. Project docs unchanged; `docs/deploy.md` carries the remaining steps.
 
+## §E.5 Re-pin to the published file (0.5.0)
+
+- Trigger: the orchestrating session reported on 2026-11-02 that Zenodo published record 23875743 with a file that
+  differs from 98ea319b…, checked against the Zenodo API: SHA-256 673b2dbb…, 2,480,672 bytes, MD5 b0af234c….
+- Local copy measured here: `sha256sum` 673b2dbb4c79ef4eb8f7af8c298d640c1cf4e393ab78359bbce0b4cff7c897f6, `md5sum`
+  b0af234c809d8c22cc5e5a30dd90ad5b, `stat -c %s` 2480672. Row counts read from the zip (core tables and the material
+  transfer modes): papers 237, platforms 279, modules 1597, steps 2610, connections 1681, material_connections 1074,
+  candidates 2172; `modes/benchmark/split.csv` train 135, test 98, excluded 4.
+- What the published release changes (its `CHANGELOG.md`): Snapp2023 removed as the preprint of Snapp2024 (a training
+  paper; its platform had 6 modules, 11 steps, 6 connections of which 2 material, 8 unit operations, 1 field tag);
+  Snapp2024 dated 2023, so its platform moves from test to train (10 module-type and 2 transfer-mode items); seven
+  papers carry their published DOI; benchmark reference results recomputed (recorded_in evi-exp-h1-20261102-112907).
+- Derived files against 1.0.0, value by value (a script over the 1.0.0 build in the primary checkout and this build):
+  every difference is one of the changes above, the two wording items of 0.4.0 (exclusion reason, 56 Gottstein2026
+  locators) or the Leong2022 sentence. A second script reverted those changes in each 1.1.0 file and compared it with
+  the 1.0.0 file without Snapp2023's rows, as `JSON.stringify`: equal for all five (platform files 8935ce45…,
+  benchmark-items 9b4d87ab…, index 20dc3a0d…, taxonomy 2dcc668d…, benchmark 21de595d…). `tests/release-docs.test.ts`
+  now pins the 1.1.0 hashes and repeats that revert (acceptance.md AC-3).
+- RED: after the pin and `fetch-release` + `build-data` on the published zip (counts verified), Vitest failed 38 tests
+  in 11 files (config; release-docs; release AC-1/AC-2/AC-10; taxonomy-derive; benchmark-derive; benchmark;
+  filterApply; platformFilter; trends; siteText). Every failing value was re-measured on the 1.1.0 build next to the
+  1.0.0 build and traced to the changes above (for example train module-type items 1384 − 11 + 10 = 1383, test
+  1199 − 10 = 1189; Trends 2024 bin one paper and one platform fewer); literals moved to the measured values, no check
+  deleted. Two test names lost a stale count ("279 platforms", "5 papers for #/trends?uo=sonicate").
+- About text (`src/lib/siteText.ts`) read sentence by sentence against the published `DATA_CARD.md`. Changed: 238 →
+  237 papers eligible; screening decisions now in the card's words ("Of the 3298 screening decisions, 3239 were made by
+  a language model working from the written criteria and 59 by the researcher", was 3240 and 58); uncertain items 340
+  of 2610 steps and 155 of 1681 connections (was 2621, 156, 1687); timing 454 step durations, 185 numbers of samples,
+  233 batch sizes, 135 throughputs (91 measured, 44 nominal), 228 of the 237 papers (was 455, 186, 234, 136, 92, 229
+  of 238); 25 papers state a number (was 26); limits: 237 papers, 29 main texts are preprints and 19 of them have a
+  journal version (was 238, 30, 13). Unchanged: 2172, 655, 469, 20 October 2026, 10 development papers, 30 papers,
+  0.905/0.898/0.891, 0.862/0.858/0.847, 13 costs, 44 nominal, 57 rows, 15 platforms, 0.870, 54 steps, 0.755 to
+  0.957, 73, 51, 88, 48. The home intro takes its counts from `index.json`. The phrase test in
+  `tests/siteText.test.ts` now pins nine more counts with their words (eligible papers, screening decisions, uncertain
+  items, micro-F1 values and bounds, the 237 papers of the limits, preprints); RED 15 failures before the text change.
+- No screen text says the benchmark split is unchanged from 1.0.0: `git grep -i` over `src` and `index.html` for
+  unchanged / same / identical / 1.0.0 / previous release finds only "not changed afterwards" (the coding instructions)
+  and a code comment; the benchmark caption, split table, exclusion line and reference rows read `benchmark.json`.
+- e2e: the first run on the published data failed 33 of 166 specs, all on totals (237 papers, 279 platforms, 2610
+  and 981 benchmark items) or the values traced above (test items 1189, software test items 278, test platforms 115,
+  Trends 2024 bin: 27 papers, 36 platforms, robot_arm_gantry 2 of 36; data_transfer 607 connections). Filtered counts
+  whose filter Snapp2023 does not meet (catalysis, mix or sonicate, mixed integration, years 2016-2020) stay as they
+  were. The About phrases in `e2e/site.spec.ts` follow the new text.
+- Final verification (logs in `.moai/state/verify/repin/`): local copy `sha256sum` 673b2dbb…, 2480672 bytes;
+  `npm run build` with `SDL_RELEASE_ZIP` exit 0 (zip SHA-256 and MANIFEST, 90 files, verified); cache marker removed,
+  then `npm run build` without `SDL_RELEASE_ZIP` exit 0: "downloading https://zenodo.org/api/records/23875743/files/
+  sdl-workflows-1.1.0.zip/content", "zip SHA-256 verified (673b2dbb…)", "MANIFEST verified (90 files)"; the downloaded
+  file hashes 673b2dbb…, 2480672 bytes. On the data of the Zenodo build: typecheck 0; Vitest 34 files / 555 passed;
+  `npm run e2e` 166 passed.
+
 ## §F Phase 4 Mode Selection
 
 - Inputs: Tier M; about 25 files; TypeScript, CSS and Markdown; one domain; concurrency benefit low.

@@ -7,6 +7,9 @@ Branch `release-1.1.0` from `origin/main` at aa10af8, in a separate worktree
 the file held by Zenodo draft 23875743): `/home/cyjoe/research/sdl-db/release/out/sdl-workflows-1.1.0.zip`, 2,484,010
 bytes, SHA-256 98ea319b…, MD5 ee6c2e45…; the earlier b77dacc2… and b1d35a52… are void.
 
+Re-pinned in 0.5.0 to the file Zenodo published (673b2dbb…, 2,480,672 bytes); the measurements below describe the
+98ea319b… bundle, and those of the published file are in progress.md §E.5 and acceptance.md AC-3.
+
 Measured on the final bundle with the 1.1.0 pin, before any test change: `fetch-release` verifies 90 files;
 `build-data` passes with unchanged counts; `benchmark-items.json` 7a709c16… and the platform files 9001ca64… hash as
 in 1.0.0; `index.json` 464b1c6d… differs only in `release` (without it: 76908d5a…, as in 1.0.0); `taxonomy.json`

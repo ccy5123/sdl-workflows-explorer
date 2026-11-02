@@ -1,7 +1,7 @@
 ---
 id: SPEC-RELEASE-001
 title: "Pin the explorer to data release 1.1.0 on a branch, with a plain-language pass over the site text"
-version: "0.4.0"
+version: "0.5.0"
 status: completed
 created: 2026-11-02
 updated: 2026-11-02
@@ -39,6 +39,11 @@ depends_on: [SPEC-SITE-001]
   `benchmark.json` change, every other derived file is as in 1.0.0 (AC-3). Besides the two CHANGELOG items, the
   release README's sources table adds one sentence to the Leong2022 reference, which reaches `taxonomy.json`; REQ-003
   names it.
+- 2026-11-02 0.5.0 re-pin to the file Zenodo published for record 23875743: SHA-256 `673b2dbb…`, 2,480,672 bytes,
+  MD5 `b0af234c…`; `98ea319b…` is void. The published release removes Snapp2023 as an earlier version of Snapp2024
+  (237 papers, 279 platforms), dates Snapp2024 to 2023 so it moves from the benchmark's test to its training split,
+  and gives seven papers their published DOI; the benchmark reference results were recomputed. REQ-001 takes the new
+  hash and counts, REQ-003 names these changes, and the About text follows the published data card (progress.md §E.5).
 
 ## 1. Why
 
@@ -55,18 +60,20 @@ knowing the project's working vocabulary.
 - **REQ-001** (ubiquitous) `release.config.json` on branch `release-1.1.0` shall pin version `1.1.0`, DOI
   `10.5281/zenodo.23875743`, record id `23875743`, file name `sdl-workflows-1.1.0.zip`, URL
   `https://zenodo.org/api/records/23875743/files/sdl-workflows-1.1.0.zip/content`, SHA-256
-  `98ea319bb1884c2b2404a818504580a529fc4b8dd02d01f7712c84ee60a2d357` and the unchanged counts (238, 280, 1603, 2621,
-  1687, 1076, 2172), in a commit that changes only this file.
+  `673b2dbb4c79ef4eb8f7af8c298d640c1cf4e393ab78359bbce0b4cff7c897f6` and the counts of the published release (237,
+  279, 1597, 2610, 1681, 1074, 2172), in a commit that changes only this file.
 - **REQ-002** (ubiquitous) Tests that pinned release 1.0.0 shall check release 1.1.0: the config test shall check the
   REQ-001 values; tests and e2e specs that compare the site with the pinned release (footer data version, release DOI,
   path of the extracted release, describe names and skip messages naming the release) shall take the expected values
   from `release.config.json` or name "the pinned release" instead of a version literal.
 - **REQ-003** (ubiquitous) The derived-file checks shall keep checking what did not change: every derived file
   (`index.json` without its `release` object, `taxonomy.json`, `benchmark.json`, `benchmark-items.json`, the platform
-  files) shall stay identical to 1.0.0 except where the 1.1.0 release documents a change — the two `CHANGELOG.md`
-  items (benchmark exclusion reason; Gottstein2026 locators `pdf p.N` → `p.N`) and the Leong2022 reference sentence of
-  the README's sources table; a file that changes shall get its new pinned hash plus a check that only those values
-  differ from 1.0.0; the `release` object shall equal
+  files) shall stay identical to 1.0.0 except where the 1.1.0 release documents a change — the removal of Snapp2023
+  and what follows from it (Snapp2024's first public year and benchmark split, its identity group, usage counts,
+  benchmark summaries and recomputed reference results), the published DOIs of seven papers, the two wording items of
+  `CHANGELOG.md` (benchmark exclusion reason; Gottstein2026 locators `pdf p.N` → `p.N`) and the Leong2022 reference
+  sentence of the README's sources table; a file that changes shall get its new pinned hash plus a check that reverting
+  those changes gives the 1.0.0 file without Snapp2023's rows; the `release` object shall equal
   the 1.1.0 release metadata; tests that show a value the release changed (such as the benchmark exclusion reason)
   shall read it from the release instead of a literal. No check shall be deleted.
 

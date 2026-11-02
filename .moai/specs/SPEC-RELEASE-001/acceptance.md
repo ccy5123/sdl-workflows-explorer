@@ -7,7 +7,7 @@ Real-data cases read `public/data/` after `npm run build-data`, as before.
 
 ### AC-1 Pinned release (REQ-001, REQ-007)
 - In the same run as the suites, `sha256sum "$SDL_RELEASE_ZIP"` prints the pinned SHA-256 and `stat -c %s` prints
-  2484010.
+  2480672.
 - `tests/config.test.ts` checks every REQ-001 value of `release.config.json`.
 - `npm run fetch-release` verifies the bundle against the pin and `MANIFEST.sha256`; `npm run build-data` reports counts
   equal to `release.config.json`.
@@ -26,23 +26,28 @@ Real-data cases read `public/data/` after `npm run build-data`, as before.
   `tests/release-docs.test.ts` — synthetic or fixture values only; in `tests/release-docs.test.ts` the remaining
   matches are the two fixture-release cases (expected fixture citation, version-mismatch edit).
 
-### AC-3 Unchanged files stay checked (REQ-003)
-Values below were measured on the final bundle 98ea319b…; if the bundle is ever re-pinned, they are re-measured.
-- Unchanged, with their 1.0.0 hashes (SPEC-SITE-001 progress.md §E.1), checked in `tests/release-docs.test.ts` and
-  `tests/benchmark-derive.test.ts`: `benchmark-items.json` (7a709c16…) and the 238 platform files (9001ca64…).
-- `taxonomy.json` hashes to `f4b111b046402fcb332050a67bc19ff9126dc82003b1e5c1e71e9fbdcd392537`, and differs from 1.0.0
-  in exactly 57 values: 56 correspondence source `page` values, each `p.N` where 1.0.0 had `pdf p.N` (all Gottstein2026
-  rows), and the Leong2022 `reference` in `sources`, which is the 1.0.0 text followed by ". The locators Proposal,
-  CS1–CS3 and FW1–FW3 are the paper's own section heading and labels of its case studies and future-work examples". A
-  test reverts these values and compares the result with the 1.0.0 file by its hash (e33f52e3…).
-- `benchmark.json` hashes to `bbf945aa945885c420729fc76518040994d72ee8900931af4ae120209b39828e`, and differs from
-  1.0.0 only in `exclusion_reasons[0].reason` ("one of the 10 development papers of the coding instructions" instead of
-  "used to develop the extraction instructions"); a test reverts it and compares with the 1.0.0 hash (4ca73f0e…).
-- `index.json` without its `release` object hashes (as `JSON.stringify`) to
-  `76908d5a24205c4878684f109585156fdfd394db0e6540478ec3df14a3a4b856` (the 1.0.0 value), its `release` equals
-  `{version: "1.1.0", released_on: "2026-11-02", doi: "10.5281/zenodo.23875743", taxonomy_version: "v1", license:
-  "data: CC-BY-4.0; code: MIT"}`, and the whole file hashes to
-  `464b1c6dce9f30f39a89c2f3ac5f32b9d7d0d688d0e9c926a4c7715543a21064`.
+### AC-3 Derived files stay checked against the previous release (REQ-003)
+Values below were measured on the published bundle 673b2dbb… (re-pinned on 2026-11-02 after Zenodo published 1.1.0;
+98ea319b… is void). Each derived file has its pinned 1.1.0 hash, and a test in `tests/release-docs.test.ts` reverts the
+changes the 1.1.0 `CHANGELOG.md` names and compares the result, as `JSON.stringify`, with the 1.0.0 file without the
+rows of Snapp2023 (that hash computed from the 1.0.0 build):
+- Platform files: 237 files, no `Snapp2023.json`, concatenation `b4212f2b…`; reverting the seven papers' DOIs, the
+  first public year of Snapp2024 (2023 back to 2024) and Snapp2023 in the `shared_with` of identity I010 gives
+  `8935ce45…`.
+- `benchmark-items.json` `0f12de15…`, no Snapp2023 rows; reverting the 12 Snapp2024 rows from train to test gives
+  `9b4d87ab…`.
+- `index.json` `a452131e…`; its `release` equals `{version: "1.1.0", released_on: "2026-11-02", doi:
+  "10.5281/zenodo.23875743", taxonomy_version: "v1", license: "data: CC-BY-4.0; code: MIT"}`, its counts are 237, 279,
+  1597, 2610, 1681, 1074 and 2172; reverting the DOIs and Snapp2024's year, without `release` and `counts`, gives
+  `20dc3a0d…`.
+- `taxonomy.json` `677615d0…`; reverting the 56 Gottstein2026 locators (`p.N` back to `pdf p.N`) and the Leong2022
+  sentence, with the usage counts and examples left out, gives `2dcc668d…`.
+- `benchmark.json` `585ca400…`; reverting the exclusion reason and Snapp2024's split, with the recomputed split counts,
+  summaries, reference results and task figures (top-1 values, interval, test items and papers, `recorded_in`) left
+  out, gives `21de595d…`.
+- The fields left out are pinned by `tests/taxonomy-derive.test.ts` and `tests/benchmark-derive.test.ts`, whose values
+  were re-measured on the published bundle; each change from 1.0.0 is Snapp2023's removal (a training paper: 11 module
+  and 2 transfer items) or Snapp2024 moving from test to train (10 and 2 items).
 - `tests/benchmark-derive.test.ts`, `tests/benchmark.test.ts` and `e2e/benchmark.spec.ts` read the expected exclusion
   reason from the extracted release's `modes/benchmark/split.csv` instead of a literal.
 
@@ -50,14 +55,18 @@ Values below were measured on the final bundle 98ea319b…; if the bundle is eve
 - `#/about` has the `h2` headings, in order: "How the papers were found", "How the papers were coded", "How far the
   labels can be trusted", "Timing data", "Human-intervention reporting", "Limits", "Full text".
 - A Vitest case in `tests/siteText.test.ts` checks that each of these phrases appears both in the About text and,
-  whitespace-normalised, in the 1.1.0 `DATA_CARD.md`, so a figure paired with the wrong words fails: "455 step
-  durations", "186 numbers of samples one device handles in one run of a step", "234 batch sizes", "136 throughputs (92
-  measured in a campaign, 44 nominal)", "13 costs", "229 of the 238 papers have at least one value", "(57 rows)", "For
-  the same 30 papers as above", "1.000 for throughput (15 platforms)", "0.870 for step duration (54 steps", "95%
-  interval 0.755 to 0.957", "26 papers state a number", "73 name tasks people performed without a number", "51 state
-  that the campaign ran without human intervention", "88 state none of these", "48 papers state a stretch of the
-  campaign that ran without a person", "settled on 10 development papers and not changed afterwards", "midpoint of a
-  stated range".
+  whitespace-normalised, in the 1.1.0 `DATA_CARD.md`, so a figure paired with the wrong words fails: "237 papers were
+  eligible", "Of the 3298 screening decisions", "3239 were made by a language model working from the written
+  criteria", "59 by the researcher", "340 of 2610 steps and 155 of 1681 connections", "0.905 for the unit operation of
+  steps, 0.898 for module type and 0.891 for transfer mode", "0.862, 0.858 and 0.847", "454 step durations", "185
+  numbers of samples one device handles in one run of a step", "233 batch sizes", "135 throughputs (91 measured in a
+  campaign, 44 nominal)", "13 costs", "228 of the 237 papers have at least one value", "(57 rows)", "For the same 30
+  papers as above", "1.000 for throughput (15 platforms)", "0.870 for step duration (54 steps", "95% interval 0.755 to
+  0.957", "25 papers state a number", "73 name tasks people performed without a number", "51 state that the campaign
+  ran without human intervention", "88 state none of these", "48 papers state a stretch of the campaign that ran
+  without a person", "The 237 papers are the eligible candidates that this search found", "29 main texts are
+  preprints, and 19 of them belong to papers with a journal version whose pages differ", "settled on 10 development
+  papers and not changed afterwards", "midpoint of a stated range".
 - The About text also contains "agreement between two models, not accuracy", "reference values are not released", "No
   second reading exists", "free-text qualifiers" and "the reference values of the timing data are not included"; the
   home intro contains "batch sizes" and "human intervention".

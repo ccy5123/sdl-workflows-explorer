@@ -1,8 +1,9 @@
 # Deploying the site
 
 The site is built and ready for GitHub Pages at `https://ccy5123.github.io/sdl-workflows-explorer/`, but it is not
-deployed. Branch `release-1.1.0` already pins data release 1.1.0 (Zenodo record 23875743) from the local bundle; the
-site is published together with that release, in this order.
+deployed. Branch `release-1.1.0` pins data release 1.1.0 as Zenodo published it (record 23875743, SHA-256
+`673b2dbb…`); the site is published together with that release, in this order. Steps 1 to 3 were done on 2026-11-02;
+repeat steps 2 and 3 if the record ever gets a different file.
 
 1. **Publish release 1.1.0** on Zenodo (with the ChemRxiv posting).
 
