@@ -114,19 +114,21 @@ test("AC-12: not-found routes, home list and back navigation", async ({ page }) 
     await expect(alert.getByRole("link", { name: "Go to the home page" })).toHaveAttribute("href", "#/");
   }
 
+  // The platform list of Home (SPEC-UI-001 REQ-010): 20 rows before "Show all", a filter field, one link per row.
   await page.goto("/");
-  await expect(page.locator('[data-table="platforms"] tbody tr')).toHaveCount(279);
-  await tabUntil(page, 'input[type="search"]');
+  await expect(page.locator('[data-list="platforms"] > li')).toHaveCount(20);
+  await tabUntil(page, 'input[type="search"][placeholder^="Filter"]');
   await page.keyboard.type("Aand2024");
-  await expect(page.locator('[data-table="platforms"] tbody tr')).toHaveCount(1);
+  await expect(page.locator('[data-list="platforms"] > li')).toHaveCount(1);
+  await page.keyboard.press("Tab"); // "View all in Browse"
   await page.keyboard.press("Tab");
-  expect(await page.evaluate(() => document.activeElement?.textContent)).toBe("Aand2024/P1");
+  expect(await page.evaluate(() => document.activeElement?.getAttribute("href"))).toBe("#/platform/Aand2024/P1");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#\/platform\/Aand2024\/P1$/);
   await expect(page.locator("h1")).toHaveText("auto-optimization platform (AOP)");
 
   await page.goBack();
-  await expect(page.getByRole("heading", { name: "Platforms" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Platforms", exact: true })).toBeVisible();
   expect(new URL(page.url()).hash).toBe("");
   expect(errors).toEqual([]);
 });
@@ -201,7 +203,8 @@ test("Follow-up: the graph stays readable after Fit to view and the platform id 
   expect(after.y1).toBeGreaterThanOrEqual(0);
   expect(after.y2).toBeLessThanOrEqual(after.height);
   const fontFamily = await page.locator(".platform-id code").evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(fontFamily.startsWith("ui-monospace")).toBe(true);
+  // The site monospace stack starts with the self-hosted JetBrains Mono since SPEC-UI-001 REQ-003.
+  expect(fontFamily.startsWith('"JetBrains Mono"')).toBe(true);
 });
 
 // SPEC-RELEASE-001 REQ-011: the module table says what its yes/no column means.

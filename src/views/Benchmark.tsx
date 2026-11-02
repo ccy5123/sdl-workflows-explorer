@@ -1,8 +1,9 @@
 // Benchmark view: the benchmark page (tasks, split, label counts, the reference results as published, how to run the
 // evaluation, items by platform) and the item explorer (SPEC-BENCH-001 REQ-007 to REQ-016). Loaded lazily;
-// data/benchmark.json and, for the explorer, data/benchmark-items.json are fetched by this module on first use and kept
-// for the page's lifetime.
+// data/benchmark.json (through the loader Home shares, useJson.ts) and, for the explorer, data/benchmark-items.json are
+// fetched once per page load.
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { loadJsonOnce } from "../components/useJson";
 import { SPLITS, type BenchmarkItemsJson, type BenchmarkJson, type IndexJson, type Split } from "../data/types";
 import {
   BACK_LINK_TEXT,
@@ -45,7 +46,6 @@ import { parseRoute } from "../lib/route";
 
 export type BenchmarkRoute = { kind: "benchmark" } | { kind: "benchmarkItems"; query: string };
 
-let benchmarkRequest: Promise<BenchmarkJson> | null = null;
 let itemsRequest: Promise<BenchmarkItemsJson> | null = null;
 
 function getJson<T>(path: string): Promise<T> {
@@ -55,8 +55,8 @@ function getJson<T>(path: string): Promise<T> {
   });
 }
 
-/** data/benchmark.json, requested at most once per page load. */
-const loadBenchmark = () => (benchmarkRequest ??= getJson<BenchmarkJson>("data/benchmark.json"));
+/** data/benchmark.json, requested at most once per page load (shared with Home, SPEC-UI-001). */
+const loadBenchmark = () => loadJsonOnce<BenchmarkJson>("data/benchmark.json");
 /** data/benchmark-items.json, requested at most once per page load and only by the explorer. */
 const loadItems = () => (itemsRequest ??= getJson<BenchmarkItemsJson>("data/benchmark-items.json"));
 

@@ -1,20 +1,27 @@
-// SPEC-SITE-001 AC-4: every number in the home intro and the about summary comes from index.json or appears as a
-// whole number in the pinned release's DATA_CARD.md. The real-data case reads public/data/ and skips with a message
-// when build-data has not run.
+// SPEC-SITE-001 AC-4, SPEC-UI-001 AC-4: every number in the home text and the about summary comes from the built data
+// or appears as a whole number in the pinned release's DATA_CARD.md. The real-data case reads public/data/ and skips
+// with a message when build-data has not run.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { IndexJson, ReleaseDocs, SimulationJson } from "../src/data/types";
+import { fieldTagCounts, latestYear } from "../src/lib/home";
 import {
   ABOUT_AUTHOR_LEAD,
   ABOUT_SECTIONS,
   AUTHOR,
+  STATS_CAPTION,
   VIEWS,
   WORKFLOW_ABOUT,
   aboutIntro,
-  homeIntro,
+  fieldsCaption,
+  heroLead,
+  heroTitle,
   numbersIn,
+  sampleText,
+  searchPlaceholder,
   unsourcedNumbers,
+  yearsCaption,
 } from "../src/lib/siteText";
 
 describe("author link (footer and about page)", () => {
@@ -48,12 +55,31 @@ describe.skipIf(!built)("home and about text against the pinned release (AC-4)",
   if (!built) console.warn("release-docs.json absent: run `npm run build-data` for the real-data cases");
   const docs = (built ? JSON.parse(readFileSync(join(DATA_DIR, "release-docs.json"), "utf8")) : null) as ReleaseDocs;
   const index = (built ? JSON.parse(readFileSync(join(DATA_DIR, "index.json"), "utf8")) : null) as IndexJson;
+  const latest = built ? latestYear(index.platforms) : { year: 0, n: 0 };
+  const tagsInUse = built ? fieldTagCounts(index.papers).length : 0;
   const filled = built
-    ? [index.release.version, String(index.counts.platforms), String(index.counts.papers)]
+    ? [
+        index.release.version,
+        ...[index.counts.platforms, index.counts.papers, index.counts.candidates].flatMap((n) => [String(n), n.toLocaleString("en")]),
+        String(latest.year),
+        String(tagsInUse),
+      ]
+    : [];
+  // The Home text with its placeholders filled as Home fills them (5 field tags shown).
+  const homeText = built
+    ? [
+        heroTitle(index.counts.platforms),
+        heroLead(index.counts.papers),
+        searchPlaceholder(index.counts.platforms),
+        STATS_CAPTION,
+        yearsCaption(latest.year),
+        fieldsCaption(5, tagsInUse),
+        ...sampleText(index.counts.candidates, index.counts.papers),
+      ]
     : [];
   const texts = built
     ? [
-        homeIntro(index.release.version, index.counts.platforms, index.counts.papers),
+        ...homeText,
         aboutIntro(index.release.version),
         ...VIEWS.map((v) => v.description),
         ...ABOUT_SECTIONS.map((s) => s.text),
@@ -122,7 +148,7 @@ describe.skipIf(!built)("home and about text against the pinned release (AC-4)",
     ]) {
       expect(about, phrase).toContain(phrase);
     }
-    const home = homeIntro(index.release.version, index.counts.platforms, index.counts.papers);
+    const home = homeText.join(" ");
     expect(home).toContain("batch sizes");
     expect(home).toContain("human intervention");
     for (const text of [home, about]) {

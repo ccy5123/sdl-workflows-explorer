@@ -70,7 +70,14 @@ progress.md.
   `e2e/site.spec.ts` AC-6 (home order and links), its platform-viewer-button focus test and the 375 px views-table
   check; the home-list part of `e2e/viewer.spec.ts` AC-12; `"#/"` leaves the table routes of `e2e/a11y.spec.ts` AC-13
   (Home has no table); `tests/siteTokens.test.ts` expected values; `tests/siteText.test.ts` (`homeIntro` replaced by
-  the Home text, VIEWS gains the workflow builder).
+  the Home text, VIEWS gains the workflow builder); `tests/graphElements.test.ts` stylesheet colours (the graph takes
+  the new token values); `tests/tableStyles.test.ts` no longer expects a `.counts` table rule (the counts table became
+  stat tiles); the release-1.1.0 home check in `e2e/site.spec.ts` reads "batch sizes" and "human intervention" from
+  the sample card instead of the removed intro paragraph; `e2e/browse.spec.ts` AC-9/AC-10 and `e2e/trends.spec.ts`
+  AC-15 wait for Home's stat tiles instead of the removed counts table (browse AC-9 counts 20 list rows instead of 279
+  table rows); `e2e/taxonomy.spec.ts` AC-15 expects the one taxonomy.json request Home now makes, shared with the
+  taxonomy view (still one request in all); `e2e/viewer.spec.ts` names the "Platforms" heading exactly (the hero
+  heading also contains the word) and expects the platform id in the JetBrains Mono stack.
 
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;

@@ -1,8 +1,9 @@
 // Taxonomy explorer: the overview of the release taxonomy and one page per class, with counts that open the matching
 // browser rows, example platforms and the correspondence to other vocabularies (SPEC-TAXO-001 REQ-009 to REQ-016).
-// Loaded lazily; data/taxonomy.json is fetched by this module on first use and kept for the page's lifetime.
+// Loaded lazily; data/taxonomy.json is fetched once per page load through the loader Home shares (useJson.ts).
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { IssueLink } from "../components/IssueLink";
+import { loadJsonOnce } from "../components/useJson";
 import type { IndexJson, TaxonomyClass, TaxonomyJson, TaxonomySource } from "../data/types";
 import { TAXONOMY_LINK_TEXT, taxonomyUrl } from "../lib/contribute";
 import { offeredValues } from "../lib/filterState";
@@ -35,27 +36,21 @@ import {
 
 export type TaxonomyRoute = { kind: "taxonomy"; source?: string } | { kind: "taxonomyClass"; classKind: string; cls: string };
 
-let request: Promise<TaxonomyJson> | null = null;
-
-/** data/taxonomy.json, requested at most once per page load. */
-function loadTaxonomy(): Promise<TaxonomyJson> {
-  request ??= fetch("data/taxonomy.json").then((response) => {
-    if (!response.ok) throw new Error(`data/taxonomy.json: HTTP ${response.status}`);
-    return response.json() as Promise<TaxonomyJson>;
-  });
-  return request;
-}
+/** data/taxonomy.json, requested at most once per page load (shared with Home, SPEC-UI-001). */
+const loadTaxonomy = () => loadJsonOnce<TaxonomyJson>("data/taxonomy.json");
 
 const DASH = "—";
 const headingId = (text: string) => `taxo-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
 function Reference({ source }: { source: TaxonomySource }) {
   const { before, doiText, after } = splitReference(source);
+  // Word joiners keep a range such as "FW1–FW3" or "101–108" on one line (SPEC-SITE-001 REQ-014).
+  const keepRanges = (text: string) => text.replace(/(\w)–(\w)/g, "$1⁠–⁠$2");
   return (
     <>
-      {before}
+      {keepRanges(before)}
       {doiText && <a href={`https://doi.org/${source.doi}`}>{doiText}</a>}
-      {after}
+      {keepRanges(after)}
     </>
   );
 }

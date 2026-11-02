@@ -90,8 +90,8 @@ for (const route of ROUTES) {
   }
 }
 
+// Home has no table since SPEC-UI-001 (stat tiles, cards and a row list).
 const TABLE_ROUTES = [
-  "#/",
   "#/browse",
   "#/compare/Aand2024/P1,Li2020/P1",
   "#/taxonomy",

@@ -282,7 +282,7 @@ test("AC-15: the dashboard and Plot load in a lazy chunk", async ({ page }) => {
   };
   page.on("response", onResponse);
   await page.goto("/#/");
-  await expect(page.locator("table.counts")).toBeVisible();
+  await expect(page.locator(".stat-tiles")).toBeVisible();
   page.off("response", onResponse);
   // A string only Plot's code holds: the default class name it gives its SVG (recorded in progress.md §E.2).
   for (const body of await Promise.all(bodies)) expect(body).not.toContain("plot-d6a7b5");

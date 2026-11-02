@@ -339,7 +339,8 @@ test("AC-15: lazy chunk and a single taxonomy.json request", async ({ page }) =>
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   }
   expect(requested.filter((p) => /\/Taxonomy[^/]*\.js$/.test(p))).toEqual([]);
-  expect(taxonomyJson()).toEqual([]);
+  // Home shows counts from taxonomy.json (SPEC-UI-001 REQ-011); the taxonomy view reuses that one request.
+  expect(taxonomyJson()).toHaveLength(1);
 
   await page.getByRole("navigation").getByRole("link", { name: "Taxonomy", exact: true }).click();
   await expect(h1(page, "Taxonomy")).toBeVisible();

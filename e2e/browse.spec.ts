@@ -64,8 +64,8 @@ test("AC-9: a filtered URL opens the browser", async ({ page }) => {
   await expect(nav.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("href", "#/");
   await expect(nav.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute("href", "#/browse");
   await nav.getByRole("link", { name: "Home", exact: true }).click();
-  await expect(page.locator("table.counts")).toBeVisible();
-  await expect(page.locator('[data-table="platforms"] tbody tr')).toHaveCount(279);
+  await expect(page.locator(".stat-tiles")).toBeVisible(); // Home (SPEC-UI-001: stat tiles and a 20-row list)
+  await expect(page.locator("[data-list=platforms] > li")).toHaveCount(20);
   expect(errors).toEqual([]);
 });
 
@@ -81,7 +81,7 @@ test("AC-10: filters write the URL without adding history entries", async ({ pag
   expect(await page.evaluate(() => history.length)).toBe(length);
 
   await page.goBack();
-  await expect(page.locator("table.counts")).toBeVisible();
+  await expect(page.locator(".stat-tiles")).toBeVisible();
 });
 
 test("AC-10: the Browse link resets a filtered browser", async ({ page }) => {
