@@ -1,7 +1,8 @@
 // Verified release tables -> index / platform / taxonomy / benchmark JSON (REQ-009, REQ-010; SPEC-TAXO-001 REQ-001 to
 // REQ-004: unit operations on platform rows, per-class counts and examples, the checked correspondence; SPEC-BENCH-001
 // REQ-001 to REQ-003: typed tasks, split and item summaries, benchmark-items.json and the checked benchmark files;
-// SPEC-SITE-001 REQ-001, REQ-002: release-docs.json with the citation and the data card).
+// SPEC-SITE-001 REQ-001, REQ-002: release-docs.json with the citation and the data card; SPEC-SIM-001 REQ-001:
+// simulation.json, built in simulation.ts).
 // Every output object is built field by field from the lists in REQ-009, so no other release column
 // (for example an abstract) can reach the derived data.
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -31,6 +32,7 @@ import type {
   PlatformRow,
   ReleaseDocs,
   ReleaseInfo,
+  SimulationJson,
   Step,
   TaxonomyExample,
   TaxonomyJson,
@@ -40,6 +42,7 @@ import type {
 } from "../../src/data/types";
 import { parseCitationCff } from "./citation";
 import { type CsvRow, nullIfEmpty, readCsv, splitList, toBool01, toInt } from "./csv";
+import { buildSimulation } from "./simulation";
 
 export interface Derived {
   index: IndexJson;
@@ -48,6 +51,7 @@ export interface Derived {
   benchmark: BenchmarkJson;
   benchmarkItems: BenchmarkItemsJson;
   releaseDocs: ReleaseDocs;
+  simulation: SimulationJson;
 }
 
 // ---- CSV access -------------------------------------------------------------------------------
@@ -905,6 +909,7 @@ export function deriveAll(releaseDir: string): Derived {
   const platformFiles = buildPlatformFiles(papers, graphs, campaigns);
   const taxonomy = buildTaxonomy(releaseDir, papers, platformRows, graphs);
   const { benchmark, items } = buildBenchmark(releaseDir, papers, platformRows, graphs, taxonomy.classes);
+  const simulation = buildSimulation(releaseDir, graphs);
   return {
     index,
     platformFiles,
@@ -912,6 +917,7 @@ export function deriveAll(releaseDir: string): Derived {
     benchmark,
     benchmarkItems: items,
     releaseDocs,
+    simulation,
   };
 }
 
@@ -923,5 +929,6 @@ export function writeDerived(derived: Derived, outDir: string): void {
   write("benchmark.json", derived.benchmark);
   write("benchmark-items.json", derived.benchmarkItems);
   write("release-docs.json", derived.releaseDocs);
+  write("simulation.json", derived.simulation);
   for (const [paperId, file] of Object.entries(derived.platformFiles)) write(`platforms/${paperId}.json`, file);
 }

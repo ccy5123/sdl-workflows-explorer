@@ -1,0 +1,5 @@
+unit_operation,family,definition
+analyze_data,analyze,Computing the target value from measurements.
+dispense_liquid,dispense,Adding a liquid.
+measure_optical,measure,Optical measurement.
+unmapped,unmapped,No class fits.

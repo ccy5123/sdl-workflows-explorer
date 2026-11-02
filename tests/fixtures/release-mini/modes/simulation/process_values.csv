@@ -1,0 +1,16 @@
+target_kind,target_id,platform_id,quantity,value,unit,throughput_kind,n_experiments,elapsed_time,elapsed_time_unit,per_working_day,agent,manual_items,bound,approximate,range_midpoint,range_low,range_high,ev_doc,ev_page,ev_locator
+platform,PaperA2024/P1,PaperA2024/P1,throughput,10.0,experiments/h,measured,160.0,16.0,h,0,,,,0,0,,,main,3,§Results ¶3
+platform,PaperA2024/P1,PaperA2024/P1,throughput,30.0,min/experiment,nominal,,,,0,,,lower,0,0,,,main,3,§Results ¶4
+platform,PaperA2024/P1,PaperA2024/P1,throughput,3.0,runs/d,nominal,,,,0,,,,0,0,,,main,3,§Results ¶5
+platform,PaperA2024/P2,PaperA2024/P2,throughput,6.0,samples/4h,measured,,,,0,,,,1,0,,,SI1,6,Table S2
+platform,PaperA2024/P2,PaperA2024/P2,throughput,2.0,h/batch,measured,,,,0,,,,0,0,,,SI1,6,Table S3
+platform,PaperA2024/P2,PaperA2024/P2,throughput,14.0,experiments/week,nominal,,,,0,,,,0,1,10.0,18.0,SI1,7,
+platform,PaperB2025/P1,PaperB2025/P1,throughput,2.0,batches/d,measured,,,,1,,,,0,0,,,main,8,Fig. 4
+platform,PaperB2025/P1,PaperB2025/P1,throughput,5.0,samples/h,nominal,,,,0,,,,0,0,,,main,8,Fig. 4
+platform,PaperA2024/P1,PaperA2024/P1,batch_size,4.5,samples,,,,,,,,,0,1,4.0,5.0,main,3,§Methods ¶1
+platform,PaperA2024/P1,PaperA2024/P1,parallel_units,2.0,count,,,,,,,,upper,0,0,,,main,3,§Methods ¶2
+platform,PaperA2024/P2,PaperA2024/P2,experiments_per_count,0.5,,,,,,,,,,0,0,,,SI1,6,Table S2
+platform,PaperA2024/P2,PaperA2024/P2,transfer_agent_count,2.0,count,,,,,,robot_arm_gantry,,,0,0,,,SI1,3,§S2 ¶1
+platform,PaperB2025/P1,PaperB2025/P1,batch_size,8.0,samples,,,,,,,,,0,0,,,main,8,§Methods ¶1
+module,PaperA2024/P1/M2,PaperA2024/P1,units,3.0,count,,,,,,,,,0,0,,,main,3,Fig. 1
+connection,PaperA2024/P2/E1,PaperA2024/P2,transfer_time,12.5,s,,,,,,,,,0,0,,,SI1,4,Table S1

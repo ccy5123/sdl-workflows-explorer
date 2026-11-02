@@ -295,11 +295,12 @@ describe("deriveAll on the fixture release", () => {
 });
 
 describe("writeDerived", () => {
-  it("writes index.json, taxonomy.json, benchmark.json, release-docs.json and one platform file per paper", () => {
+  it("writes index.json, taxonomy.json, benchmark.json, release-docs.json, simulation.json and one platform file per paper", () => {
     const out = join(tempDir(), "data");
     writeDerived(deriveAll(MINI), out);
     expect(readdirSync(out).sort()).toEqual([
-      "benchmark-items.json", "benchmark.json", "index.json", "platforms", "release-docs.json", "taxonomy.json",
+      "benchmark-items.json", "benchmark.json", "index.json", "platforms", "release-docs.json", "simulation.json",
+      "taxonomy.json",
     ]);
     expect(readdirSync(join(out, "platforms")).sort()).toEqual(["PaperA2024.json", "PaperB2025.json"]);
     const index = JSON.parse(readFileSync(join(out, "index.json"), "utf8"));

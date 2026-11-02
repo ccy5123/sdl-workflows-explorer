@@ -300,3 +300,93 @@ export interface BenchmarkItems {
 
 /** benchmark-items.json: one entry per task id. */
 export type BenchmarkItemsJson = Record<string, BenchmarkItems>;
+
+// ---- simulation.json (SPEC-SIM-001 REQ-001 to REQ-003) -----------------------------------------
+
+export type DurationUnit = "s" | "min" | "h" | "d";
+export type Bound = "lower" | "upper" | null;
+
+/** One `duration` row of modes/simulation/step_timing.csv, in seconds with its markers (REQ-002). */
+export interface DurationRow {
+  step_id: string;
+  platform_id: string;
+  paper_id: string;
+  doi: string;
+  unit_operation: string;
+  seconds: number;
+  value: number;
+  unit: DurationUnit;
+  bound: Bound;
+  approximate: boolean;
+  range_midpoint: boolean;
+  range_low_s: number | null;
+  range_high_s: number | null;
+  /** `duration_batch_size` of the same step: samples handled in one run of the step. */
+  samples_per_run: number | null;
+  /** A time stated for several consecutive steps; null for a single-step duration. */
+  joint: { step_ids: string[]; unit_operations: string[] } | null;
+  evidence: Evidence;
+}
+
+export type ThroughputBasis = "experiments" | "samples × experiments per sample" | "batches × batch size";
+
+/** One platform `throughput` row of modes/simulation/process_values.csv with its per-day value (REQ-003). */
+export interface ThroughputRow {
+  platform_id: string;
+  paper_id: string;
+  doi: string;
+  kind: "measured" | "nominal";
+  value: number;
+  unit: string;
+  per_working_day: boolean;
+  bound: Bound;
+  approximate: boolean;
+  range_midpoint: boolean;
+  range_low: number | null;
+  range_high: number | null;
+  n_experiments: number | null;
+  elapsed_time: number | null;
+  elapsed_time_unit: string | null;
+  per_day: number | null;
+  basis: ThroughputBasis | null;
+  not_converted: string | null;
+  evidence: Evidence;
+}
+
+export interface TransferTimeRow {
+  edge_id: string;
+  platform_id: string;
+  seconds: number;
+  value: number;
+  unit: string;
+  evidence: Evidence;
+}
+
+export type TransferAgent = "robot_arm_gantry" | "mobile_robot" | "human";
+
+/** What "Start from a coded platform" and the similarity list need of one platform. */
+export interface PlatformLayout {
+  platform_id: string;
+  name: string | null;
+  paper_id: string;
+  year: number;
+  /** Steps in step_order; module_id is the primary module (null when the step names none). */
+  steps: { unit_operation: string; module_id: string | null }[];
+  /** Only the modules some step uses as its primary module. */
+  modules: { module_id: string; module_type: string; name: string | null; units: number | null }[];
+  /** Connections between those modules, in edge-number order. */
+  connections: { from: string; to: string; transfer_mode: string; is_material: boolean; transfer_time_s: number | null }[];
+  batch_size: number | null;
+  parallel_units: number | null;
+  transfer_agents: { agent: TransferAgent; count: number }[];
+}
+
+export interface SimulationJson {
+  unit_operations: { id: string; family: string; definition: string }[];
+  module_types: { id: string; definition: string }[];
+  transfer_modes: { id: string; is_material: boolean; definition: string }[];
+  durations: DurationRow[];
+  throughputs: ThroughputRow[];
+  transfer_times: TransferTimeRow[];
+  platforms: PlatformLayout[];
+}

@@ -1,0 +1,6 @@
+step_id,platform_id,quantity,value,unit,bound,approximate,range_midpoint,range_low,range_high,covers_steps,ev_doc,ev_page,ev_locator
+PaperA2024/P1/S1,PaperA2024/P1,duration,2.0,min,,0,1,1.0,3.0,,main,4,Table 1
+PaperA2024/P1/S1,PaperA2024/P1,duration_batch_size,4.0,samples,,0,0,,,,main,4,Table 1
+PaperA2024/P2/S1,PaperA2024/P2,duration,90.0,s,upper,0,0,,,,SI1,2,§S1 ¶2
+PaperA2024/P2/S2,PaperA2024/P2,duration,0.5,h,,1,0,,,PaperA2024/P2/S2;PaperA2024/P2/S3,main,5,
+PaperB2025/P1/S1,PaperB2025/P1,duration,1.0,d,,0,0,,,,main,,Fig. 2
