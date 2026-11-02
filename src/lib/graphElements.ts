@@ -54,6 +54,9 @@ export function buildElements(platform: PlatformGraph): ElementDefinition[] {
   return elements;
 }
 
+/** The site's UI font (styles.css --font-ui); Cytoscape draws on a canvas and does not inherit CSS fonts. */
+const GRAPH_FONT = 'Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif';
+
 /** Cytoscape stylesheet; colours come from the site tokens of the theme (SPEC-SITE-001 REQ-008, REQ-009). */
 export function buildStylesheet(theme: Theme = "light"): StylesheetJson {
   const t = SITE_TOKENS[theme];
@@ -64,10 +67,12 @@ export function buildStylesheet(theme: Theme = "light"): StylesheetJson {
         "background-color": "data(colour)",
         label: "data(label)",
         "text-wrap": "wrap",
-        "text-max-width": "140px",
+        "text-max-width": "150px",
         "text-valign": "bottom",
         "text-margin-y": 4,
-        "font-size": 12,
+        // Larger and wider than before SPEC-UI-001 REQ-018; the Graph layout spaces nodes with their labels included.
+        "font-size": 13,
+        "font-family": GRAPH_FONT,
         color: t["--text"],
         width: 26,
         height: 26,
@@ -99,7 +104,8 @@ export function buildStylesheet(theme: Theme = "light"): StylesheetJson {
         "target-arrow-shape": "triangle",
         "arrow-scale": 1,
         label: "data(label)",
-        "font-size": 11,
+        "font-size": 12,
+        "font-family": GRAPH_FONT,
         color: t["--text"],
         "text-background-color": t["--bg"],
         "text-background-opacity": 0.85,

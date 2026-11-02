@@ -1,14 +1,17 @@
-// One platform: header, graph, steps, evidence, legend and text tables (REQ-001, REQ-002, REQ-005 to REQ-016).
+// One platform: header, graph, steps, evidence, legend and text tables (REQ-001, REQ-002, REQ-005 to REQ-016); laid out
+// as a header card, a full-width graph, the step timeline beside the tables, and an evidence sheet that opens on a
+// selection with an empty state before it (SPEC-UI-001 REQ-017 to REQ-020).
+import { MousePointerClick } from "lucide-react";
 import { useEffect, useMemo, useReducer, useState, type KeyboardEvent } from "react";
 import { EvidencePanel } from "../components/EvidencePanel";
 import { Graph } from "../components/Graph";
 import { Header } from "../components/Header";
-import { Legend } from "../components/Legend";
 import { StepList } from "../components/StepList";
 import type { IndexJson, PlatformFile, PlatformGraph } from "../data/types";
 import { formatEvidence } from "../lib/evidence";
 import { sharedIdentityLinks } from "../lib/identity";
 import { selectionReducer, sortSteps, type Selection } from "../lib/steps";
+import { Loading } from "../components/Loading";
 import { NotFound } from "./NotFound";
 
 type Load = { state: "loading" } | { state: "ready"; platform: PlatformGraph } | { state: "missing" };
@@ -52,7 +55,7 @@ export function PlatformView({ index, paperId, platformId, hash }: Props) {
     };
   }, [paperId, platformId]);
 
-  if (load.state === "loading") return <p>Loading…</p>;
+  if (load.state === "loading") return <Loading />;
   if (load.state === "missing") return <NotFound hash={hash} />;
   return <Platform index={index} platform={load.platform} />;
 }
@@ -83,22 +86,30 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
         release={index.release.version}
         onSelectPlatform={() => select({ kind: "platform", id: platform.platform_id })}
       />
+      <Graph platform={platform} selection={selection} onSelect={select} />
+      {!selection && (
+        <p className="evidence-empty">
+          <MousePointerClick size={16} aria-hidden="true" />
+          Select a module or connection in the graph, a step or a table row to see the page in the paper that describes
+          it.
+        </p>
+      )}
+      {selection && (
+        <EvidencePanel
+          view={formatEvidence(platform, selection)}
+          release={index.release.version}
+          onClose={() => dispatch({ type: "clear" })}
+        />
+      )}
       <div className="viewer">
-        <div className="viewer-main">
-          <Graph platform={platform} selection={selection} onSelect={select} />
-        </div>
-        <div className="viewer-side">
-          <EvidencePanel view={formatEvidence(platform, selection)} release={index.release.version} />
-          <StepList
-            steps={steps}
-            modules={platform.modules}
-            selectedStepId={selection?.kind === "step" ? selection.id : null}
-            onSelect={(id) => select({ kind: "step", id })}
-          />
-        </div>
-      </div>
-      <Legend />
-      <section className="panel" aria-labelledby="modules-heading">
+        <StepList
+          steps={steps}
+          modules={platform.modules}
+          selectedStepId={selection?.kind === "step" ? selection.id : null}
+          onSelect={(id) => select({ kind: "step", id })}
+        />
+        <div className="viewer-tables">
+      <section className="card panel" aria-labelledby="modules-heading">
         <h2 id="modules-heading">Modules</h2>
         <div className="table-scroll">
           <table className="data" data-table="modules">
@@ -135,7 +146,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
           Part of the platform: yes for modules of the platform, no for equipment outside it that the loop uses.
         </p>
       </section>
-      <section className="panel" aria-labelledby="connections-heading">
+      <section className="card panel" aria-labelledby="connections-heading">
         <h2 id="connections-heading">Connections</h2>
         <div className="table-scroll">
           <table className="data" data-table="connections">
@@ -172,6 +183,8 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
           </table>
         </div>
       </section>
+        </div>
+      </div>
     </div>
   );
 }

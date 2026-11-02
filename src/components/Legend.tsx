@@ -1,10 +1,11 @@
 // Legend: display groups, transfer modes and line markers (REQ-007, REQ-009, REQ-010, REQ-011). The unmapped mode
-// line takes var(--unmapped), black in light and the text colour in dark (SPEC-SITE-001 REQ-009).
+// line takes var(--unmapped), black in light and the text colour in dark (SPEC-SITE-001 REQ-009). It floats over the
+// graph and opens from the graph toolbar (SPEC-UI-001 REQ-018).
 import { DISPLAY_GROUPS, TRANSFER_MODES } from "../lib/moduleGroups";
 
-export function Legend() {
+export function Legend({ id, hidden }: { id: string; hidden: boolean }) {
   return (
-    <section className="panel legend" aria-labelledby="legend-heading">
+    <section id={id} className="legend" aria-labelledby="legend-heading" hidden={hidden}>
       <h2 id="legend-heading">Legend</h2>
       <h3>Module groups</h3>
       <p className="note" data-legend="note">

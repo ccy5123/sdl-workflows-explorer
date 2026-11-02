@@ -50,6 +50,17 @@
   Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 210 passed. Screens checked: 375 px light
   and dark (menu closed and open, no sideways scroll), 800 px, 1440 px light and dark.
 
+- Phase 3, platform viewer (REQ-017 to REQ-020). RED: `npx playwright test e2e/viewer.spec.ts e2e/contribute.spec.ts`
+  — 13 failed, 8 passed (new header, sheet, legend, overlap and timeline tests; the label-overlap test already failed
+  on `Aand2024/P1` with the old spacing). GREEN after `Header.tsx`, `Graph.tsx` (toolbar, legend overlay, dagre
+  spacing with `nodeDimensionsIncludeLabels`), `graphElements.ts` (13 px labels in the UI font, wrap at 150 px),
+  `EvidencePanel.tsx` (sheet), `StepList.tsx` (timeline with lucide performer icons), `PlatformView.tsx` and the viewer
+  styles. Browser check: the first spacing (rankSep 110, wrap 170 px) pushed the five-module chain of `Aand2024/P1` past
+  the right edge at 1440 px; rankSep 70 and wrap 150 px fit it at zoom 1.12. `Kim2026/P1` (largest, 16 modules) lays
+  out 2350 px wide at the readable zoom of 1 and is panned, as before. Screens: `Aand2024/P1` and `Kim2026/P1` at
+  1440 px and 375 px in light and dark, sheet and legend open; no sideways scroll at 375 px.
+  Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 218 passed (2.5 min).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

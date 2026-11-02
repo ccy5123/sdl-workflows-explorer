@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
-title: "Explorer UI redesign, phases 0 to 2: design tokens and shell, readable labels, Home"
-version: "0.2.0"
+title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
+version: "0.3.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -25,6 +25,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   approval and are out of scope. Not deployed: Pages waits for the researcher's approval of a preview build.
 - 2026-11-03 0.2.0 REQ-016: below 800 px the tabs collapse into a menu instead of a sideways-scrolling row, as the
   redesign plan's shell section says; the researcher approved the change after seeing the tab row cut off at 375 px.
+- 2026-11-03 0.3.0 REQ-017 to REQ-020: phase 3 of the plan (platform viewer), approved by the researcher. This
+  supersedes SPEC-VIEW-001's evidence panel that showed the platform's evidence while nothing was selected.
 
 ## 1. Why
 
@@ -114,3 +116,21 @@ taken from the built release data.
   `aria-current="page"`, and move focus to the first link. The panel shall close on Escape and on choosing a view
   (focus back on the button), on a route change, on a click outside it and when focus leaves it. Its entry animation
   is off under `prefers-reduced-motion: reduce`. From 800 px up the tabs stay, all in one row.
+
+### Phase 3: platform viewer
+
+- **REQ-017** (ubiquitous) The platform header shall be a card with the platform id, the title, chips for the first
+  public year, each field tag (readable label, code in `title`) and a commercial integrated system, the paper and
+  campaigns, a "DOI" link button to the paper and a "Show platform evidence" button, and the correction link.
+- **REQ-018** (ubiquitous) The graph shall take the full content width with a floating toolbar: "Fit to view", "Zoom
+  in", "Zoom out" and a "Legend" toggle (`aria-expanded`) that shows the legend over the graph. Node labels are 13 px
+  in the UI font and wrap at 150 px; dagre spaces node-and-label boxes (`nodeDimensionsIncludeLabels`, nodeSep 36,
+  rankSep 70, edgeSep 16), so no two module labels overlap. The Okabe–Ito data colours are unchanged.
+- **REQ-019** (state, event-driven) While nothing is selected, the evidence sheet shall not be shown and an empty
+  state under the graph says how to select an item. When a module, connection, step, table row or the platform is
+  selected, an evidence sheet (named "Evidence") shall open at the right edge of the screen, or at the bottom below
+  800 px, with the selected item's evidence, and focus moves to its "Close evidence" button. Escape or the close
+  button closes it and returns focus to the element that opened it. The page shall not scroll sideways at 375 px.
+- **REQ-020** (ubiquitous) The cycle steps shall be a vertical timeline: a numbered marker on a line, the unit
+  operation as a readable label, the performer with an icon (robot, software, human, or not stated), the family and
+  the modules. The step buttons keep `.steps .step`, `data-step-order` and `aria-pressed`.

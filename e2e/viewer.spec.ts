@@ -58,6 +58,10 @@ test("AC-9: the viewer opens a platform by URL", async ({ page }) => {
   );
   await expect(page.locator('[data-table="modules"] tbody tr')).toHaveCount(5);
   await expect(page.locator('[data-table="connections"] tbody tr')).toHaveCount(5);
+  // SPEC-UI-001 REQ-019: nothing is selected, so the evidence sheet is closed and the empty state shows.
+  await expect(page.locator(".evidence")).toHaveCount(0);
+  await expect(page.locator(".evidence-empty")).toBeVisible();
+  await page.getByRole("button", { name: "Show platform evidence" }).click();
   await expect(evidence(page, "kind")).toHaveText("Platform");
   await expectEvidence(page, "main", "4", "Fig. 1a");
 });
@@ -75,15 +79,15 @@ test("AC-10: selecting a step by keyboard and by click", async ({ page }) => {
   await page.keyboard.press("Escape");
   expect(await highlighted(page)).toEqual([]);
   expect(await dimmedCount(page)).toBe(0);
-  await expect(evidence(page, "kind")).toHaveText("Platform");
-  await expectEvidence(page, "main", "4", "Fig. 1a");
+  await expect(page.locator(".evidence")).toHaveCount(0);
+  await expect(page.locator('.step[data-step-order="1"]')).toBeFocused();
 
   const step1 = page.locator('.step[data-step-order="1"]');
   await step1.click();
   expect(await highlighted(page)).toEqual(["Aand2024/P1/M3"]);
   await step1.click();
   expect(await highlighted(page)).toEqual([]);
-  await expect(evidence(page, "kind")).toHaveText("Platform");
+  await expect(page.locator(".evidence")).toHaveCount(0);
 });
 
 test("AC-11: selecting table rows with Enter shows their evidence", async ({ page }) => {
@@ -178,6 +182,7 @@ test("AC-13: off-platform modules, dashed inferred edges, ? markers and the lege
     await expect(page.locator(`.step[data-step-order="${step.step_order}"]`)).toContainText("?");
   }
 
+  await page.getByRole("button", { name: "Legend" }).click();
   await expect(page.locator('[data-legend="groups"] > li')).toHaveCount(5);
   await expect(page.locator('[data-legend="modes"] > li')).toHaveCount(6);
   await expect(page.locator('[data-legend="note"]')).toContainText("display choice of this site, not part of the dataset");
@@ -190,6 +195,13 @@ test("Follow-up: the graph stays readable after Fit to view and the platform id 
   await waitForGraph(page);
   const zoomAtLoad = await page.evaluate(() => (window as Win).__cy!.zoom());
   expect(zoomAtLoad).toBeGreaterThanOrEqual(1);
+  // SPEC-UI-001 REQ-018: the floating toolbar zooms in and out; Fit to view brings the readable fit back.
+  const zoom = () => page.evaluate(() => (window as Win).__cy!.zoom());
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  expect(await zoom()).toBeGreaterThan(zoomAtLoad * 1.3);
+  await page.getByRole("button", { name: "Zoom out" }).click();
+  expect(await zoom()).toBeLessThan(zoomAtLoad * 1.3);
   await page.getByRole("button", { name: "Fit to view" }).click();
   const after = await page.evaluate(() => {
     const cy = (window as Win).__cy!;
@@ -234,4 +246,116 @@ test("screen check: module and connection ids stay on one line at 375 px", async
     client: document.documentElement.clientWidth,
   }));
   expect(scroll).toBeLessThanOrEqual(client);
+});
+
+// SPEC-UI-001 phase 3 (REQ-017 to REQ-020): header card, graph toolbar and spacing, evidence sheet, step timeline.
+const LARGE = "#/platform/Kim2026/P1";
+
+const sheet = (page: Page) => page.getByRole("complementary", { name: "Evidence" });
+
+test("UI AC-15: the header is a card with year, field and DOI, and an evidence button", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  const header = page.locator(".platform-header");
+  await expect(header.locator('[data-field="year"]')).toHaveText("2024");
+  await expect(header.locator(".chip", { hasText: "Chemistry synthesis" })).toHaveAttribute("title", "chemistry_synthesis");
+  await expect(header.getByRole("link", { name: "Paper DOI" })).toHaveAttribute("href", "https://doi.org/10.1039/d4re00138a");
+  await expect(header.getByRole("button", { name: "Show platform evidence" })).toBeVisible();
+});
+
+test("UI AC-16: empty state, then selecting a node opens the sheet and Escape closes it", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  await expect(page.locator(".evidence-empty")).toHaveText(/Select a module or connection/);
+  await expect(sheet(page)).toHaveCount(0);
+
+  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/M4").emit("tap"));
+  await expect(sheet(page)).toBeVisible();
+  await expect(evidence(page, "kind")).toHaveText("Module");
+  await expect(evidence(page, "id")).toHaveText("Aand2024/P1/M4");
+  await expect(page.locator(".evidence-empty")).toBeHidden();
+  await expect(sheet(page).getByRole("button", { name: "Close evidence" })).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(sheet(page)).toHaveCount(0);
+  await expect(page.locator(".evidence-empty")).toBeVisible();
+});
+
+test("UI AC-16: the close button closes the sheet and returns focus to the step that opened it", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  const step = page.locator('.step[data-step-order="3"]');
+  await step.focus();
+  await page.keyboard.press("Enter");
+  const close = sheet(page).getByRole("button", { name: "Close evidence" });
+  await expect(close).toBeFocused();
+  await expect(evidence(page, "kind")).toHaveText("Step");
+  await close.click();
+  await expect(sheet(page)).toHaveCount(0);
+  await expect(step).toBeFocused();
+  await expect(step).toHaveAttribute("aria-pressed", "false");
+});
+
+test("UI AC-16: at 375 px the sheet sits at the bottom of the screen without sideways scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  await page.locator('.step[data-step-order="1"]').click();
+  await expect(sheet(page)).toBeVisible();
+  const box = (await sheet(page).boundingBox())!;
+  expect(Math.round(box.y + box.height)).toBeGreaterThanOrEqual(810);
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(375);
+  expect(box.height).toBeLessThan(812 * 0.7);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  await page.keyboard.press("Escape");
+  await expect(sheet(page)).toHaveCount(0);
+});
+
+test("UI AC-17: the legend toggle shows and hides the legend over the graph", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  const toggle = page.getByRole("button", { name: "Legend" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator(".legend")).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".legend")).toBeVisible();
+  await toggle.click();
+  await expect(page.locator(".legend")).toBeHidden();
+});
+
+/** Pairs of modules whose node-and-label boxes overlap. */
+const labelOverlaps = (page: Page) =>
+  page.evaluate(() => {
+    const cy = (window as Win).__cy!;
+    const boxes = cy.nodes(".module").map((n) => ({ id: n.id(), b: n.boundingBox({ includeLabels: true, includeOverlays: false }) }));
+    const out: string[] = [];
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const [a, c] = [boxes[i]!.b, boxes[j]!.b];
+        if (a.x1 < c.x2 && c.x1 < a.x2 && a.y1 < c.y2 && c.y1 < a.y2) out.push(`${boxes[i]!.id} / ${boxes[j]!.id}`);
+      }
+    }
+    return out;
+  });
+
+for (const ref of [REF, LARGE]) {
+  test(`UI AC-17: no two module labels overlap on ${ref}`, async ({ page }) => {
+    await page.goto(`/${ref}`);
+    await waitForGraph(page);
+    expect(await labelOverlaps(page)).toEqual([]);
+    expect(await page.evaluate(() => (window as Win).__cy!.nodes(".module").first().style("font-size"))).toBe("13px");
+  });
+}
+
+test("UI AC-18: the steps form a timeline with a performer icon each", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  const steps = page.locator(".steps .step");
+  await expect(steps).toHaveCount(6);
+  const titles = await page.locator(".steps .step-performer").evaluateAll((els) => els.map((e) => e.getAttribute("title")));
+  expect(titles).toHaveLength(6);
+  for (const t of titles) expect(t).toMatch(/^(robot|software|human|performer not stated)$/);
+  await expect(page.locator(".steps .step-performer svg")).toHaveCount(6);
+  await expect(steps.first().locator(".step-performer")).toHaveAttribute("title", "robot");
+  await expect(steps.nth(4).locator(".step-performer")).toHaveAttribute("title", "software");
+  await expect(steps.first().locator(".step-op")).toContainText("Dispense liquid");
 });

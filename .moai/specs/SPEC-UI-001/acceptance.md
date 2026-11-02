@@ -88,6 +88,22 @@ progress.md.
 - At 799 px the menu button shows and the tabs are hidden; at 800 and 1440 px the tabs show in one row (the tab list
   does not scroll, the bar is under 72 px high) and the menu button is hidden.
 
+### AC-15 to AC-18 Platform viewer (REQ-017 to REQ-020), `e2e/viewer.spec.ts` "UI AC-…"
+- AC-15: the header card shows the year chip "2024", the "Chemistry synthesis" chip with title `chemistry_synthesis`,
+  a "Paper DOI" link to the paper's DOI and the "Show platform evidence" button.
+- AC-16: on load the empty state shows and no sheet exists; tapping module M4 opens the "Evidence" sheet with kind
+  Module and id `Aand2024/P1/M4`, focus on "Close evidence"; Escape removes it and the empty state returns. Enter on
+  step 3 opens the sheet; the close button removes it and focus returns to step 3. At 375 px the sheet touches the
+  bottom of the screen, stays inside 375 px and under 70% of the height, with no sideways scroll.
+- AC-17: "Legend" toggles `aria-expanded` and the legend's visibility; on `Aand2024/P1` and on the largest graph,
+  `Kim2026/P1` (16 modules, 21 connections), no two module node-and-label boxes overlap and labels are 13 px; "Zoom
+  in" twice raises the zoom by more than 30%, "Zoom out" lowers it, and "Fit to view" returns to the readable fit.
+- AC-18: six steps, each with a performer icon whose title is robot, software, human or "performer not stated"; step 1
+  reads "Dispense liquid".
+- Changed existing tests: viewer AC-9, AC-10 and contribute AC-5 expected the platform's evidence while nothing was
+  selected; they now expect no sheet (and AC-9 opens it with "Show platform evidence"); viewer AC-13 opens the legend
+  before reading it; the fit test also zooms first.
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.
