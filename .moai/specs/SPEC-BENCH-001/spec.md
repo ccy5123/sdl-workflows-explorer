@@ -2,7 +2,7 @@
 id: SPEC-BENCH-001
 title: "Benchmark view: chrono2023 tasks, split, item counts and labels, reference results as published, how to run the evaluation, items by platform and an item explorer"
 version: "0.3.0"
-status: draft
+status: completed
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe

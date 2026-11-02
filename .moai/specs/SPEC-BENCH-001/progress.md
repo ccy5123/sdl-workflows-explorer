@@ -200,6 +200,28 @@ problems                                                   0
     375 = clientWidth; tables stack as labelled blocks.
   - After the fix: Vitest 445 passed, Playwright 62 passed (52 before this SPEC), typecheck exit 0.
 
+
+## §E.3 Run-phase Audit-Ready Signal
+
+- run_status: audit-ready
+- run_complete_at: 2026-11-02
+- AC-1 to AC-16: PASS (unit tests in `tests/{derive,benchmark-derive,benchmark,route,libBoundary,release}.test.ts`,
+  Playwright in `e2e/benchmark.spec.ts`; the nav-link lists of `e2e/{taxonomy,trends}.spec.ts`).
+- Run commits: d4937a3, fde1c7f, cbebd15 (implementation), 5c9573c (screen-check fix).
+
+## §E.4 Sync-phase Audit-Ready Signal
+
+- sync_at: 2026-11-02
+- sync_commit_sha: pending-backfill
+- Orchestrator verification at sync (HEAD 5c9573c): `npm run typecheck` exit 0; `npx vitest run` 27 files / 445 tests
+  passed (389 before this SPEC); `npm run e2e` 62 passed (52 before); `npm run build-data` exit 0, release count check
+  passing; `expected-counts.mjs` exit 0; `public/data/benchmark.json` 22,561 bytes, `benchmark-items.json` 418,205
+  bytes; `index.json`, `taxonomy.json` and the platform files equal to the §E.1 baseline hashes.
+- Browser check at 1280 px and 375 px: see §E.2 (no horizontal scroll, no console error; the mid-word wrap finding was
+  fixed in 5c9573c).
+- Project docs (`.moai/project/`, `docs/plan.md`) unchanged; step 7 (home/about, accessibility pass, deployment) not
+  started. The GitHub repository stays private.
+
 ## §F Phase 4 Mode Selection
 
 - Inputs: Tier M; about 12 to 15 files (scripts, src, tests, e2e, fixture); domains: data pipeline, routing, view,
