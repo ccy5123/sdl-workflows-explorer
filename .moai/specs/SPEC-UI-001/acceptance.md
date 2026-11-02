@@ -119,6 +119,13 @@ progress.md.
 - Changed existing tests: `tests/graphElements.test.ts` expected the codes as node and edge labels; `tests/evidence.test.ts`
   views gain the `type` field.
 
+### AC-24 Refit (REQ-024), `e2e/viewer.spec.ts` "UI AC-24"
+- At 1440 × 900 on `Aand2024/P1`, every module node's rendered box (labels included) lies inside the graph's box, and
+  Cytoscape's size equals the box, before the sheet opens, while it is open and after Escape closes it.
+- After "Zoom in", opening the sheet keeps the reader's zoom. On `Kim2026/P1` the zoom stays 1 with the sheet open.
+- Test change: graph elements are now selected by a real mouse click where they are drawn (`tapElement`) instead of
+  a scripted `emit("tap")`, which crashed renderers when several tests ran at once (viewer UI AC-16, AC-19, AC-20).
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

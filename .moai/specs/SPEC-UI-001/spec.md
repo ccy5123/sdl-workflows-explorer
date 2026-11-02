@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.4.0"
+version: "0.4.1"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -31,6 +31,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   and the legend use readable names (the phase-3 result still printed codes there); the evidence sheet docks beside
   the content from 1024 px instead of floating over the header buttons; the selection resets on entering a platform
   route. REQ-019's bottom sheet now applies below 1024 px instead of 800 px.
+- 2026-11-03 0.4.1 REQ-024: with the sheet docked, the rightmost module of `Aand2024/P1` was cut off at 1440 px until
+  "Fit to view" was pressed; the researcher approved the refit fix.
 
 ## 1. Why
 
@@ -150,3 +152,8 @@ taken from the built release data.
   header or graph controls; the graph follows its narrower box and keeps its centre.
 - **REQ-023** (event-driven) When a platform route is entered, from another route or another platform, nothing shall
   be selected and the sheet shall be closed.
+- **REQ-024** (event-driven) When the graph's box changes size (the sheet opens or closes, the window resizes), the
+  graph shall resize and, unless the reader has zoomed or panned since the last fit, fit again by the readable rule
+  of REQ-018 (a graph too long for zoom 1, such as `Kim2026/P1`, keeps zoom 1 and is panned), without animation. The
+  open sheet shall take the page's side margin first (the page widens by the sheet's 320 px column, up to the
+  window), so at 1440 px the whole graph of `Aand2024/P1` stays in view with the sheet open and after it closes.

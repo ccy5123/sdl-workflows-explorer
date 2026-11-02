@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import type { Core } from "cytoscape";
+import type { Core, EdgeSingular, NodeSingular } from "cytoscape";
 import type { PlatformFile, PlatformGraph } from "../src/data/types";
 
 type Win = Window & { __cy?: Core };
@@ -14,6 +14,25 @@ async function waitForGraph(page: Page) {
     const cy = (window as Win).__cy;
     return !!cy && cy.nodes(".module").length > 0;
   });
+}
+
+/**
+ * Clicks a graph node or edge with the mouse where it is drawn. A scripted `emit("tap")` crashed renderers when
+ * several tests ran at once; a real click does not, and is what a reader does. The graph is first scrolled into view
+ * and left to settle after a resize (the view refits after a short debounce).
+ */
+async function tapElement(page: Page, id: string) {
+  await page.locator(".graph").scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => (window as Win).__cy!.width() === document.querySelector(".graph")!.clientWidth);
+  await page.waitForTimeout(200);
+  const point = await page.evaluate((elementId) => {
+    const cy = (window as Win).__cy!;
+    const el = cy.getElementById(elementId);
+    const box = document.querySelector(".graph")!.getBoundingClientRect();
+    const at = el.isEdge() ? (el as EdgeSingular).renderedMidpoint() : (el as NodeSingular).renderedPosition();
+    return { x: box.x + at.x, y: box.y + at.y };
+  }, id);
+  await page.mouse.click(point.x, point.y);
 }
 
 const evidence = (page: Page, field: string) => page.locator(`.evidence [data-field="${field}"]`);
@@ -268,7 +287,7 @@ test("UI AC-16: empty state, then selecting a node opens the sheet and Escape cl
   await expect(page.locator(".evidence-empty")).toHaveText(/Select a module or connection/);
   await expect(sheet(page)).toHaveCount(0);
 
-  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/M4").emit("tap"));
+  await tapElement(page, "Aand2024/P1/M4");
   await expect(sheet(page)).toBeVisible();
   await expect(evidence(page, "kind")).toHaveText("Module");
   await expect(evidence(page, "id")).toHaveText("Aand2024/P1/M4");
@@ -372,10 +391,10 @@ test("UI AC-19: graph labels are readable names; the codes stay in the legend an
   expect(await nodeLabel(page, "Aand2024/P1/E1")).toBe("Fixed tubing");
   expect(await nodeLabel(page, "Aand2024/P1/E3")).toBe("Data transfer");
 
-  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/M2").emit("tap"));
+  await tapElement(page, "Aand2024/P1/M2");
   await expect(evidence(page, "type")).toContainText("Flow reactor");
   await expect(evidence(page, "type").locator("code")).toHaveText("flow_reactor");
-  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/E1").emit("tap"));
+  await tapElement(page, "Aand2024/P1/E1");
   await expect(evidence(page, "type")).toContainText("Fixed tubing");
   await expect(evidence(page, "type").locator("code")).toHaveText("fixed_tubing");
   await page.keyboard.press("Escape");
@@ -401,7 +420,7 @@ test("UI AC-20: at 1440 px the open sheet covers no header or graph control", as
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/${REF}`);
   await waitForGraph(page);
-  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/M4").emit("tap"));
+  await tapElement(page, "Aand2024/P1/M4");
   await expect(sheet(page)).toBeVisible();
   const header = page.locator(".platform-header");
   const controls = [
@@ -474,4 +493,57 @@ test("UI AC-21: the selection resets when the platform route is entered again", 
   await expect(page.locator(".platform-id")).toContainText("Kim2026/P1");
   await expect(sheet(page)).toHaveCount(0);
   await expect(page.locator('.step[aria-pressed="true"]')).toHaveCount(0);
+});
+
+/** Module nodes (with labels) whose rendered box leaves the graph's box; also whether Cytoscape matches the box. */
+const outsideNodes = (page: Page) =>
+  page.evaluate(() => {
+    const cy = (window as Win).__cy!;
+    const box = document.querySelector(".graph")!;
+    const out = cy
+      .nodes(".module")
+      .filter((n) => {
+        const b = n.renderedBoundingBox({ includeLabels: true });
+        return b.x1 < 0 || b.y1 < 0 || b.x2 > cy.width() || b.y2 > cy.height();
+      })
+      .map((n) => n.id());
+    return { out, sized: cy.width() === box.clientWidth && cy.height() === box.clientHeight };
+  });
+
+test("UI AC-24: at 1440 px the whole graph stays in view as the sheet opens and closes", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  expect(await outsideNodes(page)).toEqual({ out: [], sized: true });
+
+  await tapElement(page, "Aand2024/P1/M4");
+  await expect(sheet(page)).toBeVisible();
+  await expect.poll(() => outsideNodes(page)).toEqual({ out: [], sized: true });
+
+  await page.keyboard.press("Escape");
+  await expect(sheet(page)).toHaveCount(0);
+  await expect.poll(() => outsideNodes(page)).toEqual({ out: [], sized: true });
+});
+
+test("UI AC-24: a zoom the reader set is kept when the sheet opens", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  const zoom = await page.evaluate(() => (window as Win).__cy!.zoom());
+  await page.locator('.step[data-step-order="3"]').click();
+  await expect(sheet(page)).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as Win).__cy!.width() === document.querySelector(".graph")!.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBeCloseTo(zoom, 6);
+});
+
+test("UI AC-24: the largest graph keeps the readable zoom of 1 when the sheet opens", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/${LARGE}`);
+  await waitForGraph(page);
+  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBe(1);
+  await page.locator('.step[data-step-order="1"]').click();
+  await expect(sheet(page)).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as Win).__cy!.width() === document.querySelector(".graph")!.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBe(1);
 });

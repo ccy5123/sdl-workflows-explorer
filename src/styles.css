@@ -1907,9 +1907,15 @@ button {
 }
 
 @media (min-width: 1024px) {
+  /* The open sheet takes the side margin first: the page widens by the sheet's column, up to the window, so the
+     graph keeps as much width as it had (REQ-024). */
+  .page-main:has(.platform > .evidence-sheet) {
+    max-width: calc(var(--content-width) + 336px);
+  }
+
   .platform:has(> .evidence-sheet) {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     gap: 16px;
   }
 

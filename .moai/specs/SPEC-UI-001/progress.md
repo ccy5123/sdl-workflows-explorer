@@ -76,6 +76,18 @@
   `Aand2024/P1` 375 px dark (bottom sheet), `Kim2026/P1` 375 px light (legend), 1024 px light; no sideways scroll.
   Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 221 passed (2.5 min).
 
+- Refit fix (REQ-024). Measured on the e2e build at 1440 px: the graph of `Aand2024/P1` is 988 layout px wide, so it
+  needs a 1036 px box at zoom 1; with the sheet docked the box was 774 px, so the readable rule could not fit it.
+  RED: `npx playwright test e2e/viewer.spec.ts -g "UI AC-24"` — the in-view test failed (modules outside the box).
+  GREEN after the page widens into its side margin while the sheet is open (sheet column 320 px; graph box 1039 px at
+  1440 px with a scrollbar) and `Graph.tsx` refits after a 60 ms debounced resize unless the reader zoomed or panned
+  (Cytoscape's `dragpan`, `scrollzoom`, `pinchzoom` events and the toolbar zoom buttons; "Fit to view" clears it).
+  The intermittent e2e timeouts of the follow-up were traced: ten pages at once crash when a node is selected by a
+  scripted `emit("tap")`, and do not when the same module is selected by its table row or by a real mouse click, so
+  the tests now click (`tapElement`); viewer and contribute specs 27 passed in 9 s (41 s with failures before).
+  Browser check: `Aand2024/P1` 1440 px light with the sheet open (whole chain in view), dark after closing (refit).
+  Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 224 passed (2.3 min).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

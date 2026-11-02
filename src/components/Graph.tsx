@@ -30,20 +30,12 @@ const LAYOUT = {
   nodeDimensionsIncludeLabels: true,
 } as cytoscape.LayoutOptions;
 
-function fitFor(cy: Core, width: number) {
-  const bb = cy.elements().boundingBox();
-  return readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, width, cy.height(), PADDING);
-}
+/** Delay before a container resize is acted on, so a run of resize notifications refits once. */
+const RESIZE_DEBOUNCE_MS = 60;
 
 function readableFit(cy: Core) {
-  cy.viewport(fitFor(cy, cy.width()));
-}
-
-/** Whether the view is the readable fit of a box `width` pixels wide, i.e. the reader has not zoomed or panned. */
-function atReadableFit(cy: Core, width: number) {
-  const v = fitFor(cy, width);
-  const pan = cy.pan();
-  return Math.abs(v.zoom - cy.zoom()) < 1e-6 && Math.abs(v.pan.x - pan.x) < 0.5 && Math.abs(v.pan.y - pan.y) < 0.5;
+  const bb = cy.elements().boundingBox();
+  cy.viewport(readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, cy.width(), cy.height(), PADDING));
 }
 
 /** Graph elements of the selection: the module or connection, or the modules of a step. */
@@ -82,6 +74,8 @@ export function Graph({ platform, selection, onSelect }: Props) {
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const [legendOpen, setLegendOpen] = useState(false);
+  // True once the reader zooms or pans; a fit (on load or from "Fit to view") clears it (SPEC-UI-001 REQ-024).
+  const movedRef = useRef(false);
 
   useEffect(() => {
     if (!container.current) return;
@@ -98,7 +92,12 @@ export function Graph({ platform, selection, onSelect }: Props) {
     cy.on("tap", "node.module", (e) => onSelectRef.current({ kind: "module", id: e.target.id() }));
     cy.on("tap", "node.boundary", () => onSelectRef.current({ kind: "platform", id: platform.platform_id }));
     cy.on("tap", "edge", (e) => onSelectRef.current({ kind: "connection", id: e.target.id() }));
+    // Cytoscape's own gesture events; programmatic fits and pans do not emit them.
+    cy.on("dragpan scrollzoom pinchzoom", () => {
+      movedRef.current = true;
+    });
     readableFit(cy);
+    movedRef.current = false;
     cyRef.current = cy;
     // Test hook: only the `vite build --mode e2e` bundle exposes the instance (AC-14 checks dist/ has none).
     if (import.meta.env.MODE === "e2e") window.__cy = cy;
@@ -114,10 +113,11 @@ export function Graph({ platform, selection, onSelect }: Props) {
     cyRef.current?.style(buildStylesheet(theme));
   }, [theme]);
 
-  // The box narrows when the evidence sheet docks beside the content (SPEC-UI-001 REQ-022) and widens when it
-  // closes. Cytoscape resizes itself after a 100 ms debounce and keeps the top-left corner; here it resizes at once.
-  // A view still at its readable fit is fitted again; one the reader moved keeps its centre. Either way the selected
-  // item is brought into view if the narrower box cut it off.
+  // The box changes width when the evidence sheet docks beside the content or closes (SPEC-UI-001 REQ-022, REQ-024),
+  // and with the window. Cytoscape resizes itself after its own debounce but keeps the old viewport; here, after a
+  // short debounce, it resizes and, unless the reader has zoomed or panned since the last fit, fits again by the
+  // readable rule (a graph too long for zoom 1 shows its left end and is panned). A reader's view keeps its centre.
+  // Then a selected item cut off by the box is panned into view. Nothing is animated, so reduced motion is respected.
   const platformRef = useRef(platform);
   platformRef.current = platform;
   const selectionRef = useRef(selection);
@@ -126,23 +126,30 @@ export function Graph({ platform, selection, onSelect }: Props) {
     const el = container.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     let width = el.clientWidth;
-    const observer = new ResizeObserver(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const settle = () => {
       const cy = cyRef.current;
       const next = el.clientWidth;
       if (!cy || next === width) return;
-      const fitted = atReadableFit(cy, width);
       cy.resize();
-      if (fitted) readableFit(cy);
-      else cy.panBy({ x: (next - width) / 2, y: 0 });
+      if (movedRef.current) cy.panBy({ x: (next - width) / 2, y: 0 });
+      else readableFit(cy);
       width = next;
       const picked = selectedElements(cy, platformRef.current, selectionRef.current);
       if (picked.nonempty()) {
         const bb = picked.renderedBoundingBox();
         if (bb.x1 < PADDING || bb.x2 > next - PADDING) cy.panBy({ x: next / 2 - (bb.x1 + bb.x2) / 2, y: 0 });
       }
+    };
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(settle, RESIZE_DEBOUNCE_MS);
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -166,7 +173,12 @@ export function Graph({ platform, selection, onSelect }: Props) {
     });
   }, [platform, selection]);
 
-  const withCy = (action: (cy: Core) => void) => () => cyRef.current && action(cyRef.current);
+  // `moved` records whether the toolbar action leaves a view the reader chose (zoom) or the fit.
+  const withCy = (action: (cy: Core) => void, moved: boolean) => () => {
+    if (!cyRef.current) return;
+    action(cyRef.current);
+    movedRef.current = moved;
+  };
 
   return (
     <div className="card graph-wrap">
@@ -177,13 +189,13 @@ export function Graph({ platform, selection, onSelect }: Props) {
         aria-label={`Module graph of ${platform.platform_id}: ${platform.modules.length} modules, ${platform.connections.length} connections. The tables below give the same information as text.`}
       />
       <div className="graph-toolbar" role="toolbar" aria-label="Graph">
-        <button type="button" className="btn btn-icon graph-fit" aria-label="Fit to view" title="Fit to view" onClick={withCy(readableFit)}>
+        <button type="button" className="btn btn-icon graph-fit" aria-label="Fit to view" title="Fit to view" onClick={withCy(readableFit, false)}>
           <Maximize size={16} aria-hidden="true" />
         </button>
-        <button type="button" className="btn btn-icon" aria-label="Zoom in" title="Zoom in" onClick={withCy((cy) => zoomBy(cy, ZOOM_STEP))}>
+        <button type="button" className="btn btn-icon" aria-label="Zoom in" title="Zoom in" onClick={withCy((cy) => zoomBy(cy, ZOOM_STEP), true)}>
           <ZoomIn size={16} aria-hidden="true" />
         </button>
-        <button type="button" className="btn btn-icon" aria-label="Zoom out" title="Zoom out" onClick={withCy((cy) => zoomBy(cy, 1 / ZOOM_STEP))}>
+        <button type="button" className="btn btn-icon" aria-label="Zoom out" title="Zoom out" onClick={withCy((cy) => zoomBy(cy, 1 / ZOOM_STEP), true)}>
           <ZoomOut size={16} aria-hidden="true" />
         </button>
         <button
