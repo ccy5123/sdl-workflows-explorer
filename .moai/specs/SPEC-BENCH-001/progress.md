@@ -212,7 +212,7 @@ problems                                                   0
 ## §E.4 Sync-phase Audit-Ready Signal
 
 - sync_at: 2026-11-02
-- sync_commit_sha: pending-backfill
+- sync_commit_sha: 7a61e4a
 - Orchestrator verification at sync (HEAD 5c9573c): `npm run typecheck` exit 0; `npx vitest run` 27 files / 445 tests
   passed (389 before this SPEC); `npm run e2e` 62 passed (52 before); `npm run build-data` exit 0, release count check
   passing; `expected-counts.mjs` exit 0; `public/data/benchmark.json` 22,561 bytes, `benchmark-items.json` 418,205
