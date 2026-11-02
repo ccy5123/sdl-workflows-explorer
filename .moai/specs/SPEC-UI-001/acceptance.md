@@ -1,0 +1,77 @@
+# Acceptance: SPEC-UI-001
+
+AC-1 to AC-5 are Vitest tests (real-data cases read `public/data/` after `npm run build-data` and skip with a message
+when it is absent). AC-6 to AC-11 are Playwright tests against `dist-e2e/`. AC-13 is a browser check recorded in
+progress.md.
+
+### AC-1 Tokens and contrast (REQ-001, REQ-002)
+- `SITE_TOKENS.light` and `.dark` equal the variant-B values listed in design.md §1, have the same keys, and equal the
+  hex declarations of `:root` and `:root[data-theme="dark"]` in `styles.css`; dark `--unmapped` equals dark `--text`.
+- Every pair of REQ-002 reaches its minimum in both sets. No hex colour outside the two token blocks.
+
+### AC-2 Fonts (REQ-003)
+- `public/fonts/` holds `lmroman10-regular.woff2`, `lmroman10-italic.woff2`, `GUST-FONT-LICENSE.txt`,
+  `jetbrains-mono-latin-400.woff2`, `jetbrains-mono-latin-500.woff2` and `OFL.txt`; each woff2 starts with the
+  `wOF2` signature; every `@font-face` in `styles.css` names one of them.
+- `.math` sets the Latin Modern family and `font-size: 1.1em`.
+
+### AC-3 Labels (REQ-007, REQ-009)
+- `displayLabel("field_tag", "chemistry_synthesis")` = "Chemistry synthesis";
+  `displayLabel("module_type", "instrument_separation_ms")` = "Separation / MS instrument";
+  `displayLabel("field_tag", "biology_biochem")` = "Biology and biochemistry"; an unknown code `foo_bar_baz` gives
+  "Foo bar baz".
+- With built data: every class of `taxonomy.json` has a non-empty label different from its code, and the labels of
+  all classes are distinct. `labels.ts` passes the UI-free module check of `tests/libBoundary.test.ts`.
+
+### AC-4 Home text is sourced (REQ-011)
+- Every number in the fixed Home text of `src/lib/siteText.ts` (hero, view descriptions, stat notes, captions, sample
+  card), with placeholders filled from the built data, is a filled value or a whole number of `DATA_CARD.md`.
+- The example search queries each match at least one platform of `index.json`.
+
+### AC-5 Home derivations (REQ-010, REQ-011)
+- `src/lib/home.ts` pure functions, on the built data: stat values equal `index.counts`; "first public in <latest
+  year>" counts platforms of the latest year; field-tag top 5 counts papers per tag; papers per year group years
+  before 2015; taxonomy counts per kind equal the class counts of `taxonomy.json`; the featured layout of
+  `Aand2024/P1` has the software module in the control row and the material chain fluidics → flow reactor → optical
+  instrument → sample handling station with the last link inferred; the platform list sorts newest first.
+
+### AC-6 Shell (REQ-004)
+- On every route of `e2e/routes.ts`: the top bar stays at the top of the viewport after scrolling; the nav holds the
+  site-name link and the seven view links; the current link has `aria-current="page"` (existing AC-9 test); the version
+  chip links to `https://doi.org/<release DOI>`.
+- At 375 px the tabs sit below the site name and the page does not scroll sideways (existing AC-12 test).
+
+### AC-7 Theme toggle (REQ-005)
+- With a light system scheme, pressing the toggle sets `data-theme="dark"` and the dark body colours; after a reload the
+  dark theme stays; pressing again returns to light. Without a stored choice, the existing system-scheme tests pass.
+
+### AC-8 Home structure (REQ-010)
+- Home shows, in document order: hero heading, search, the two buttons, the featured card, the stat tiles, the six view
+  cards, the platform list, the citation card, the sample card. "Download data" links to the release DOI; the
+  citation equals `formatCitation`; `CITATION.cff` sits in a closed `details`; the licence chip reads "CC BY 4.0".
+- The featured card names `Aand2024/P1`, lists its 6 steps in order with readable labels, and links to
+  `#/platform/Aand2024/P1`. The six view cards link to their routes. No link points into `data/`.
+
+### AC-9 Search and list (REQ-012)
+- Typing "Aand2024" in the hero search lists one suggestion linking to the platform; Enter opens it. "Show all
+  matches" fills the list filter and focuses it. "/" focuses the hero search.
+- The list shows 20 rows, then all `index.counts.platforms` after "Show all"; filtering "Aand2024" leaves one row
+  whose link opens the platform viewer, and Back returns to Home.
+
+### AC-10 Copy (REQ-006, REQ-010)
+- The citation copy button writes the citation text to the clipboard and announces "Copied".
+
+### AC-11 Typefaces in the browser (REQ-003)
+- The benchmark preview's statistics render with the Latin Modern font face loaded (`document.fonts.check`), and ids
+  render in JetBrains Mono.
+
+### AC-12 No regression (REQ-013, REQ-014)
+- `npm test`, `npm run typecheck`, `npm run e2e` exit 0. Changed existing tests, each replaced by AC-8/AC-9 checks:
+  `e2e/site.spec.ts` AC-6 (home order and links), its platform-viewer-button focus test and the 375 px views-table
+  check; the home-list part of `e2e/viewer.spec.ts` AC-12; `"#/"` leaves the table routes of `e2e/a11y.spec.ts` AC-13
+  (Home has no table); `tests/siteTokens.test.ts` expected values; `tests/siteText.test.ts` (`homeIntro` replaced by
+  the Home text, VIEWS gains the workflow builder).
+
+### AC-13 Browser check (REQ-010)
+- Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
+  findings and fixes recorded in progress.md.
