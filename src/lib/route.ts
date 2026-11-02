@@ -1,5 +1,5 @@
 // Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001; SPEC-TAXO-001
-// REQ-009). Pure: never throws.
+// REQ-009; SPEC-BENCH-001 REQ-005). Pure: never throws.
 
 export type Route =
   | { kind: "home" }
@@ -9,6 +9,8 @@ export type Route =
   | { kind: "compare"; ids: string[] }
   | { kind: "taxonomy"; source?: string }
   | { kind: "taxonomyClass"; classKind: string; cls: string }
+  | { kind: "benchmark" }
+  | { kind: "benchmarkItems"; query: string }
   | { kind: "notFound"; hash: string };
 
 function decode(segment: string): string | null {
@@ -31,7 +33,8 @@ function compareId(item: string): string {
 /**
  * `#/platform/<paper_id>/<platform_suffix>` → platform; `#/browse[?<query>]` → browse; `#/compare/<id>,<id>…` →
  * compare; `#/taxonomy` → taxonomy; `#/taxonomy?source=<key>` → taxonomy with a target source;
- * `#/taxonomy/<kind>/<class>` → taxonomy class; empty, `#` or `#/` → home; anything else → not found.
+ * `#/taxonomy/<kind>/<class>` → taxonomy class; `#/benchmark` → benchmark; `#/benchmark/items[?<query>]` → benchmark
+ * items; empty, `#` or `#/` → home; anything else → not found.
  */
 export function parseRoute(hash: string): Route {
   if (hash === "" || hash === "#" || hash === "#/") return { kind: "home" };
@@ -60,6 +63,9 @@ export function parseRoute(hash: string): Route {
     const cls = decode(segments[1]!);
     return classKind && cls ? { kind: "taxonomyClass", classKind, cls } : notFound;
   }
+  if (rest === "benchmark") return { kind: "benchmark" };
+  if (rest === "benchmark/items") return { kind: "benchmarkItems", query: "" };
+  if (rest.startsWith("benchmark/items?")) return { kind: "benchmarkItems", query: rest.slice("benchmark/items?".length) };
   const parts = rest.split("/");
   if (parts.length !== 3 || parts[0] !== "platform") return notFound;
   const paperId = decode(parts[1]!);

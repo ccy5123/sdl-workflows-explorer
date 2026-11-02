@@ -151,3 +151,21 @@ describe("parseRoute: taxonomy source target (SPEC-TAXO-001 0.4.0 AC-9)", () => 
     expect(parseRoute(taxonomySourceHash("a b&c"))).toEqual({ kind: "taxonomy", source: "a b&c" });
   });
 });
+
+// SPEC-BENCH-001 AC-5: the benchmark page and the item explorer (REQ-005).
+describe("parseRoute: benchmark (SPEC-BENCH-001 AC-5)", () => {
+  it("parses the benchmark page and the explorer with its query text", () => {
+    expect(parseRoute("#/benchmark")).toEqual({ kind: "benchmark" });
+    expect(parseRoute("#/benchmark/items")).toEqual({ kind: "benchmarkItems", query: "" });
+    expect(parseRoute("#/benchmark/items?task=x")).toEqual({ kind: "benchmarkItems", query: "task=x" });
+    expect(parseRoute("#/benchmark/items?")).toEqual({ kind: "benchmarkItems", query: "" });
+    expect(parseRoute("#/benchmark/items?task=a%2Fb&split=test")).toEqual({ kind: "benchmarkItems", query: "task=a%2Fb&split=test" });
+  });
+
+  it.each(["#/benchmark/x", "#/benchmark?x", "#/benchmarks", "#/benchmark/items/x", "#/benchmark/", "#/benchmarkitems"])(
+    "treats %j as not found, carrying the hash",
+    (hash) => {
+      expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+    },
+  );
+});
