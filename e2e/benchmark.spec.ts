@@ -86,7 +86,7 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
   }
 
   const reference = region(page, "Reference results");
-  expect(await cellTexts(page, 'section[aria-labelledby="bench-reference-results"] table tbody tr')).toEqual([
+  expect(await cellTexts(page, 'section[aria-labelledby="bench-reference-results"] table:first-of-type tbody tr')).toEqual([
     [MT, "1199 (99)", "0.6681", "0.6881", "+0.0200", "[-0.0097, +0.0529]", "2000"],
     [TM, "426 (93)", "0.4413", "0.5117", "+0.0704", "[+0.0172, +0.1255]", "2000"],
   ]);
@@ -368,4 +368,28 @@ test("table words wrap only at spaces, hyphens, _ or / at 1280 px", async ({ pag
   await page.goto(`/#/benchmark/items?task=${TM}`);
   await expect(countLine(page)).toHaveText("983 of 983 items");
   expect(await brokenWords()).toEqual([]);
+});
+
+// Amendment 0.4.0 (AC-10): one metric line, the models grouped by task in one table, no working label on the page.
+test("AC-10 (0.4.0): reference results show one metric line and a Task | Baseline | Reference model table", async ({ page }) => {
+  const errors = trackErrors(page);
+  const task = (id: string) =>
+    JSON.parse(
+      readFileSync(join(import.meta.dirname, "..", ".cache", "release", "extract", "sdl-workflows-1.0.0", "modes", "benchmark", "tasks", `${id}.json`), "utf8"),
+    ) as { metric: string; baseline_rule: string; reference_model: string };
+  const [mt, tm] = [task(MT), task(TM)];
+  await page.goto("/#/benchmark");
+  const section = page.locator("section", { has: page.getByRole("heading", { level: 2, name: "Reference results" }) });
+  await expect(section).toBeVisible();
+  const paragraphs = await section.locator("p").allTextContents();
+  expect(paragraphs.filter((p) => p.startsWith("Metric as recorded"))).toEqual([`Metric as recorded (both tasks): ${mt.metric}`]);
+  expect(paragraphs.filter((p) => p.startsWith("Baseline:") || p.startsWith("Reference model:"))).toEqual([]);
+  const models = section.locator("table", { has: page.getByRole("columnheader", { name: "Reference model", exact: true }) });
+  await expect(models.locator("thead th")).toHaveText(["Task", "Baseline", "Reference model"]);
+  await expect(models.locator("tbody tr")).toHaveCount(2);
+  const cells = async (i: number) => models.locator("tbody tr").nth(i).locator("td").allTextContents();
+  expect(await cells(0)).toEqual([MT, mt.baseline_rule, mt.reference_model.replace(" (sdl-db-02 H1)", "")]);
+  expect(await cells(1)).toEqual([TM, tm.baseline_rule, tm.reference_model.replace(" (sdl-db-02 H1)", "")]);
+  expect(await page.locator("main").textContent()).not.toContain("sdl-db-");
+  expect(errors).toEqual([]);
 });

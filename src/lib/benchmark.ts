@@ -273,9 +273,25 @@ export const METRIC_DEFINITION =
   "paired cluster bootstrap over the test papers; Replicates is the number of bootstrap replicates used (replicates " +
   "with no test item are dropped).";
 
-export const metricLine = (t: BenchmarkTask): string => `Metric as recorded for ${t.task_id}: ${t.metric}`;
-export const baselineLine = (t: BenchmarkTask): string => `Baseline: ${t.baseline_rule}`;
-export const referenceModelLine = (t: BenchmarkTask): string => `Reference model: ${t.reference_model}`;
+/** One line for a metric every task records alike (two or more tasks), else one line per task (amendment 0.4.0). */
+export function metricLines(tasks: readonly BenchmarkTask[]): string[] {
+  const shared = tasks.length >= 2 && tasks.every((t) => t.metric === tasks[0]!.metric);
+  if (!shared) return tasks.map((t) => `Metric as recorded for ${t.task_id}: ${t.metric}`);
+  const which = tasks.length === 2 ? "both tasks" : `all ${tasks.length} tasks`;
+  return [`Metric as recorded (${which}): ${tasks[0]!.metric}`];
+}
+
+/**
+ * The recorded reference-model text without parentheticals such as " (sdl-db-02 H1)": they name the authors' research
+ * record, which a visitor cannot open. benchmark.json keeps the text as recorded; only the displayed text drops them.
+ */
+export const displayReferenceModel = (text: string): string => text.replace(/ \(sdl-db-[^)]*\)/g, "");
+
+export const MODEL_HEADS = ["Task", "Baseline", "Reference model"] as const;
+
+/** Rows of the Task | Baseline | Reference model table, in task order. */
+export const modelRows = (tasks: readonly BenchmarkTask[]) =>
+  tasks.map((t) => ({ task: t.task_id, baseline: t.baseline_rule, referenceModel: displayReferenceModel(t.reference_model) }));
 
 export const REFERENCE_HEADS = [
   "Task",

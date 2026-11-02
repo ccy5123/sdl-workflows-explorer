@@ -10,6 +10,7 @@ import {
   DIFFERENCE_NOTE,
   EXPLORER_HEADING,
   METRIC_DEFINITION,
+  MODEL_HEADS,
   NO_ITEMS_TEXT,
   PUBLISHED_JSON_SUMMARY,
   REFERENCE_HEADS,
@@ -17,11 +18,11 @@ import {
   SHOW_MORE_TEXT,
   SPLIT_LABELS,
   TEST_PAPERS_NOTE,
-  baselineLine,
   benchmarkItemsHash,
   benchmarkCaption,
   countLine,
   decodeExplorerQuery,
+  displayReferenceModel,
   encodeExplorerQuery,
   evaluationNote,
   exclusionLine,
@@ -32,10 +33,10 @@ import {
   labelRows,
   linkedCells,
   loadErrorText,
-  metricLine,
+  metricLines,
+  modelRows,
   platformRows,
   platformsCountLine,
-  referenceModelLine,
   referenceRow,
   splitTable,
   taskTitle,
@@ -342,11 +343,34 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
         "chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.” " +
         "The labels are the release's model codings, so top-1 accuracy measures agreement with those codings.",
     );
-    for (const t of b.tasks) {
-      expect(metricLine(t)).toBe(`Metric as recorded for ${t.task_id}: ${t.metric}`);
-      expect(baselineLine(t)).toBe(`Baseline: ${t.baseline_rule}`);
-      expect(referenceModelLine(t)).toBe(`Reference model: ${t.reference_model}`);
-    }
+    // Amendment 0.4.0: one metric line for the shared metric; models grouped by task with the working label removed.
+    expect(metricLines(b.tasks)).toEqual([
+      "Metric as recorded (both tasks): top-1 accuracy over the test items; 95% interval of a difference by " +
+        "paper-level paired cluster bootstrap over the test papers (B = 2000, seed 1)",
+    ]);
+    expect(MODEL_HEADS).toEqual(["Task", "Baseline", "Reference model"]);
+    const models = modelRows(b.tasks);
+    expect(models.map((m) => m.task)).toEqual([MT, TM]);
+    expect(models.map((m) => m.baseline)).toEqual(b.tasks.map((t) => t.baseline_rule));
+    expect(models[0]!.referenceModel).toBe(
+      "back-off conditional-frequency model: the finest context seen in training among (unit operation, previous, " +
+        "next, field tag), (unit operation, previous, next), (unit operation, field tag), (unit operation), all items; " +
+        "its most frequent label, ties by the next coarser context, then alphabetical",
+    );
+    expect(models[1]!.referenceModel).toBe(b.tasks[1]!.reference_model.replace(" (sdl-db-02 H1)", ""));
+    expect(models.map((m) => m.referenceModel).join(" ")).not.toContain("sdl-db-");
+  });
+
+  it("AC-8: metric lines and the displayed reference model on synthetic tasks", () => {
+    const task = (id: string, metric: string) => ({ task_id: id, metric }) as BenchmarkTask;
+    expect(metricLines([task("a", "m1"), task("b", "m2")])).toEqual([
+      "Metric as recorded for a: m1",
+      "Metric as recorded for b: m2",
+    ]);
+    expect(metricLines([task("a", "m"), task("b", "m"), task("c", "m")])).toEqual(["Metric as recorded (all 3 tasks): m"]);
+    expect(metricLines([task("a", "m")])).toEqual(["Metric as recorded for a: m"]);
+    expect(displayReferenceModel("model A (sdl-db-07 H3) and model B (sdl-db-11)")).toBe("model A and model B");
+    expect(displayReferenceModel("model (H1) (db-02)")).toBe("model (H1) (db-02)");
   });
 
   it("AC-8: the evaluation note gives the commands, the input format and no script text", () => {
@@ -381,6 +405,8 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
       ...b.summaries.map(uncertainSentence),
       ...b.tasks.flatMap((t) => [taskTitle(t.target), itemUnit(t.target)]),
       METRIC_DEFINITION,
+      ...metricLines(b.tasks).map((l) => l.slice(0, l.indexOf(":"))),
+      ...MODEL_HEADS,
       DIFFERENCE_NOTE,
       TEST_PAPERS_NOTE,
       ...REFERENCE_HEADS,

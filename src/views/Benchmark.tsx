@@ -9,6 +9,7 @@ import {
   DIFFERENCE_NOTE,
   EXPLORER_HEADING,
   METRIC_DEFINITION,
+  MODEL_HEADS,
   NO_ITEMS_TEXT,
   PAGE_SIZE,
   PUBLISHED_JSON_SUMMARY,
@@ -17,7 +18,6 @@ import {
   SHOW_MORE_TEXT,
   SPLIT_LABELS,
   TEST_PAPERS_NOTE,
-  baselineLine,
   benchmarkCaption,
   benchmarkItemsHash,
   countLine,
@@ -30,10 +30,10 @@ import {
   itemUnit,
   labelRows,
   loadErrorText,
-  metricLine,
+  metricLines,
+  modelRows,
   platformRows,
   platformsCountLine,
-  referenceModelLine,
   referenceRow,
   splitTable,
   taskTitle,
@@ -187,8 +187,8 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
   return (
     <Section title={SECTION_HEADINGS.reference}>
       <p>{METRIC_DEFINITION}</p>
-      {data.tasks.map((t) => (
-        <p key={t.task_id}>{metricLine(t)}</p>
+      {metricLines(data.tasks).map((line) => (
+        <p key={line}>{line}</p>
       ))}
       <table className="bench-table">
         <thead>
@@ -218,12 +218,28 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
       </table>
       <p className="note">{DIFFERENCE_NOTE}</p>
       <p className="note">{TEST_PAPERS_NOTE}</p>
-      {data.tasks.map((t) => (
-        <div key={t.task_id}>
-          <p>{baselineLine(t)}</p>
-          <p>{referenceModelLine(t)}</p>
-        </div>
-      ))}
+      <table className="bench-table">
+        <thead>
+          <tr>
+            {MODEL_HEADS.map((h) => (
+              <th scope="col" key={h}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {modelRows(data.tasks).map((m) => (
+            <tr key={m.task}>
+              <td data-label={MODEL_HEADS[0]}>
+                <Breakable text={m.task} />
+              </td>
+              <td data-label={MODEL_HEADS[1]}>{m.baseline}</td>
+              <td data-label={MODEL_HEADS[2]}>{m.referenceModel}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       <details className="bench-published">
         <summary>{PUBLISHED_JSON_SUMMARY}</summary>
         <pre>{data.reference_results_text}</pre>

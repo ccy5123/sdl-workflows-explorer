@@ -244,3 +244,18 @@ problems                                                   0
   label form and two occurrences; the shared-metric line needs two or more tasks; AC-10 names `baseline_rule`), D4
   needs no change. Report: `.moai/reports/plan-audit/SPEC-BENCH-001-amend-0.4.0-review-1.md`.
 - Approved by the researcher through AskUserQuestion on 2026-11-02 (table form Task | Baseline | Reference model).
+- Run (test first): `tests/benchmark.test.ts` AC-8 now asserts `metricLines`, `MODEL_HEADS`, `modelRows` and
+  `displayReferenceModel` (new synthetic case: different metrics, three tasks, one task, a second label form with two
+  occurrences, a text without the label); `e2e/benchmark.spec.ts` gains "AC-10 (0.4.0): …". RED before the change:
+  Vitest 3 failed (`TypeError: metricLines is not a function`); Playwright the new test failed with two
+  "Metric as recorded for …" lines received instead of one "(both tasks)" line. GREEN after `src/lib/benchmark.ts`
+  (`metricLines`, `displayReferenceModel`, `MODEL_HEADS`, `modelRows` replace `metricLine`, `baselineLine`,
+  `referenceModelLine`) and `src/views/Benchmark.tsx` (one metric paragraph; the Task | Baseline | Reference model
+  table). The AC-10 test of this SPEC selected every table of the section; its selector is narrowed to
+  `table:first-of-type` (the reference-results table). No test that predates this SPEC was edited.
+- Verification: `npm run typecheck` exit 0; `npx vitest run` 27 files / 446 tests passed; `npm run e2e` 63 passed.
+- Screen check (built site, `vite preview`, in-app browser): 1280 px — "Reference results" shows the definition, one
+  "Metric as recorded (both tasks): …" paragraph, the results table, the two notes and the model table with rows
+  chrono2023-module_type and chrono2023-transfer_mode; `main` contains no "sdl-db-"; scrollWidth 1265 = clientWidth.
+  375 px — the model table stacks as labelled blocks ("Task:", "Baseline:", "Reference model:"); scrollWidth 375 =
+  clientWidth; no console error.
