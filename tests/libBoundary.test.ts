@@ -1,10 +1,10 @@
 // AC-8: the filter, compare, trends and taxonomy modules stay free of UI and chart code so views can import them
-// (SPEC-BROWSE-001 REQ-009; SPEC-TRENDS-001 REQ-009, AC-8; SPEC-TAXO-001 REQ-015, AC-10).
+// (SPEC-BROWSE-001 REQ-009; SPEC-TRENDS-001 REQ-009, AC-8; SPEC-TAXO-001 REQ-015, AC-10; SPEC-CONTRIB-001 AC-3).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const FILES = ["filterState.ts", "filterUrl.ts", "filterApply.ts", "compare.ts", "trends.ts", "chartTokens.ts", "taxonomy.ts", "benchmark.ts"];
+const FILES = ["filterState.ts", "filterUrl.ts", "filterApply.ts", "compare.ts", "trends.ts", "chartTokens.ts", "taxonomy.ts", "benchmark.ts", "contribute.ts"];
 const UI_PACKAGE = String.raw`(?:react|react-dom|@tanstack\/[^"']*|@observablehq\/[^"']*|d3|d3-[^"']*)`;
 const RULES: [string, RegExp][] = [
   ["import from a UI package", new RegExp(String.raw`\bfrom\s*["']${UI_PACKAGE}["']`)],
