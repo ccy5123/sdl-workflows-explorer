@@ -53,4 +53,50 @@ describe.skipIf(!built)("home and about text against the pinned release (AC-4)",
     expect(unsourcedNumbers(limits.replace("For 30 papers", "For 31 papers"), docs.data_card, filled)).toEqual(["31"]);
     expect(unsourcedNumbers(`${limits} 999`, docs.data_card, filled)).toEqual(["999"]);
   });
+
+  // SPEC-RELEASE-001 AC-4: each figure travels with its own words, so a figure paired with the wrong words fails.
+  const norm = (s: string) => s.replace(/\s+/g, " ");
+  const about = norm(ABOUT_SECTIONS.map((s) => s.text).join(" "));
+  it.each([
+    "455 step durations",
+    "186 numbers of samples one device handles in one run of a step",
+    "234 batch sizes",
+    "136 throughputs (92 measured in a campaign, 44 nominal)",
+    "13 costs",
+    "229 of the 238 papers have at least one value",
+    "(57 rows)",
+    "For the same 30 papers as above",
+    "1.000 for throughput (15 platforms)",
+    "0.870 for step duration (54 steps",
+    "95% interval 0.755 to 0.957",
+    "26 papers state a number",
+    "73 name tasks people performed without a number",
+    "51 state that the campaign ran without human intervention",
+    "88 state none of these",
+    "48 papers state a stretch of the campaign that ran without a person",
+    "settled on 10 development papers and not changed afterwards",
+    "midpoint of a stated range",
+  ])("states %j as the data card does", (phrase) => {
+    expect(about).toContain(phrase);
+    expect(norm(docs.data_card)).toContain(phrase);
+  });
+
+  it("keeps the card's limits on the timing data and the human-intervention reading", () => {
+    for (const phrase of [
+      "agreement between two models, not accuracy",
+      "reference values are not released",
+      "No second reading exists",
+      "free-text qualifiers",
+      "the reference values of the timing data are not included",
+    ]) {
+      expect(about, phrase).toContain(phrase);
+    }
+    const home = homeIntro(index.release.version, index.counts.platforms, index.counts.papers);
+    expect(home).toContain("batch sizes");
+    expect(home).toContain("human intervention");
+    for (const text of [home, about]) {
+      expect(text).not.toMatch(/extraction/i);
+      expect(text).not.toMatch(/frozen/i);
+    }
+  });
 });

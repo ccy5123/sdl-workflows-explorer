@@ -47,7 +47,7 @@ export function decodeTrends(query: string, offered: Offered): { state: FilterSt
 
 // ---- Bins (REQ-006, REQ-013) ----
 
-/** Search date of release 1.0.0: the year it ran in is a partial year. */
+/** Date the literature search ran (one search, shared by every release so far): its year is a partial year. */
 export const RELEASE_SEARCH_DATE = { year: 2026, month: 10, day: 20, text: "20 October 2026" } as const;
 export const PARTIAL_YEAR: number = RELEASE_SEARCH_DATE.year;
 /** Last year of the grouped bin: before 2015 there are at most three papers per year. */

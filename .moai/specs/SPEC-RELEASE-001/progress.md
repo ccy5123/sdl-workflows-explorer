@@ -37,6 +37,12 @@
   spec §2's list, and these rows keep literals rather than reading from the release — reading them from the release
   would compare the derived rows with themselves. The synthetic fixture rows in `tests/derive.test.ts` keep "pdf p.3".
   Then Vitest 34 files / 525 passed; `npm run e2e` 162 passed; typecheck 0.
+- M2 About and home text. Tests first: the AC-4 phrase case and limits case in `tests/siteText.test.ts`, the AC-4
+  e2e test in `e2e/site.spec.ts`. RED: Vitest 19 failed (18 phrases absent from the About text, the limits case);
+  the e2e test failed on the `h2` list. GREEN after `src/lib/siteText.ts` (coding sentence "not changed afterwards";
+  "Timing data" and "Human-intervention reporting" sections; the new not-included sentence; the home intro sentence)
+  and the `src/lib/trends.ts:50` comment (no release number): Vitest 34 files / 544 passed; site.spec 6 passed;
+  `git grep -n "1\.0\.0" -- src` prints nothing; typecheck 0.
 - Dependencies: SPEC-SITE-001 completed (main at aa10af8).
 - Source of the brief: the orchestrating session of 2026-11-02 relayed the researcher's decision to publish the site
   with release 1.1.0 (Zenodo record 23875743, draft on that day), the pin values, the local bundle path and SHA-256,

@@ -6,7 +6,9 @@ export function homeIntro(version: string, platforms: number, papers: number): s
   return (
     "sdl-workflows records which modules published closed-loop self-driving laboratories use, in what order one " +
     "experimental cycle runs its steps on them, and how material moves between the modules. " +
-    `Release ${version} codes ${platforms} platforms described in ${papers} papers that one literature search found.`
+    `Release ${version} codes ${platforms} platforms described in ${papers} papers that one literature search found. ` +
+    "It also holds the times, batch sizes, throughput and cost that the papers state, and what each paper states " +
+    "about human intervention during its campaign."
   );
 }
 
@@ -78,7 +80,8 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     heading: "How the papers were coded",
     text:
       "Each paper was coded once by a language model (Claude Opus 5.5) from its main text and supplements, following " +
-      "written coding instructions and a taxonomy that were settled on 10 development papers and then frozen. For " +
+      "written coding instructions and a taxonomy that were settled on 10 development papers and not changed " +
+      "afterwards. For " +
       "each platform the coding records its modules, the steps of one experimental cycle in order (unit operation, " +
       "whether a robot, a person or software performs it, and the modules involved) and the connections between " +
       "modules (transfer mode, and whether the paper states the transfer or it was inferred from context). Every " +
@@ -97,13 +100,44 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
       "accuracy against human coding; the release contains no human coding.",
   },
   {
+    heading: "Timing data",
+    text:
+      "The release holds the process numbers the papers state: 455 step durations and 186 numbers of samples one " +
+      "device handles in one run of a step; for platforms, 234 batch sizes, 136 throughputs (92 measured in a " +
+      "campaign, 44 nominal), 13 costs and other quantities; and values for some modules and connections. 229 of the " +
+      "238 papers have at least one value. Claude Opus 5.5 extracted the values under written instructions, once per " +
+      "paper, from the paper's text and its released coding. The instructions allowed only numbers the paper states, " +
+      "with three calculations: the midpoint of a stated range, a measured throughput as a stated number of " +
+      "experiments divided by a stated elapsed time of the same campaign, and an expression the paper prints for that " +
+      "one quantity; the model was not allowed to estimate a value or derive a time from flow rates, volumes or " +
+      "counts. Values are in the paper's unit. A time the paper gives for several consecutive steps sits on the first " +
+      "of them (57 rows). For the same 30 papers as above, Claude Fable 5.1 extracted the timing data under the same " +
+      "instructions as a reference. Counting an item as agreeing when both gave a value and the two differed by at " +
+      "most 10%, the share of agreeing items was 1.000 for throughput (15 platforms) and 0.870 for step duration (54 " +
+      "steps; 95% interval 0.755 to 0.957). This is agreement between two models, not accuracy; the reference values " +
+      "are not released.",
+  },
+  {
+    heading: "Human-intervention reporting",
+    text:
+      "For every paper, the release records what it states about human intervention during its closed-loop " +
+      "campaign, read by Claude Opus 5.5 under written instructions, once per paper. 26 papers state a number for it " +
+      "(a count of interventions, person-time, or the frequency of a human task), 73 name tasks people performed " +
+      "without a number, 51 state that the campaign ran without human intervention, and 88 state none of these. " +
+      "One-time set-up before the first iteration does not count as intervention, and a capability statement or the " +
+      'word "autonomous" alone does not count as a statement that the campaign ran without it. 48 papers state a ' +
+      "stretch of the campaign that ran without a person. No second reading exists to compare with.",
+  },
+  {
     heading: "Limits",
     text:
       "The search ran once, on one date, in two indexes. The 238 papers are the eligible candidates that this search " +
       "found, not every closed-loop self-driving laboratory paper published, so counts by year reflect the search as " +
       "well as the field. Page numbers refer to the file versions that were read; 30 main texts are preprints, and 13 " +
       "of them belong to papers with a journal version whose pages differ. Paper text and abstracts, process " +
-      "conditions, the coders' general notes on each paper and the second coding are not included.",
+      "conditions other than the stated times, batch sizes, throughput and cost, the coders' general notes on each " +
+      "paper, the extracting model's notes and free-text qualifiers, the second coding and the reference values of " +
+      "the timing data are not included.",
   },
 ];
 

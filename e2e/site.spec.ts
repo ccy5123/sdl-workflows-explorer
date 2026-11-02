@@ -118,6 +118,40 @@ test("AC-7: about page summary, limits and full data card", async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+// SPEC-RELEASE-001 AC-4: the About sections of release 1.1.0 and the home intro.
+test("release 1.1.0: About sections in order, timing and human-intervention text, home intro", async ({ page }) => {
+  await page.goto("/#/about");
+  const main = page.locator("main");
+  await expect(main.locator("h2")).toHaveText([
+    "How the papers were found",
+    "How the papers were coded",
+    "How far the labels can be trusted",
+    "Timing data",
+    "Human-intervention reporting",
+    "Limits",
+    "Full text",
+  ]);
+  const text = await ownText(page);
+  for (const phrase of [
+    "455 step durations",
+    "229 of the 238 papers have at least one value",
+    "0.870 for step duration",
+    "agreement between two models, not accuracy",
+    "reference values are not released",
+    "26 papers state a number",
+    "88 state none of these",
+    "No second reading exists",
+    "free-text qualifiers",
+    "the reference values of the timing data are not included",
+  ]) {
+    expect(text, phrase).toContain(phrase);
+  }
+  await page.goto("/#/");
+  const intro = page.locator(".home-intro");
+  await expect(intro).toContainText("batch sizes");
+  await expect(intro).toContainText("human intervention");
+});
+
 test("AC-7: home and about text draw no conclusion about the field", async ({ page }) => {
   for (const route of ["/#/", "/#/about"]) {
     await page.goto(route);
