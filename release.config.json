@@ -1,10 +1,10 @@
 {
-  "version": "1.0.0",
-  "doi": "10.5281/zenodo.23857126",
-  "record_id": "23857126",
-  "file_name": "sdl-workflows-1.0.0.zip",
-  "url": "https://zenodo.org/api/records/23857126/files/sdl-workflows-1.0.0.zip/content",
-  "sha256": "dd1d18cf2fb7978105d422b2c1e6810c0c35306511fb56491f3d05f6d997e245",
+  "version": "1.1.0",
+  "doi": "10.5281/zenodo.23875743",
+  "record_id": "23875743",
+  "file_name": "sdl-workflows-1.1.0.zip",
+  "url": "https://zenodo.org/api/records/23875743/files/sdl-workflows-1.1.0.zip/content",
+  "sha256": "98ea319bb1884c2b2404a818504580a529fc4b8dd02d01f7712c84ee60a2d357",
   "counts": {
     "papers": 238,
     "platforms": 280,
