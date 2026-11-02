@@ -92,8 +92,17 @@ in the run phase and recorded in `progress.md`; it is not an acceptance criterio
   and "—" for an empty field tag.
 - The text functions return exactly the texts of REQ-008 (exclusion line), REQ-009 (uncertain sentence for both
   tasks; transfer_mode: "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train,
-  51 test, 1 excluded."), REQ-010 (definition, the two notes, "Metric as recorded for <task_id>: " followed by the
-  task's `metric`, "Baseline: " + `baseline_rule`, "Reference model: " + `reference_model`) and REQ-016 (caption:
+  51 test, 1 excluded."), REQ-010 (definition, the two notes; the metric lines: for release 1.0.0 exactly one line
+  "Metric as recorded (both tasks): top-1 accuracy over the test items; 95% interval of a difference by paper-level
+  paired cluster bootstrap over the test papers (B = 2000, seed 1)", for two tasks with different metrics one
+  "Metric as recorded for <task_id>: <metric>" line each, for three tasks with one metric "(all 3 tasks)"; the
+  displayed reference model: module_type gives "back-off conditional-frequency model: the finest context seen in
+  training among (unit operation, previous, next, field tag), (unit operation, previous, next), (unit operation, field
+  tag), (unit operation), all items; its most frequent label, ties by the next coarser context, then alphabetical",
+  transfer_mode the recorded text with " (sdl-db-02 H1)" removed and nothing else changed; "model A (sdl-db-07 H3) and
+  model B (sdl-db-11)" gives "model A and model B"; a text with no parenthetical starting " (sdl-db-" (for example
+  "model (H1) (db-02)") is returned unchanged; with one task the metric line is "Metric as recorded for <task_id>:
+  <metric>") and REQ-016 (caption:
   "Benchmark chrono2023 has 2 tasks over 238 papers. The data dictionary describes the split as: “Benchmark:
   chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.”
   The labels are the release's model codings, so top-1 accuracy measures agreement with those codings.").
@@ -116,7 +125,12 @@ in the run phase and recorded in `progress.md`; it is not an acceptance criterio
   items, and the line "Excluded: 4 papers, used to develop the extraction instructions."; the caption is the text of
   AC-8; each task section shows "Unit of an item" (step / material connection), "Which items" and "Inputs" with the
   task file's `item_rule` and `inputs`, and the uncertain sentence of AC-8; the module_type label table has 22 rows and
-  transfer_mode 5; the reference table shows the two rows of AC-8 and the two notes; the evaluation section links
+  transfer_mode 5; the reference table shows the two rows of AC-8 and the two notes; "Reference results" holds one
+  "Metric as recorded (both tasks): …" paragraph and none starting "Metric as recorded for", no paragraph starting
+  "Baseline:" or "Reference model:", and a table Task | Baseline | Reference model with the rows
+  `chrono2023-module_type` and `chrono2023-transfer_mode` showing each task file's `baseline_rule` and the displayed
+  reference model of AC-8; the text of `main` contains no
+  "sdl-db-"; the evaluation section links
   `https://doi.org/10.5281/zenodo.23857126`;
   the details element "reference_results.json as published" is closed and its preformatted text equals the file;
   "Items by platform" shows "280 platforms" and 280 rows, the row `Aand2024/P1` with its name "auto-optimization

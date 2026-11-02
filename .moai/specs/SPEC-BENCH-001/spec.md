@@ -1,8 +1,8 @@
 ---
 id: SPEC-BENCH-001
 title: "Benchmark view: chrono2023 tasks, split, item counts and labels, reference results as published, how to run the evaluation, items by platform and an item explorer"
-version: "0.3.0"
-status: completed
+version: "0.4.0"
+status: in-progress
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
@@ -13,6 +13,7 @@ lifecycle: spec-anchored
 tags: "benchmark, data-pipeline, routing, views"
 tier: M
 depends_on: [SPEC-DATA-001, SPEC-VIEW-001, SPEC-BROWSE-001, SPEC-TRENDS-001, SPEC-TAXO-001]
+amendment_of: SPEC-BENCH-001
 ---
 
 ## HISTORY
@@ -41,6 +42,24 @@ depends_on: [SPEC-DATA-001, SPEC-VIEW-001, SPEC-BROWSE-001, SPEC-TRENDS-001, SPE
   explorer's field-tag and unit-operation links, "yes" and "—" (N4); AC-12 starts the platform-removal case from a
   URL with a platform (N5); AC-6 keeps its query in one code span (N6). Plan audit iteration 3 PASS (0.95, no
   finding). Approved by the researcher through AskUserQuestion on 2026-11-02.
+- 2026-11-02 0.4.0 in-place amendment of the completed 0.3.0 (see Amendments): the recorded metric shown once when
+  all tasks record the same text; baseline and reference model descriptions grouped by task in one table; the
+  authors' working label removed from the displayed reference-model text. Changed: REQ-010; AC-8, AC-10.
+
+## Amendments
+
+- 0.4.0 (2026-11-02), amendment of 0.3.0 (status completed, prior_completed_sha a1435f0).
+  - Rationale: screen check of `#/benchmark` on origin/main a1435f0 by the researcher (relayed by the orchestrating
+    session): the metric was stated three times, the four Baseline / Reference model paragraphs named no task, and
+    "(sdl-db-02 H1)" is a working label a visitor cannot resolve.
+  - Scope: (1) one "Metric as recorded" line when every task's `metric` is the same text, per-task lines otherwise
+    (REQ-010); (2) the baseline and reference-model descriptions as one table Task | Baseline | Reference model, one
+    row per task, stacking at 375 px like the other tables (REQ-010, REQ-015); (3) in the displayed reference-model
+    text, each parenthetical of the form " (sdl-db-…)" is removed; the rest of the release wording stays verbatim,
+    and `benchmark.json` keeps the recorded text unchanged (REQ-010).
+  - Unchanged: the derived data, the split and label tables, every number of the reference-results table, the two
+    notes, the published JSON block, "Run the evaluation yourself", the explorer, loading and routing. Tests added by
+    this SPEC that assert the 0.3.0 texts are updated to the 0.4.0 texts; tests that predate this SPEC are not touched.
 
 ## 1. Why
 
@@ -168,7 +187,9 @@ printed by `expected-counts.mjs`. "Plain string comparison" means UTF-16 code-un
   - the definition "Top-1 accuracy is the fraction of a task's test items whose single predicted label equals the
     label recorded in the release. The 95% interval is for the difference reference model top-1 minus baseline
     top-1, from a paper-level paired cluster bootstrap over the test papers; Replicates is the number of bootstrap
-    replicates used (replicates with no test item are dropped).", then per task "Metric as recorded for <task_id>: <metric>";
+    replicates used (replicates with no test item are dropped)."; then, when there are two or more tasks and every
+    task's `metric` is the same text, one line "Metric as recorded (both tasks): <metric>" ("(all <n> tasks)" when there are more than two), otherwise
+    per task "Metric as recorded for <task_id>: <metric>";
   - a table with one row per `reference_results` entry and the columns Task, Test items (papers), Baseline top-1,
     Reference model top-1, Difference (computed), 95% interval of the difference and Replicates: accuracies and
     interval bounds with four decimals, the difference = `reference_model_top1` − `baseline_top1` with four decimals
@@ -177,7 +198,10 @@ printed by `expected-counts.mjs`. "Plain string comparison" means UTF-16 code-un
   - below the table the notes "Difference (computed) is reference model top-1 minus baseline top-1, computed by this
     site from the two recorded values; reference_results.json does not record it." and "Test papers are the test
     papers with at least one item of the task.";
-  - per task, "Baseline: <baseline_rule>" and "Reference model: <reference_model>", as recorded;
+  - a table with the columns Task, Baseline and Reference model and one row per task, in task order: the task id,
+    the task's `baseline_rule` as recorded, and its `reference_model` with each parenthetical of the form
+    " (sdl-db-…)" removed (a label of the authors' research record that a visitor cannot resolve; release 1.0.0:
+    "back-off conditional-frequency model: the finest context seen in training among …"), otherwise as recorded;
   - a collapsed block "reference_results.json as published" holding `reference_results_text` unchanged in a
     preformatted element.
 - **REQ-011** (ubiquitous) "Run the evaluation yourself" shall state that `modes/benchmark/evaluate.py` is part of the

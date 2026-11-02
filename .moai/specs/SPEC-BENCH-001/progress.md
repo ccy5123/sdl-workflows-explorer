@@ -232,3 +232,15 @@ problems                                                   0
 - Justification: one general-purpose implementation agent in the main checkout works through plan.md §B in order, test
   first per unit. manager-develop is not used because its worktree isolation fails on this WSL UNC path (hand-over
   notes of steps 4 and 5). The orchestrator re-runs the verification batch and checks the view in the browser.
+
+## §G Amendment 0.4.0
+
+- Requested by the researcher after a screen check of `#/benchmark` on origin/main a1435f0, relayed by the
+  orchestrating session: (1) metric stated three times, (2) Baseline / Reference model paragraphs without task labels,
+  (3) the working label "(sdl-db-02 H1)" in the displayed reference-model text.
+- spec.md 0.4.0: status completed → in-progress, `amendment_of: SPEC-BENCH-001`, Amendments section
+  (prior_completed_sha a1435f0); REQ-010, AC-8 and AC-10 changed.
+- plan-auditor (amendment iteration 1): PASS 0.94, no blocking finding; optional D1 to D3 applied (AC-8 tests a second
+  label form and two occurrences; the shared-metric line needs two or more tasks; AC-10 names `baseline_rule`), D4
+  needs no change. Report: `.moai/reports/plan-audit/SPEC-BENCH-001-amend-0.4.0-review-1.md`.
+- Approved by the researcher through AskUserQuestion on 2026-11-02 (table form Task | Baseline | Reference model).
