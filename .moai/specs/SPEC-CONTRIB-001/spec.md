@@ -2,7 +2,7 @@
 id: SPEC-CONTRIB-001
 title: "Links from the explorer to the dataset's GitHub issue forms"
 version: "0.2.0"
-status: draft
+status: completed
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
