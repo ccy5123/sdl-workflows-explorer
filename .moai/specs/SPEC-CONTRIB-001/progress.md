@@ -63,7 +63,7 @@
 ## §E.4 Sync-phase Audit-Ready Signal
 
 - sync_at: 2026-11-02
-- sync_commit_sha: pending-backfill
+- sync_commit_sha: 3f8fa9c
 - Verification at sync (HEAD df17884): typecheck exit 0; Vitest 459 passed; Playwright 68 passed.
 - Project docs (`.moai/project/`, `docs/plan.md`) unchanged; step 7 not started. The issue forms, CONTRIBUTING and
   CONTRIBUTORS files are not part of this repository and were not touched. The GitHub repository stays private.
