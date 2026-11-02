@@ -1,16 +1,18 @@
 // Taxonomy explorer rules (SPEC-TAXO-001 REQ-011 to REQ-016): kind labels and unit nouns, count and caption texts, the
-// browse-link rule of a class, the correspondence texts and the family grouping. Pure: no UI code. Reference texts,
-// dois and relation meanings come from taxonomy.json, never from this module.
+// browse-link rule of a class, the correspondence table rows and the family grouping. Pure: no UI code. Reference
+// texts, dois and the release's relation meanings come from taxonomy.json, never from this module; the two relation
+// glosses and the vocabulary display labels are site text and live here (REQ-005).
 import type {
   CorrespondenceEntry,
   CorrespondenceSource,
-  CorrespondenceTarget,
   TaxonomyClass,
+  TaxonomyRelation,
   TaxonomySource,
   TaxonomyVocabulary,
 } from "../data/types";
 import { DEFAULT_STATE, type FilterState, type Offered, type View } from "./filterState";
 import { browseHash } from "./filterUrl";
+import { taxonomySourceHash } from "./route";
 
 type BrowseGroup = "field" | "mt" | "tm" | "uo";
 
@@ -67,8 +69,23 @@ export function overviewCaption(classes: readonly TaxonomyClass[]): string {
   const kinds = kindsInOrder(classes);
   const parts = kinds.map((k) => countText(classes.filter((c) => c.class_kind === k).length, kindLabel(k).toLowerCase(), kindPlural(k)));
   const units = kinds.map((k) => `${words(k)?.unit[1] ?? "items"} for ${kindPlural(k)}`);
-  return `The ${classes.length} classes of the release taxonomy: ${joinWords(parts)}. Item counts are ${joinWords(units)}.`;
+  return (
+    `The ${classes.length} classes of the release taxonomy: ${joinWords(parts)}. Item counts are ${joinWords(units)}. ` +
+    "A paper can carry several field tags, so the paper counts of the field tags need not add up to the number of papers."
+  );
 }
+
+/** Name of the overview's jump list to the kind sections (REQ-011). */
+export const JUMP_LIST_NAME = "On this page";
+
+/** Site glosses for relations whose release meaning is null (REQ-011). */
+export const RELATION_GLOSSES: Readonly<Record<string, string>> = {
+  exact: "the same concept",
+  none: "no counterpart in that vocabulary; the listed source was searched",
+};
+
+/** Meaning column of the Relations table: the release's meaning, else the site gloss, else an em dash. */
+export const relationMeaning = (r: TaxonomyRelation): string => r.meaning ?? RELATION_GLOSSES[r.match] ?? "—";
 
 /** Unit-operation classes grouped by family, families in alphabetical order (REQ-011). */
 export function familyGroups(classes: readonly TaxonomyClass[]): { family: string; classes: TaxonomyClass[] }[] {
@@ -131,14 +148,24 @@ export function exampleCaption(kind: string): string {
 // ---- Correspondence (REQ-013) ----
 
 export const NO_ROW_TEXT = "The correspondence table has no row for this class.";
-export const NO_COUNTERPART_TEXT = "No counterpart in this vocabulary.";
-export const SOURCE_SEARCHED_LABEL = "Source searched:";
-export const SOURCES_LABEL = "Sources:";
 
 export const noMappingText = (kind: string): string => `The correspondence table does not map ${kindPlural(kind)}.`;
 
+/** Display labels of the vocabularies, keyed by correspondence-table column name. */
+export const VOCABULARY_LABELS: Readonly<Record<string, string>> = {
+  XDL: "XDL",
+  WCSO: "WCSO",
+  Leong2022: "MAP (Leong2022)",
+  OntoLab_SAREF: "OntoLab/SAREF",
+  Gottstein2026: "Gottstein2026 orchestration levels",
+};
+
+/** The vocabulary's display label; a column with no label shows its name. */
+export const vocabularyLabel = (vocabulary: string): string => VOCABULARY_LABELS[vocabulary] ?? vocabulary;
+
+/** Source text of a vocabulary that has no entry for the class: "OntoLab/SAREF maps module types only". */
 export const notCoveredText = (vocabulary: string, kinds: readonly string[]): string =>
-  `Not covered: ${vocabulary} maps ${joinWords(kinds.map(kindPlural))} only.`;
+  `${vocabularyLabel(vocabulary)} maps ${joinWords(kinds.map(kindPlural))} only`;
 
 /** Whether any class of the kind has a row in the correspondence table. */
 export const kindIsMapped = (kind: string, classes: readonly TaxonomyClass[]): boolean =>
@@ -147,16 +174,48 @@ export const kindIsMapped = (kind: string, classes: readonly TaxonomyClass[]): b
 /** An entry whose single target has the relation none. */
 export const isNoneEntry = (e: CorrespondenceEntry): boolean => e.targets.length === 1 && e.targets[0]!.match === "none";
 
-/** "Heater/chiller — exact": the relation as a word, never by colour alone. */
-export const targetText = (t: CorrespondenceTarget): string => `${t.target} — ${t.match}`;
-
-/** A source as recorded: "<key> ; <page> ; <locator>", or the key alone. */
+/** A source as "<key>, <page>, <locator>", or the key alone. */
 export const sourceText = (s: CorrespondenceSource): string =>
-  s.page === null && s.locator === null ? s.key : [s.key, s.page ?? "", s.locator ?? ""].join(" ; ");
+  s.page === null && s.locator === null ? s.key : [s.key, s.page ?? "", s.locator ?? ""].join(", ");
+
+/** An entry's sources joined with "; ". */
+export const sourcesText = (sources: readonly CorrespondenceSource[]): string => sources.map(sourceText).join("; ");
 
 /** README source row of a vocabulary's source keys (one row by REQ-004 f), or null. */
 export const referenceOf = (vocabulary: TaxonomyVocabulary, sources: readonly TaxonomySource[]): TaxonomySource | null =>
   sources.find((s) => vocabulary.source_keys.some((k) => s.keys.includes(k))) ?? null;
+
+/** One body row of a class page's correspondence table; relations are words, never colour alone (REQ-016). */
+export interface CorrespondenceRow {
+  vocabulary: string;
+  label: string;
+  /** Overview hash targeting the vocabulary's sources row, or null when no row holds its keys. */
+  link: string | null;
+  term: string;
+  relation: string;
+  source: string;
+  /** Rows the Vocabulary and Source cells span when this row starts an entry; 0 on the entry's other rows. */
+  span: number;
+}
+
+// @MX:NOTE: [AUTO] REQ-013 — one row per target; a "none" entry and a vocabulary with no entry each give one row
+/** Rows of the correspondence table of a class, vocabularies in `vocabularies` order; none when it has no row. */
+export function correspondenceRows(
+  cls: TaxonomyClass,
+  vocabularies: readonly TaxonomyVocabulary[],
+  sources: readonly TaxonomySource[],
+): CorrespondenceRow[] {
+  if (cls.correspondence === null) return [];
+  return vocabularies.flatMap((v) => {
+    const ref = referenceOf(v, sources);
+    const cell = { vocabulary: v.vocabulary, label: vocabularyLabel(v.vocabulary), link: ref ? taxonomySourceHash(ref.keys[0]!) : null };
+    const entry = cls.correspondence!.find((e) => e.vocabulary === v.vocabulary);
+    if (!entry) return [{ ...cell, term: "—", relation: "not covered", source: notCoveredText(v.vocabulary, v.kinds), span: 1 }];
+    if (isNoneEntry(entry)) return [{ ...cell, term: "—", relation: "none", source: `searched: ${sourcesText(entry.sources)}`, span: 1 }];
+    const source = sourcesText(entry.sources);
+    return entry.targets.map((t, i) => ({ ...cell, term: t.target, relation: t.match, source, span: i === 0 ? entry.targets.length : 0 }));
+  });
+}
 
 /** A reference split around its "doi:<doi>" text, so a view can link the doi. */
 export function splitReference(source: TaxonomySource): { before: string; doiText: string | null; after: string } {

@@ -729,14 +729,34 @@ table.count-table a {
   margin: 0;
 }
 
-.taxo-label {
-  margin-bottom: 0.25rem;
-  font-weight: 600;
+/* Class names and vocabulary labels break only at the <wbr> after each "_" or at a space, never mid-word. */
+.taxo-name {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
-.taxo-ref {
-  color: var(--muted);
-  font-size: 0.92rem;
+.taxo-jump ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.taxo-jump button {
+  font: inherit;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* The sources row a ?source= link targets: weight, not colour (REQ-016). */
+.taxonomy tr[aria-current="true"] td {
+  font-weight: 600;
 }
 
 @media (max-width: 800px) {

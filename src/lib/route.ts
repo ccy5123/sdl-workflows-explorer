@@ -7,7 +7,7 @@ export type Route =
   | { kind: "browse"; query: string }
   | { kind: "trends"; query: string }
   | { kind: "compare"; ids: string[] }
-  | { kind: "taxonomy" }
+  | { kind: "taxonomy"; source?: string }
   | { kind: "taxonomyClass"; classKind: string; cls: string }
   | { kind: "notFound"; hash: string };
 
@@ -30,8 +30,8 @@ function compareId(item: string): string {
 
 /**
  * `#/platform/<paper_id>/<platform_suffix>` → platform; `#/browse[?<query>]` → browse; `#/compare/<id>,<id>…` →
- * compare; `#/taxonomy` → taxonomy; `#/taxonomy/<kind>/<class>` → taxonomy class; empty, `#` or `#/` → home; anything
- * else → not found.
+ * compare; `#/taxonomy` → taxonomy; `#/taxonomy?source=<key>` → taxonomy with a target source;
+ * `#/taxonomy/<kind>/<class>` → taxonomy class; empty, `#` or `#/` → home; anything else → not found.
  */
 export function parseRoute(hash: string): Route {
   if (hash === "" || hash === "#" || hash === "#/") return { kind: "home" };
@@ -47,6 +47,12 @@ export function parseRoute(hash: string): Route {
     return { kind: "compare", ids: list === "" ? [] : list.split(",").map(compareId) };
   }
   if (rest === "taxonomy") return { kind: "taxonomy" };
+  if (rest.startsWith("taxonomy?")) {
+    const query = rest.slice("taxonomy?".length);
+    if (query.includes("&") || !query.startsWith("source=")) return notFound;
+    const source = decode(query.slice("source=".length));
+    return source ? { kind: "taxonomy", source } : notFound;
+  }
   if (rest.startsWith("taxonomy/")) {
     const segments = rest.slice("taxonomy/".length).split("/");
     if (segments.length !== 2) return notFound;
@@ -77,4 +83,9 @@ export function compareHash(platformIds: readonly string[]): string {
 /** Hash URL of a taxonomy class page, each segment percent-encoded. */
 export function taxonomyHash(kind: string, cls: string): string {
   return `#/taxonomy/${encodeURIComponent(kind)}/${encodeURIComponent(cls)}`;
+}
+
+/** Hash URL of the taxonomy overview targeting the sources row with this key. */
+export function taxonomySourceHash(key: string): string {
+  return `#/taxonomy?source=${encodeURIComponent(key)}`;
 }

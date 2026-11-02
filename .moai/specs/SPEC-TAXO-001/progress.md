@@ -475,3 +475,29 @@ trends count line with uo, #/trends?uo=sonicate (papers)   5 of 238 papers
   warning (StatusGitConsistency: frontmatter `in-progress` while git history implies `completed`).
 - Plan-audit cache for this SPEC is invalidated by the spec.md change; the run phase starts with a new plan audit.
 - The run phase records its evidence in §E.2 and §E.3 as additional entries; the sync phase updates §E.4.
+
+### Run evidence
+
+- 2026-11-02, base 14351ab, TDD per unit (route, `src/lib/taxonomy.ts`, view/e2e). Recorded here rather than in §E.2/§E.3
+  at the orchestrator's instruction for this run.
+- Pre-flight on 14351ab: `npm test` 369 passed (25 files); `npm run typecheck` exit 0; `npm run e2e` 47 passed.
+- RED, route (`npx vitest run tests/route.test.ts`): 4 failed | 50 passed; e.g.
+  `AssertionError: expected { kind: 'notFound', …(1) } to deeply equal { kind: 'taxonomy', source: 'a b' }` and
+  `TypeError: taxonomySourceHash is not a function`.
+- RED, library (`npx vitest run tests/taxonomy.test.ts`): 13 failed; e.g.
+  `expected 'Mehr2020 ; p.10 ; Fig. 5' to be 'Mehr2020, p.10, Fig. 5'`, `TypeError: correspondenceRows is not a function`,
+  `TypeError: relationMeaning is not a function`.
+- RED, view: the new `e2e/taxonomy.spec.ts` run against the 14351ab code in a temporary detached worktree (removed
+  afterwards): 9 failed, 7 passed; e.g. AC-13 `expect(locator).toHaveCount(expected) failed Expected: 1 Received: 0`,
+  AC-16 `Tab did not reach the BUTTON Field tags within 400 presses`.
+- GREEN: `npm run typecheck` exit 0; `npm test` 389 passed (25 files); `npm run e2e` 52 passed; `npx vitest run
+  --coverage`: `src/lib` 100 % statements and lines (route.ts 98.21 % branches, taxonomy.ts 92.13 % branches);
+  production `vite build` (to a temporary directory) emits `assets/Taxonomy-*.js`.
+- Line breaks measured per character (temporary probe, not kept): at 800 px and 375 px no overview class name wraps
+  (each fits its stacked cell); at 375 px "Gottstein2026 orchestration levels" wraps at a space; at 1280 px four class
+  names wrap (materials_polymer_soft, instrument_electrochemical, generate_instructions, plan_next_experiment). No
+  `white-space: nowrap` fallback was needed for "OntoLab/SAREF".
+- Files: `src/lib/route.ts`, `src/lib/taxonomy.ts`, `src/views/Taxonomy.tsx`, `src/styles.css`, `tests/route.test.ts`
+  (new cases only), `tests/taxonomy.test.ts`, `e2e/taxonomy.spec.ts`. `src/App.tsx` unchanged: it already passes the
+  whole route, which now carries `source`. `BANNED_SUBSTRINGS` in `src/lib/trends.ts` unchanged; the AC-10 test checks
+  more texts against it.

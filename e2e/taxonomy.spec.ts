@@ -14,7 +14,47 @@ const link = (page: Page, name: string) => page.getByRole("link", { name, exact:
 const h1 = (page: Page, name: string) => page.getByRole("heading", { level: 1, name, exact: true });
 const CAPTION =
   "The 69 classes of the release taxonomy: 10 field tags, 22 module types, 6 transfer modes and 31 unit operations. " +
-  "Item counts are papers for field tags, modules for module types, connections for transfer modes and steps for unit operations.";
+  "Item counts are papers for field tags, modules for module types, connections for transfer modes and steps for unit operations. " +
+  "A paper can carry several field tags, so the paper counts of the field tags need not add up to the number of papers.";
+const KIND_HEADINGS = ["Field tags", "Module types", "Transfer modes", "Unit operations"];
+const h2 = (page: Page, name: string) => page.getByRole("heading", { level: 2, name, exact: true });
+const sourceRow = (page: Page, key: string) =>
+  region(page, "Sources of the correspondence").locator("tbody tr", { has: page.locator("td:first-child", { hasText: key }) });
+const currentRows = (page: Page) => page.locator('main [aria-current="true"]');
+
+/** Body rows of the correspondence table as the texts of their cells. */
+const correspondenceRows = (page: Page) =>
+  region(page, "Correspondence")
+    .locator("table tbody tr")
+    .evaluateAll((rows) => rows.map((r) => [...r.querySelectorAll("td")].map((td) => td.textContent ?? "")));
+
+/**
+ * Line breaks inside each element matched by `selector`: pairs of adjacent characters of its text that lie on different
+ * lines although the first is not "_" and neither is a space. One DOM range per character gives its line box.
+ */
+const badBreaks = (page: Page, selector: string) =>
+  page.locator(selector).evaluateAll((elements) =>
+    elements.flatMap((el) => {
+      const chars: { ch: string; top: number }[] = [];
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const text = node.textContent ?? "";
+        for (let i = 0; i < text.length; i++) {
+          const range = document.createRange();
+          range.setStart(node, i);
+          range.setEnd(node, i + 1);
+          const rect = range.getClientRects()[0] ?? range.getBoundingClientRect();
+          chars.push({ ch: text[i]!, top: rect.top });
+        }
+      }
+      const bad: string[] = [];
+      for (let i = 1; i < chars.length; i++) {
+        const [a, b] = [chars[i - 1]!, chars[i]!];
+        if (Math.abs(a.top - b.top) > 2 && a.ch !== "_" && a.ch !== " " && b.ch !== " ") bad.push(`${el.textContent}: ${a.ch}|${b.ch}`);
+      }
+      return bad;
+    }),
+  );
 
 /** Follows a link on the current page and returns the count line the browser shows for it. */
 async function followCount(page: Page, name: string): Promise<string> {
@@ -25,20 +65,20 @@ async function followCount(page: Page, name: string): Promise<string> {
   return text;
 }
 
-/** Presses Tab until the focused element is a link with this text (and href, when given). */
-async function tabToLink(page: Page, text: string, href?: string, max = 400) {
+/** Presses Tab until the focused element is a link (or button) with this text (and href, when given). */
+async function tabToLink(page: Page, text: string, href?: string, max = 400, tag = "A") {
   for (let n = 0; n < max; n++) {
     await page.keyboard.press("Tab");
     const hit = await page.evaluate(
-      ([t, h]) => {
+      ([t, h, g]) => {
         const el = document.activeElement;
-        return el instanceof HTMLAnchorElement && el.textContent === t && (!h || el.getAttribute("href") === h);
+        return el?.tagName === g && el.textContent === t && (!h || el.getAttribute("href") === h);
       },
-      [text, href ?? ""] as const,
+      [text, href ?? "", tag] as const,
     );
     if (hit) return;
   }
-  throw new Error(`Tab did not reach the link ${text} within ${max} presses`);
+  throw new Error(`Tab did not reach the ${tag} ${text} within ${max} presses`);
 }
 
 /** Heading levels of main in document order. */
@@ -60,8 +100,12 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   await expect(sources.locator("tbody tr").first().getByRole("link")).toHaveAttribute("href", "https://doi.org/10.1126/science.abc2986");
   const relations = region(page, "Relations").locator("tbody tr");
   await expect(relations.locator("td:first-child")).toHaveText(["exact", "broader", "narrower", "none"]);
-  await expect(relations.locator("td:nth-child(2)").nth(0)).toHaveText("—");
-  await expect(relations.locator("td:nth-child(2)").nth(3)).toHaveText("—");
+  await expect(relations.locator("td:nth-child(2)")).toHaveText([
+    "the same concept",
+    "the target is wider than our class",
+    "the target is narrower; for Gottstein2026, one of our items may span several of its objects",
+    "no counterpart in that vocabulary; the listed source was searched",
+  ]);
 
   for (const [name, n] of [["Field tags", 10], ["Module types", 22], ["Transfer modes", 6], ["Unit operations", 31]] as const) {
     await expect(region(page, name).locator("tbody tr"), name).toHaveCount(n);
@@ -77,6 +121,74 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   ]);
   await expect(region(page, "Family: mix").locator("tbody tr td:first-child")).toHaveText(["mix", "sonicate"]);
   expect(errors).toEqual([]);
+});
+
+test("AC-11: overview order, no disclosure, and the On this page jump list", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#/taxonomy");
+  await expect(h1(page, "Taxonomy")).toBeVisible();
+  const order = await page.locator("main").evaluate((m) =>
+    [...m.querySelectorAll("h1, h2, p.caption, nav")]
+      .filter((el) => !el.closest("section section"))
+      .map((el) => (el.tagName === "NAV" ? `nav:${el.getAttribute("aria-label")}` : `${el.tagName.toLowerCase()}:${el.textContent}`)),
+  );
+  expect(order.filter((t) => !t.startsWith("p:"))).toEqual([
+    "h1:Taxonomy",
+    "nav:On this page",
+    ...KIND_HEADINGS.map((t) => `h2:${t}`),
+    "h2:Sources of the correspondence",
+    "h2:Relations",
+  ]);
+  expect(order.slice(0, 3)).toEqual(["h1:Taxonomy", `p:${CAPTION}`, "nav:On this page"]);
+  await expect(page.locator("main details")).toHaveCount(0);
+
+  const jump = page.getByRole("navigation", { name: "On this page", exact: true });
+  await expect(jump.getByRole("button")).toHaveText(KIND_HEADINGS);
+  await jump.getByRole("button", { name: "Unit operations", exact: true }).click();
+  expect(await hash(page)).toBe("#/taxonomy");
+  await expect(h2(page, "Unit operations")).toBeInViewport();
+  await expect(h2(page, "Unit operations")).toBeFocused();
+  await jump.getByRole("button", { name: "Transfer modes", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  expect(await hash(page)).toBe("#/taxonomy");
+  await expect(h2(page, "Transfer modes")).toBeInViewport();
+  await expect(h2(page, "Transfer modes")).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+test("AC-11: ?source= targets one sources row and scrolls it into view", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#/taxonomy?source=Bai2024");
+  await expect(h1(page, "Taxonomy")).toBeVisible();
+  await expect(currentRows(page)).toHaveCount(1);
+  await expect(sourceRow(page, "Bai2024")).toHaveAttribute("aria-current", "true");
+  await expect(sourceRow(page, "Bai2024")).toBeInViewport();
+
+  await page.evaluate(() => {
+    window.location.hash = "#/taxonomy?source=Mehr2020";
+  });
+  await expect(sourceRow(page, "Mehr2020")).toHaveAttribute("aria-current", "true");
+  await expect(currentRows(page)).toHaveCount(1);
+  await expect(sourceRow(page, "Bai2024")).not.toHaveAttribute("aria-current");
+  await expect(sourceRow(page, "Mehr2020")).toBeInViewport();
+
+  const fresh = await page.context().newPage();
+  const freshErrors = trackErrors(fresh);
+  await fresh.goto("/#/taxonomy?source=Schilling2026_SI");
+  await expect(currentRows(fresh)).toHaveCount(1);
+  await expect(currentRows(fresh).locator("td").first()).toHaveText("Schilling2026, Schilling2026_SI");
+  await fresh.goto("/#/taxonomy?source=Nobody2020");
+  await expect(h1(fresh, "Taxonomy")).toBeVisible();
+  await expect(currentRows(fresh)).toHaveCount(0);
+
+  await fresh.goto("/#/taxonomy/module_type/thermal_unit");
+  await expect(h1(fresh, "thermal_unit")).toBeVisible();
+  await link(fresh, "OntoLab/SAREF").click();
+  expect(await hash(fresh)).toBe("#/taxonomy?source=Bai2024");
+  await expect(sourceRow(fresh, "Bai2024")).toHaveAttribute("aria-current", "true");
+  await expect(sourceRow(fresh, "Bai2024")).toBeInViewport();
+  expect(errors).toEqual([]);
+  expect(freshErrors).toEqual([]);
 });
 
 test("AC-12: module type, field tag and transfer mode pages with matching count lines", async ({ page }) => {
@@ -145,42 +257,70 @@ test("AC-12: unit operation, unused field tag and four-example pages", async ({ 
   expect(errors).toEqual([]);
 });
 
-test("AC-13: correspondence sections", async ({ page }) => {
+test("AC-13: the correspondence table of thermal_unit", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/taxonomy/module_type/thermal_unit");
   const corr = region(page, "Correspondence");
-  await expect(corr.getByRole("heading", { level: 3 })).toHaveText(["XDL", "WCSO", "Leong2022", "OntoLab_SAREF", "Gottstein2026"]);
-  const xdl = region(page, "XDL");
-  await expect(xdl.locator(".taxo-targets li")).toHaveText([
-    "Heater/chiller — exact", "Low temperature — exact", "circulation chiller — exact", "heater chiller — exact", "stirrer hotplate — exact",
+  await expect(corr.getByRole("heading", { level: 3 })).toHaveCount(0);
+  await expect(corr.locator("table")).toHaveCount(1);
+  await expect(corr.locator("thead th")).toHaveText(["Vocabulary", "Term", "Relation", "Source"]);
+  await expect(corr.locator("tbody tr")).toHaveCount(13);
+  const vocab = corr.locator('tbody td[data-label="Vocabulary"]');
+  await expect(vocab).toHaveText(["XDL", "WCSO", "MAP (Leong2022)", "OntoLab/SAREF", "Gottstein2026 orchestration levels"]);
+  expect(await vocab.getByRole("link").evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual([
+    "#/taxonomy?source=Mehr2020",
+    "#/taxonomy?source=Schilling2026",
+    "#/taxonomy?source=Leong2022",
+    "#/taxonomy?source=Bai2024",
+    "#/taxonomy?source=Gottstein2026",
   ]);
-  await expect(xdl.locator(".taxo-sources li")).toHaveText(["Mehr2020 ; p.10 ; Fig. 5", "Mehr2020 ; p.4 ; Fig. 2", "Mehr2020 ; p.11 ; main text"]);
-  await expect(xdl.locator(".taxo-ref a")).toHaveAttribute("href", "https://doi.org/10.1126/science.abc2986");
-  const saref = region(page, "OntoLab_SAREF");
-  await expect(saref).toContainText("No counterpart in this vocabulary.");
-  await expect(saref).toContainText("Source searched:");
-  await expect(saref.locator(".taxo-sources li")).toHaveText(["Bai2024"]);
+  await expect(vocab.first()).toHaveAttribute("rowspan", "5");
+  await expect(corr.locator('tbody td[data-label="Source"]').first()).toHaveAttribute("rowspan", "5");
+  const rows = await correspondenceRows(page);
+  expect(rows[0]).toEqual(["XDL", "Heater/chiller", "exact", "Mehr2020, p.10, Fig. 5; Mehr2020, p.4, Fig. 2; Mehr2020, p.11, main text"]);
+  expect(rows.slice(1, 5)).toEqual([
+    ["Low temperature", "exact"], ["circulation chiller", "exact"], ["heater chiller", "exact"], ["stirrer hotplate", "exact"],
+  ]);
+  expect(rows).toContainEqual(["OntoLab/SAREF", "—", "none", "searched: Bai2024"]);
+  expect(rows[12]).toEqual([
+    "Gottstein2026 orchestration levels", "setup", "exact", "Gottstein2026, pdf p.3, §Vocabulary and formalism (physical terms)",
+  ]);
+  await expect(page.locator('main a[href^="https://doi.org/"]')).toHaveCount(0);
+  expect(await page.locator("main").textContent()).not.toContain("doi:");
+  expect(errors).toEqual([]);
+});
 
+test("AC-13: mobile_robot, human, unmapped kinds and relation words", async ({ page }) => {
+  const errors = trackErrors(page);
   await page.goto("/#/taxonomy/transfer_mode/mobile_robot");
-  await expect(region(page, "Leong2022").locator(".taxo-targets li")).toHaveText(["transportation task — broader"]);
-  await expect(region(page, "Leong2022").locator(".taxo-sources li")).toHaveText(["Leong2022 ; p.9 ; Limitations"]);
-  await expect(region(page, "OntoLab_SAREF")).toContainText("Not covered: OntoLab_SAREF maps module types only.");
+  await expect(region(page, "Correspondence").locator("tbody tr")).toHaveCount(5);
+  expect(await correspondenceRows(page)).toEqual([
+    ["XDL", "—", "none", "searched: Mehr2020"],
+    ["WCSO", "—", "none", "searched: Schilling2026"],
+    ["MAP (Leong2022)", "transportation task", "broader", "Leong2022, p.9, Limitations"],
+    ["OntoLab/SAREF", "—", "not covered", "OntoLab/SAREF maps module types only"],
+    ["Gottstein2026 orchestration levels", "unit_operation", "exact", "Gottstein2026, pdf p.4, §Results"],
+  ]);
 
   await page.goto("/#/taxonomy/module_type/human");
-  await expect(region(page, "Leong2022").locator(".taxo-targets li")).toHaveText(["Manual task — broader", "manual tool — narrower"]);
-  await expect(region(page, "Gottstein2026")).toContainText("No counterpart in this vocabulary.");
-  await expect(region(page, "Gottstein2026").locator(".taxo-sources li")).toHaveText(["Gottstein2026 ; pdf p.3 ; Fig. 1"]);
+  await expect(region(page, "Correspondence").locator("tbody tr")).toHaveCount(6);
+  const rows = await correspondenceRows(page);
+  const at = rows.findIndex((r) => r[1] === "Manual task");
+  expect(rows[at]).toEqual(["MAP (Leong2022)", "Manual task", "broader", "Leong2022, p.3, Fig. 1; Leong2022, p.7, CS3"]);
+  expect(rows[at + 1]).toEqual(["manual tool", "narrower"]);
+  expect(rows).toContainEqual(["Gottstein2026 orchestration levels", "—", "none", "searched: Gottstein2026, pdf p.3, Fig. 1"]);
 
   await page.goto("/#/taxonomy/field_tag/catalysis");
   await expect(region(page, "Correspondence")).toContainText("The correspondence table does not map field tags.");
-  await expect(region(page, "Correspondence").getByRole("heading", { level: 3 })).toHaveCount(0);
+  await expect(region(page, "Correspondence").locator("table")).toHaveCount(0);
   await page.goto("/#/taxonomy/unit_operation/unmapped");
   await expect(region(page, "Correspondence")).toContainText("The correspondence table has no row for this class.");
+  await expect(region(page, "Correspondence").locator("table")).toHaveCount(0);
 
   await page.goto("/#/taxonomy/unit_operation/wash_extract");
-  const relations = await page.locator(".taxo-targets li").allTextContents();
+  const relations = await region(page, "Correspondence").locator('td[data-label="Relation"]').allTextContents();
   expect(relations.length).toBeGreaterThan(0);
-  expect(relations.every((t) => / — (exact|broader|narrower)$/.test(t))).toBe(true);
+  expect(relations.filter((t) => !["exact", "broader", "narrower", "none", "not covered"].includes(t))).toEqual([]);
   expect(errors).toEqual([]);
 });
 
@@ -267,24 +407,64 @@ test("AC-16: no page-level horizontal scroll at 375 px", async ({ page }) => {
   for (const [url, title] of [
     ["/#/taxonomy", "Taxonomy"],
     ["/#/taxonomy/module_type/thermal_unit", "thermal_unit"],
+    ["/#/taxonomy/transfer_mode/mobile_robot", "mobile_robot"],
     ["/#/taxonomy/unit_operation/sonicate", "sonicate"],
   ] as const) {
     await page.goto(url);
     await expect(h1(page, title)).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth), url).toBeLessThanOrEqual(375);
   }
+  await page.goto("/#/taxonomy/module_type/thermal_unit");
+  await expect(h1(page, "thermal_unit")).toBeVisible();
+  const cells = await region(page, "Correspondence")
+    .locator("tbody td")
+    .evaluateAll((tds) =>
+      tds.map((td) => ({
+        row: getComputedStyle(td.parentElement!).display,
+        cell: getComputedStyle(td).display,
+        label: td.getAttribute("data-label"),
+        before: getComputedStyle(td, "::before").content,
+      })),
+    );
+  expect(cells.length).toBe(13 * 2 + 5 * 2);
+  expect(cells.filter((c) => c.row !== "block" || c.cell !== "block" || !c.label || c.before !== `"${c.label}: "`)).toEqual([]);
 });
+
+for (const width of [800, 375]) {
+  test(`AC-16: class names and vocabulary labels break only after "_" or at a space at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/#/taxonomy");
+    await expect(h1(page, "Taxonomy")).toBeVisible();
+    const classLinks = 'main section table a[href^="#/taxonomy/"]';
+    await expect(page.locator(classLinks)).toHaveCount(69);
+    expect(await badBreaks(page, classLinks)).toEqual([]);
+    const longest = ["instrument_electrochemical", "instrument_separation_ms", "sample_handling_station", "measure_electrochemical", "materials_polymer_soft"];
+    for (const name of longest) await expect(link(page, name)).toBeVisible();
+    for (const url of ["/#/taxonomy/module_type/thermal_unit", "/#/taxonomy/transfer_mode/mobile_robot"]) {
+      await page.goto(url);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const labels = 'main td[data-label="Vocabulary"] a';
+      await expect(page.locator(labels)).toHaveCount(5);
+      expect(await badBreaks(page, labels), url).toEqual([]);
+    }
+  });
+}
 
 test("AC-16: keyboard reaches and opens the taxonomy links", async ({ page }) => {
   await page.goto("/#/taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
   await tabToLink(page, "Taxonomy", "#/taxonomy");
+  await tabToLink(page, "Field tags", undefined, 400, "BUTTON");
+  await tabToLink(page, "flow_reactor");
   await tabToLink(page, "doi:10.1126/science.abc2986");
+  await page.reload();
+  await expect(h1(page, "Taxonomy")).toBeVisible();
   await tabToLink(page, "flow_reactor");
   await page.keyboard.press("Enter");
   await expect(h1(page, "flow_reactor")).toBeVisible();
   await tabToLink(page, "127 platforms");
   await tabToLink(page, "Bedard2018/P11");
+  await tabToLink(page, "XDL");
 });
 
 test("AC-16: heading levels start at h1 and never skip", async ({ page }) => {

@@ -1,6 +1,6 @@
 // AC-1: hash route parsing (REQ-001, REQ-002).
 import { describe, expect, it } from "vitest";
-import { compareHash, parseRoute, platformHash, taxonomyHash } from "../src/lib/route";
+import { compareHash, parseRoute, platformHash, taxonomyHash, taxonomySourceHash } from "../src/lib/route";
 
 describe("parseRoute", () => {
   it("parses a complete platform route", () => {
@@ -116,5 +116,38 @@ describe("parseRoute: taxonomy (SPEC-TAXO-001 AC-9)", () => {
     expect(taxonomyHash("unit_operation", "sonicate")).toBe("#/taxonomy/unit_operation/sonicate");
     expect(taxonomyHash("a b", "c/d")).toBe("#/taxonomy/a%20b/c%2Fd");
     expect(parseRoute(taxonomyHash("a b", "c/d"))).toEqual({ kind: "taxonomyClass", classKind: "a b", cls: "c/d" });
+  });
+});
+
+describe("parseRoute: taxonomy source target (SPEC-TAXO-001 0.4.0 AC-9)", () => {
+  it.each([
+    ["#/taxonomy?source=Mehr2020", "Mehr2020"],
+    ["#/taxonomy?source=a%20b", "a b"],
+    ["#/taxonomy?source=Nobody2020", "Nobody2020"],
+  ])("parses %j as the overview with target source %j", (hash, source) => {
+    expect(parseRoute(hash)).toEqual({ kind: "taxonomy", source });
+  });
+
+  it("keeps the overview without a source key when no target is given", () => {
+    expect(Object.keys(parseRoute("#/taxonomy"))).toEqual(["kind"]);
+  });
+
+  it.each([
+    "#/taxonomy?",
+    "#/taxonomy?source=",
+    "#/taxonomy?source=%E0",
+    "#/taxonomy?source=Mehr2020&x=1",
+    "#/taxonomy?source=Mehr2020&",
+    "#/taxonomy?sources=Mehr2020",
+    "#/taxonomy?x=1&source=Mehr2020",
+  ])("treats %j as not found, carrying the hash", (hash) => {
+    expect(() => parseRoute(hash)).not.toThrow();
+    expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+  });
+
+  it("builds source hashes that parse back", () => {
+    expect(taxonomySourceHash("Bai2024")).toBe("#/taxonomy?source=Bai2024");
+    expect(taxonomySourceHash("a b&c")).toBe("#/taxonomy?source=a%20b%26c");
+    expect(parseRoute(taxonomySourceHash("a b&c"))).toEqual({ kind: "taxonomy", source: "a b&c" });
   });
 });
