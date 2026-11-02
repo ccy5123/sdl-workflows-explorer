@@ -18,6 +18,8 @@ export const ROUTES: readonly SiteRoute[] = [
   { hash: "#/taxonomy/module_type/flow_reactor", title: "Taxonomy: flow_reactor", current: "Taxonomy" },
   { hash: "#/benchmark", title: "Benchmark", current: "Benchmark" },
   { hash: "#/benchmark/items", title: "Benchmark items", current: "Benchmark" },
+  { hash: "#/workflow", title: "Workflow builder", current: "Workflow" },
+  { hash: "#/workflow?s=dispense_liquid~1,react_thermal~2&m=fluidics,thermal_unit", title: "Workflow builder", current: "Workflow" },
   { hash: "#/no-such-page", title: "Not found", current: null },
 ];
 

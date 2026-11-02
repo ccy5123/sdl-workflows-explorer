@@ -8,6 +8,7 @@ import {
   routeTitle,
   taxonomyHash,
   taxonomySourceHash,
+  workflowHash,
 } from "../src/lib/route";
 
 describe("parseRoute", () => {
@@ -207,5 +208,30 @@ describe("parseRoute: about (SPEC-SITE-001)", () => {
 
   it.each(["#/about/", "#/about?x", "#/abouts", "#/about/x"])("treats %j as not found, carrying the hash", (hash) => {
     expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+  });
+});
+
+// SPEC-SIM-001 AC-5: the workflow builder route.
+describe("parseRoute: workflow (SPEC-SIM-001)", () => {
+  it("parses the builder with and without a query", () => {
+    expect(parseRoute("#/workflow")).toEqual({ kind: "workflow", query: "" });
+    expect(parseRoute("#/workflow?b=4")).toEqual({ kind: "workflow", query: "b=4" });
+  });
+
+  it.each(["#/workflow/", "#/workflows", "#/workflow/x"])("treats %j as not found", (hash) => {
+    expect(parseRoute(hash)).toEqual({ kind: "notFound", hash });
+  });
+
+  it("has the title Workflow builder and marks the Workflow nav link", () => {
+    for (const hash of ["#/workflow", "#/workflow?b=4"]) {
+      expect(routeTitle(parseRoute(hash))).toBe("Workflow builder");
+      expect(navCurrent(parseRoute(hash))).toBe("Workflow");
+    }
+  });
+
+  it("builds the builder hash from a query", () => {
+    expect(workflowHash("")).toBe("#/workflow");
+    expect(workflowHash("b=4&p=2")).toBe("#/workflow?b=4&p=2");
+    expect(parseRoute(workflowHash("b=4"))).toEqual({ kind: "workflow", query: "b=4" });
   });
 });

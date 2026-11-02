@@ -1,5 +1,5 @@
 // Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001; SPEC-TAXO-001
-// REQ-009; SPEC-BENCH-001 REQ-005; SPEC-SITE-001 REQ-005). Pure: never throws.
+// REQ-009; SPEC-BENCH-001 REQ-005; SPEC-SITE-001 REQ-005; SPEC-SIM-001 REQ-005). Pure: never throws.
 
 export type Route =
   | { kind: "home" }
@@ -12,6 +12,7 @@ export type Route =
   | { kind: "taxonomyClass"; classKind: string; cls: string }
   | { kind: "benchmark" }
   | { kind: "benchmarkItems"; query: string }
+  | { kind: "workflow"; query: string }
   | { kind: "notFound"; hash: string };
 
 function decode(segment: string): string | null {
@@ -35,7 +36,7 @@ function compareId(item: string): string {
  * `#/platform/<paper_id>/<platform_suffix>` → platform; `#/browse[?<query>]` → browse; `#/compare/<id>,<id>…` →
  * compare; `#/taxonomy` → taxonomy; `#/taxonomy?source=<key>` → taxonomy with a target source;
  * `#/taxonomy/<kind>/<class>` → taxonomy class; `#/benchmark` → benchmark; `#/benchmark/items[?<query>]` → benchmark
- * items; `#/about` → about; empty, `#` or `#/` → home; anything else → not found.
+ * items; `#/workflow[?<query>]` → workflow builder; `#/about` → about; empty, `#` or `#/` → home; anything else → not found.
  */
 export function parseRoute(hash: string): Route {
   if (hash === "" || hash === "#" || hash === "#/") return { kind: "home" };
@@ -68,6 +69,8 @@ export function parseRoute(hash: string): Route {
   if (rest === "benchmark") return { kind: "benchmark" };
   if (rest === "benchmark/items") return { kind: "benchmarkItems", query: "" };
   if (rest.startsWith("benchmark/items?")) return { kind: "benchmarkItems", query: rest.slice("benchmark/items?".length) };
+  if (rest === "workflow") return { kind: "workflow", query: "" };
+  if (rest.startsWith("workflow?")) return { kind: "workflow", query: rest.slice("workflow?".length) };
   const parts = rest.split("/");
   if (parts.length !== 3 || parts[0] !== "platform") return notFound;
   const paperId = decode(parts[1]!);
@@ -98,6 +101,11 @@ export function taxonomySourceHash(key: string): string {
   return `#/taxonomy?source=${encodeURIComponent(key)}`;
 }
 
+/** Hash URL of the workflow builder with an encoded state query (SPEC-SIM-001 REQ-007). */
+export function workflowHash(query: string): string {
+  return query === "" ? "#/workflow" : `#/workflow?${query}`;
+}
+
 /** Name of a route in the document title, "<name> · SDL Workflows Explorer" (SPEC-SITE-001 REQ-010). */
 export function routeTitle(route: Route): string {
   switch (route.kind) {
@@ -121,6 +129,8 @@ export function routeTitle(route: Route): string {
       return "Benchmark";
     case "benchmarkItems":
       return "Benchmark items";
+    case "workflow":
+      return "Workflow builder";
     case "notFound":
       return "Not found";
   }
@@ -143,6 +153,8 @@ export function navCurrent(route: Route): string | null {
     case "benchmark":
     case "benchmarkItems":
       return "Benchmark";
+    case "workflow":
+      return "Workflow";
     default:
       return null;
   }

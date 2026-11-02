@@ -1,7 +1,7 @@
 // Hash router of the site (REQ-001 to REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001, REQ-015; SPEC-TAXO-001
 // REQ-009, REQ-010; SPEC-BENCH-001 REQ-005, REQ-015): home, platform viewer, browser, trends dashboard, taxonomy,
-// benchmark, comparison, about (SPEC-SITE-001 REQ-005), or not found. The footer links to the author's site and to the
-// missing-paper issue form (SPEC-CONTRIB-001 REQ-006).
+// benchmark, workflow builder (SPEC-SIM-001 REQ-005), comparison, about (SPEC-SITE-001 REQ-005), or not found. The
+// footer links to the author's site and to the missing-paper issue form (SPEC-CONTRIB-001 REQ-006).
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IssueLink } from "./components/IssueLink";
 import type { IndexJson } from "./data/types";
@@ -21,6 +21,8 @@ const Trends = lazy(() => import("./views/Trends").then((m) => ({ default: m.Tre
 const Taxonomy = lazy(() => import("./views/Taxonomy").then((m) => ({ default: m.Taxonomy })));
 // The benchmark page and item explorer load in their own chunk and fetch their data themselves (SPEC-BENCH-001 REQ-015).
 const Benchmark = lazy(() => import("./views/Benchmark").then((m) => ({ default: m.Benchmark })));
+// The workflow builder and its outputs load in their own chunk and fetch data/simulation.json themselves.
+const Workflow = lazy(() => import("./views/Workflow").then((m) => ({ default: m.Workflow })));
 
 /** Current hash, and a navigate function that shows the new view in the same render as the click. */
 function useHash(): [string, (next: string) => void] {
@@ -93,6 +95,7 @@ export function App() {
         {navLink("#/trends", "Trends")}
         {navLink("#/taxonomy", "Taxonomy")}
         {navLink("#/benchmark", "Benchmark")}
+        {navLink("#/workflow", "Workflow")}
         {navLink("#/about", "About")}
       </nav>
       <main id="main" ref={mainRef} tabIndex={-1}>
@@ -117,6 +120,11 @@ export function App() {
         {index && (route.kind === "benchmark" || route.kind === "benchmarkItems") && (
           <Suspense fallback={<p>Loading…</p>}>
             <Benchmark key={route.kind} index={index} route={route} />
+          </Suspense>
+        )}
+        {index && route.kind === "workflow" && (
+          <Suspense fallback={<p>Loading…</p>}>
+            <Workflow />
           </Suspense>
         )}
         {index && route.kind === "compare" && <Compare key={route.ids.join(",")} index={index} ids={route.ids} />}
