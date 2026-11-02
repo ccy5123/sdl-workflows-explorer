@@ -33,6 +33,14 @@
   RED run — recorded as a gap). GREEN after `route.ts` `about`, `useReleaseDocs`, `Home.tsx`, `About.tsx`, the nav
   link and styles: site.spec 4 passed; full Vitest 31 files / 490 passed; full Playwright 72 passed (68 + 4);
   typecheck exit 0.
+- M3 theme: `tests/siteTokens.test.ts`, the `buildStylesheet` theme cases in `tests/graphElements.test.ts`,
+  `e2e/routes.ts` (AC-12 route list) and `e2e/theme.spec.ts` written first. RED: siteTokens.test.ts could not load
+  `src/lib/siteTokens`; graphElements 2 failed (dark stylesheet); Playwright "Cannot find module .../src/lib/siteTokens".
+  GREEN after `siteTokens.ts`, the CSS token blocks (the hard-coded `#ffffff`, `#ddf4ff`, `#b35900`, `#cf222e` replaced
+  by `--bg`, `--highlight`, `--warn`, `--danger`), the `index.html` pre-paint script, the `main.tsx` listener,
+  `useTheme`, `buildStylesheet(theme = "light")`, `Graph` re-style and the legend's `var(--unmapped)`. One test fix:
+  Cytoscape reports `rgb(r,g,b)` without spaces, normalised in the spec. Full Vitest 32 files / 499 passed; full
+  Playwright 86 passed (72 + 14); typecheck exit 0.
 - Baseline re-measured 2026-11-02 at 69d2dc7: `npx tsc --noEmit` exit 0; `npx vitest run` 28 files, 459 passed;
   `npm run e2e` 68 passed.
 - Derived-file hashes at 69d2dc7 (`sha256sum` of `public/data/` after build-data; AC-1):

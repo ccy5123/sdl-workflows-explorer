@@ -1,13 +1,34 @@
-/* Site styles. Plain CSS; panels stack vertically below 800px. */
+/* Site styles. Plain CSS; panels stack vertically below 800px. Colour tokens equal SITE_TOKENS in
+   src/lib/siteTokens.ts (SPEC-SITE-001 REQ-008, REQ-009); data-theme on <html> follows prefers-color-scheme. */
 :root {
+  --bg: #ffffff;
   --text: #1f2328;
   --muted: #57606a;
   --line: #d0d7de;
   --panel: #f6f8fa;
   --accent: #0969da;
+  --highlight: #ddf4ff;
+  --warn: #b35900;
+  --danger: #cf222e;
+  --unmapped: #000000;
+  color-scheme: light;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
   color: var(--text);
+}
+
+:root[data-theme="dark"] {
+  --bg: #1a1a19;
+  --text: #f0efec;
+  --muted: #b8b7ae;
+  --line: #4a4a46;
+  --panel: #242422;
+  --accent: #6cb4ff;
+  --highlight: #1d3350;
+  --warn: #e8a25c;
+  --danger: #ff7b72;
+  --unmapped: #f0efec;
+  color-scheme: dark;
 }
 
 * {
@@ -16,7 +37,8 @@
 
 body {
   margin: 0;
-  background: #ffffff;
+  background: var(--bg);
+  color: var(--text);
 }
 
 a {
@@ -200,7 +222,7 @@ table.data tbody tr[tabindex] {
 
 table.data tbody tr[tabindex]:hover,
 table.data tbody tr[aria-selected="true"] {
-  background: #ddf4ff;
+  background: var(--highlight);
 }
 
 /* Platform */
@@ -277,7 +299,7 @@ button {
   height: 34rem;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--bg);
 }
 
 .graph-fit {
@@ -291,7 +313,7 @@ button {
   border-radius: 6px;
   padding: 0.75rem;
   margin-bottom: 1rem;
-  background: #ffffff;
+  background: var(--bg);
 }
 
 .viewer-side .panel {
@@ -331,12 +353,12 @@ button {
   margin-bottom: 0.25rem;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--bg);
   color: var(--text);
 }
 
 .step[aria-pressed="true"] {
-  background: #ddf4ff;
+  background: var(--highlight);
   border-color: var(--accent);
 }
 
@@ -365,7 +387,7 @@ button {
 .uncertain,
 .marker {
   font-weight: 700;
-  color: #b35900;
+  color: var(--warn);
 }
 
 /* Legend */
@@ -484,7 +506,7 @@ button {
 .year-error {
   flex-basis: 100%;
   margin: 0;
-  color: #cf222e;
+  color: var(--danger);
 }
 
 .filter.search {

@@ -1,4 +1,5 @@
-// Legend: display groups, transfer modes and line markers (REQ-007, REQ-009, REQ-010, REQ-011).
+// Legend: display groups, transfer modes and line markers (REQ-007, REQ-009, REQ-010, REQ-011). The unmapped mode
+// line takes var(--unmapped), black in light and the text colour in dark (SPEC-SITE-001 REQ-009).
 import { DISPLAY_GROUPS, TRANSFER_MODES } from "../lib/moduleGroups";
 
 export function Legend() {
@@ -23,7 +24,7 @@ export function Legend() {
           <li key={m.mode}>
             <span
               className={m.mode === "data_transfer" ? "line thin" : "line"}
-              style={{ borderTopColor: m.colour }}
+              style={{ borderTopColor: m.mode === "unmapped" ? "var(--unmapped)" : m.colour }}
               aria-hidden="true"
             />
             {m.label} <code>{m.mode}</code>

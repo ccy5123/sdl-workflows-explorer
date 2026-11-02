@@ -6,6 +6,7 @@ import type { PlatformGraph } from "../data/types";
 import { buildElements, buildStylesheet } from "../lib/graphElements";
 import { highlightSet, type Selection } from "../lib/steps";
 import { readableViewport } from "../lib/viewport";
+import { useTheme } from "./useTheme";
 
 cytoscape.use(dagre);
 
@@ -33,13 +34,16 @@ export function Graph({ platform, selection, onSelect }: Props) {
   const cyRef = useRef<Core | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const theme = useTheme();
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
 
   useEffect(() => {
     if (!container.current) return;
     const cy = cytoscape({
       container: container.current,
       elements: buildElements(platform),
-      style: buildStylesheet(),
+      style: buildStylesheet(themeRef.current),
       layout: { name: "dagre", rankDir: "LR", fit: false, nodeSep: 30, rankSep: 90 } as cytoscape.LayoutOptions,
       minZoom: 0.2,
       maxZoom: 3,
@@ -59,6 +63,11 @@ export function Graph({ platform, selection, onSelect }: Props) {
       cy.destroy();
     };
   }, [platform]);
+
+  // The system colour scheme changed while the graph is open (SPEC-SITE-001 REQ-008).
+  useEffect(() => {
+    cyRef.current?.style(buildStylesheet(theme));
+  }, [theme]);
 
   useEffect(() => {
     const cy = cyRef.current;

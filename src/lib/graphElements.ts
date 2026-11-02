@@ -3,6 +3,7 @@
 import type { ElementDefinition, StylesheetJson } from "cytoscape";
 import type { PlatformGraph } from "../data/types";
 import { groupOf, transferModeStyle } from "./moduleGroups";
+import { SITE_TOKENS, type Theme } from "./siteTokens";
 
 /** Id of the compound node that holds the on-platform modules. */
 export function boundaryId(platform: Pick<PlatformGraph, "platform_id">): string {
@@ -53,8 +54,10 @@ export function buildElements(platform: PlatformGraph): ElementDefinition[] {
   return elements;
 }
 
-export function buildStylesheet(): StylesheetJson {
-  return [
+/** Cytoscape stylesheet; colours come from the site tokens of the theme (SPEC-SITE-001 REQ-008, REQ-009). */
+export function buildStylesheet(theme: Theme = "light"): StylesheetJson {
+  const t = SITE_TOKENS[theme];
+  const sheet: StylesheetJson = [
     {
       selector: "node",
       style: {
@@ -65,20 +68,20 @@ export function buildStylesheet(): StylesheetJson {
         "text-valign": "bottom",
         "text-margin-y": 4,
         "font-size": 12,
-        color: "#1f2328",
+        color: t["--text"],
         width: 26,
         height: 26,
         "border-width": 1,
-        "border-color": "#57606a",
+        "border-color": t["--muted"],
       },
     },
     {
       selector: "node.boundary",
       style: {
-        "background-color": "#f6f8fa",
+        "background-color": t["--panel"],
         "background-opacity": 0.6,
         "border-style": "dashed",
-        "border-color": "#57606a",
+        "border-color": t["--muted"],
         "text-valign": "top",
         "text-halign": "center",
         "text-margin-y": -4,
@@ -97,8 +100,8 @@ export function buildStylesheet(): StylesheetJson {
         "arrow-scale": 1,
         label: "data(label)",
         "font-size": 11,
-        color: "#1f2328",
-        "text-background-color": "#ffffff",
+        color: t["--text"],
+        "text-background-color": t["--bg"],
         "text-background-opacity": 0.85,
         "text-background-padding": "1px",
         "text-rotation": "autorotate",
@@ -107,9 +110,15 @@ export function buildStylesheet(): StylesheetJson {
     { selector: "edge.mode-data_transfer", style: { width: 1 } },
     { selector: "edge.inferred", style: { "line-style": "dashed" } },
     { selector: "edge.uncertain", style: { "font-weight": "bold" } },
-    { selector: "node.highlighted", style: { "border-width": 4, "border-color": "#1f2328" } },
+    { selector: "node.highlighted", style: { "border-width": 4, "border-color": t["--text"] } },
     { selector: "node.dimmed", style: { opacity: 0.25 } },
     { selector: "edge.dimmed", style: { opacity: 0.2 } },
-    { selector: ".picked", style: { "overlay-color": "#0969da", "overlay-opacity": 0.25, "overlay-padding": 4 } },
+    { selector: ".picked", style: { "overlay-color": t["--accent"], "overlay-opacity": 0.25, "overlay-padding": 4 } },
   ];
+  // The unmapped transfer mode is black in the legend palette; on a dark background it takes the dark text colour.
+  if (theme === "dark") {
+    const ink = t["--unmapped"];
+    sheet.push({ selector: "edge.mode-unmapped", style: { "line-color": ink, "target-arrow-color": ink } });
+  }
+  return sheet;
 }
