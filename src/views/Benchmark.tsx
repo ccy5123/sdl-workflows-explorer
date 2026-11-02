@@ -2,7 +2,7 @@
 // evaluation, items by platform) and the item explorer (SPEC-BENCH-001 REQ-007 to REQ-016). Loaded lazily;
 // data/benchmark.json and, for the explorer, data/benchmark-items.json are fetched by this module on first use and kept
 // for the page's lifetime.
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SPLITS, type BenchmarkItemsJson, type BenchmarkJson, type IndexJson, type Split } from "../data/types";
 import {
   BACK_LINK_TEXT,
@@ -73,6 +73,21 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/** An id or class name that may break across lines only after "_" or "/" (and at spaces): a <wbr> after each. */
+function Breakable({ text }: { text: string }) {
+  const parts = text.split(/(?<=[_/])/);
+  return (
+    <>
+      {parts.map((p, i) => (
+        <Fragment key={i}>
+          {p}
+          {i < parts.length - 1 && <wbr />}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 function Count({ cell, label }: { cell: CountCell; label: string }) {
   return (
     <td data-label={label} className="num">
@@ -92,7 +107,7 @@ function SplitTable({ data }: { data: BenchmarkJson }) {
           <th scope="col">Papers</th>
           {taskIds.map((id) => (
             <th scope="col" key={id}>
-              {id} items
+              <Breakable text={`${id} items`} />
             </th>
           ))}
         </tr>
@@ -152,7 +167,9 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
           {labelRows(data, index).map((r) => (
             <tr key={r.label}>
               <td data-label="Label">
-                <a href={r.href}>{r.label}</a>
+                <a href={r.href}>
+                  <Breakable text={r.label} />
+                </a>
               </td>
               {r.cells.map((c, i) => (
                 <Count key={SPLITS[i]} cell={c} label={SPLIT_LABELS[SPLITS[i]!]} />
@@ -191,7 +208,7 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
               <tr key={row.task}>
                 {cells.map((text, i) => (
                   <td key={REFERENCE_HEADS[i]} data-label={REFERENCE_HEADS[i]} className={i > 0 ? "num" : undefined}>
-                    {text}
+                    {i === 0 ? <Breakable text={text} /> : text}
                   </td>
                 ))}
               </tr>
@@ -269,7 +286,7 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
             <th scope="col">Split</th>
             {taskIds.map((id) => (
               <th scope="col" key={id}>
-                {id} items
+                <Breakable text={`${id} items`} />
               </th>
             ))}
           </tr>
@@ -278,7 +295,9 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
           {rows.map((r) => (
             <tr key={r.platform_id}>
               <td data-label="Platform">
-                <a href={r.href}>{r.platform_id}</a>
+                <a href={r.href}>
+                  <Breakable text={r.platform_id} />
+                </a>
               </td>
               <td data-label="Name">{names.get(r.platform_id) ?? DASH}</td>
               <td data-label="Split">{r.split}</td>
@@ -420,7 +439,13 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
                 <tr key={String(row[0])}>
                   {explorerCells(task.target, taskItems.columns, row).map((cell, i) => (
                     <td key={columns[i]!.head} data-label={columns[i]!.head}>
-                      {cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text}
+                      {cell.href ? (
+                        <a href={cell.href}>
+                          <Breakable text={cell.text} />
+                        </a>
+                      ) : (
+                        <Breakable text={cell.text} />
+                      )}
                     </td>
                   ))}
                 </tr>

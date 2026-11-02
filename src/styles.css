@@ -816,6 +816,13 @@ table.count-table a {
   overflow-wrap: anywhere;
 }
 
+/* Table words never break mid-word; ids and class names break at the <wbr> after "_" or "/" instead. */
+.benchmark .bench-table th,
+.benchmark .bench-table td {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 .benchmark pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

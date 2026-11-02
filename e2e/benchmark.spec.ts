@@ -328,3 +328,44 @@ test("AC-15: no horizontal scroll at 375 px; stacked cells carry their column la
   expect(await noScroll()).toBe(true);
   expect(await stacked()).toEqual([]);
 });
+
+// Screen check at 1280 px: a table cell's text may wrap at a space, after a hyphen, or at the line-break opportunity
+// after "_" or "/", never inside a word (the rule the taxonomy tables follow, SPEC-TAXO-001 REQ-016).
+test("table words wrap only at spaces, hyphens, _ or / at 1280 px", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const brokenWords = () =>
+    page.evaluate(() => {
+      const broken: string[] = [];
+      for (const cell of document.querySelectorAll(".bench-table th, .bench-table td")) {
+        const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node.textContent ?? "";
+          let offset = 0;
+          // Segments end at whitespace or after "-", "_" or "/"; each must stay on one line.
+          for (const word of text.split(/(\s+)|(?<=[-_/])/).filter((s) => s !== undefined)) {
+            if (word.trim() !== "") {
+              const range = document.createRange();
+              range.setStart(node, offset);
+              range.setEnd(node, offset + word.length);
+              const tops = new Set([...range.getClientRects()].map((r) => Math.round(r.top)));
+              if (tops.size > 1) broken.push(word);
+            }
+            offset += word.length;
+          }
+        }
+      }
+      return broken;
+    });
+
+  await page.goto("/#/benchmark");
+  await expect(h1(page, "Benchmark chrono2023")).toBeVisible();
+  expect(await brokenWords()).toEqual([]);
+
+  await page.goto(`/#/benchmark/items?task=${MT}`);
+  await expect(countLine(page)).toHaveText("2621 of 2621 items");
+  expect(await brokenWords()).toEqual([]);
+
+  await page.goto(`/#/benchmark/items?task=${TM}`);
+  await expect(countLine(page)).toHaveText("983 of 983 items");
+  expect(await brokenWords()).toEqual([]);
+});

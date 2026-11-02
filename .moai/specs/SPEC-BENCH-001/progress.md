@@ -181,6 +181,25 @@ problems                                                   0
   bytes (both equal to the plan estimates); `index.json` sha256 6b644e3c…ca5db4d, `taxonomy.json` e33f52e3…80acdc9 and
   the 238 platform files concatenated 9001ca64…99889a8, equal to the §E.1 baseline.
 
+- Orchestrator verification of the run commits (HEAD cbebd15): `npm run typecheck` exit 0; `npm run build-data` exit
+  0 with the sizes and the three baseline hashes above; `node .moai/specs/SPEC-BENCH-001/expected-counts.mjs` exit 0;
+  `npx vitest run` 27 files / 445 tests passed; `npm run e2e` 61 passed; `git ls-files public/data` 0 files.
+- Screen check by the orchestrator (built site, `vite preview` on port 4318, in-app browser):
+  - 1280 px: `#/benchmark` in the order of REQ-007 with the texts of AC-8/AC-10; the published JSON opens and matches
+    the file; `#/benchmark/items` was replaced by `#/benchmark/items?task=chrono2023-module_type`, "2621 of 2621 items",
+    100 rows; scrollWidth 1265 = clientWidth on both pages; no console error.
+  - Finding at 1280 px: the explorer and the page tables broke words mid-word ("Spli|t", "trai|n",
+    "sample_handling_statio|n", platform ids, "Replicates"), because `.benchmark { overflow-wrap: anywhere }` let the
+    table columns shrink below word width. Fix (the rule of the taxonomy tables, SPEC-TAXO-001 REQ-016): table cells
+    use `overflow-wrap: normal`, and ids and class names in table cells get a `<wbr>` after each "_" or "/". Test first:
+    a new Playwright test "table words wrap only at spaces, hyphens, _ or / at 1280 px" failed with 184 broken words
+    (`Expected - 1 / Received + 184`, first entries "top-1", "Replicates", "chrono2023-module_type", "AbdelLatif2021/P1")
+    and passed after the fix. Edited: `src/views/Benchmark.tsx` (a `Breakable` text component), `src/styles.css`, the
+    new test in `e2e/benchmark.spec.ts`.
+  - 375 px: `#/benchmark` (published JSON open) and `#/benchmark/items?task=chrono2023-transfer_mode` have scrollWidth
+    375 = clientWidth; tables stack as labelled blocks.
+  - After the fix: Vitest 445 passed, Playwright 62 passed (52 before this SPEC), typecheck exit 0.
+
 ## §F Phase 4 Mode Selection
 
 - Inputs: Tier M; about 12 to 15 files (scripts, src, tests, e2e, fixture); domains: data pipeline, routing, view,
