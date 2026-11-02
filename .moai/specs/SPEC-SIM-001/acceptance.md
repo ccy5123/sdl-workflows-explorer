@@ -9,8 +9,8 @@ finds a different pin, they are re-measured first.
 
 ### AC-1 Simulation data from the release (REQ-001, REQ-002, REQ-003)
 - Given the 1.1.0 bundle, when `npm run build-data` runs, then `public/data/simulation.json` exists and holds 31 unit
-  operations, 22 module types, 6 transfer modes, 455 durations (57 with `joint`, 398 without), 136 throughputs (92
-  measured, 44 nominal), 127 throughputs with a per-day value and 9 without, 4 transfer times and 280 platform layouts.
+  operations, 22 module types, 6 transfer modes, 454 durations (57 with `joint`, 397 without), 135 throughputs (91
+  measured, 44 nominal), 126 throughputs with a per-day value and 9 without, 4 transfer times and 279 platform layouts.
 - Given the fixture release, when `deriveAll` runs, then each fixture duration row has the seconds, markers, range ends
   in seconds, samples per run, evidence and joint fields of design.md §1 with the values the fixture states, and each
   fixture throughput row has the per-day value and basis (or null and reason) of design.md §2.
@@ -22,7 +22,7 @@ finds a different pin, they are re-measured first.
 
 ### AC-3 Joint durations kept apart (REQ-002)
 - Given the real data, when single-step values are grouped by unit operation, then no row with `joint` is counted,
-  the groups hold 398 rows over 28 unit operations with the n of research.md §2, and dispense_solid,
+  the groups hold 397 rows over 28 unit operations with the n of research.md §2, and dispense_solid,
   generate_instructions and purify have none.
 - Given each joint row, then `joint.step_ids[0]` equals its `step_id` and `joint.unit_operations` are the unit
   operations of those steps in order.
@@ -72,7 +72,7 @@ finds a different pin, they are re-measured first.
   when it is used as the start, then those values fill the builder (Vitest on the template function, one platform
   per quantity); Holmes2016/P1 fills batch size 5 (recorded 4.5), and Erps2021/P1 fills the transfer time of its
   edge E2 as 45.7 s (not rounded).
-- Given each of the 280 platforms used as the start, then its similarity to itself is 1, 1, 1 (Vitest).
+- Given each of the 279 platforms used as the start, then its similarity to itself is 1, 1, 1 (Vitest).
 
 ### AC-9 Similarity measures and order (REQ-009)
 - Given W = [a, b, c] and P = [a, c], then step order = 1 − 1/3; given module types {x, y} and {y, z}, module types =

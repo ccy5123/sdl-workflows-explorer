@@ -1,7 +1,7 @@
 ---
 id: SPEC-SIM-001
 title: "Workflow builder: similar platforms, cycle-time range and a discrete-event simulation from the 1.1.0 timing data"
-version: "0.3.0"
+version: "0.3.1"
 status: approved
 created: 2026-11-02
 updated: 2026-11-02
@@ -29,6 +29,11 @@ depends_on: [SPEC-RELEASE-001]
   N2); device kept only across a boundary with no transfer (N3); samples per run up to the batch's samples (N4); plan
   task text (N5); boundary-rule tie-break (N6). Audit 3 PASS 0.88; its optional O1 (inputs a later edit makes
   invalid), O2 (edge number) and O3 (boundary counts wording) applied without a further audit.
+- 2026-11-02 0.3.1 start gate: branch rebased onto `origin/main` 817c6ab (1.1.0 deployed, bundle re-pinned to the
+  published file, SHA-256 673b2dbb…). Counts in research.md, design.md and acceptance.md re-measured on that file
+  (e.g. 454 durations, 135 throughputs, 1660 boundaries). The repository became public with the deploy, so
+  REQ-024 now limits pushes to the feature branch instead of naming a private origin; no other requirement
+  changed.
 
 ## 1. Why
 
@@ -40,7 +45,7 @@ workflow the visitor composes, feeds three outputs: similar platforms (data only
 built from recorded durations, and a discrete-event simulation whose every assumption outside the data is an input
 the visitor sees and sets.
 
-The recorded durations are sparse (455 rows over 28 unit operations, most with fewer than 10 values; research.md §2),
+The recorded durations are sparse (454 rows over 28 unit operations, most with fewer than 10 values; research.md §2),
 so every output shows n and its sources, and the site states no verdict or cut-off on any number.
 
 ## 2. Requirements (GEARS)
@@ -183,7 +188,7 @@ so every output shows n and its sources, and the site states no verdict or cut-o
   as acceptance.md lists.
 - **REQ-024** (unwanted) The work shall not change `main`, `release-1.1.0`, the repository's visibility, the Pages
   settings, `release.config.json` or any workflow run; the run phase shall not start before the orchestrating session
-  reports the 1.1.0 deploy done; the feature branch shall be pushed only to the private origin.
+  reports the 1.1.0 deploy done; pushes shall go only to the feature branch on origin (public since the deploy).
 
 ## 3. Out of scope
 

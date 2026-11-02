@@ -10,11 +10,11 @@ interface SimulationJson {
   unit_operations: { id: string; family: string; definition: string }[];       // core/unit_operation.csv, 31
   module_types: { id: string; definition: string }[];                           // core/module_type.csv, 22
   transfer_modes: { id: string; is_material: boolean; definition: string }[];   // core/transfer_mode.csv, 6
-  durations: DurationRow[];        // every duration row of step_timing, 455
-  throughputs: ThroughputRow[];    // every throughput row of process_value, 136
+  durations: DurationRow[];        // every duration row of step_timing, 454
+  throughputs: ThroughputRow[];    // every throughput row of process_value, 135
   transfer_times: { edge_id: string; platform_id: string; seconds: number; value: number; unit: string;
                     evidence: Evidence }[];                                     // 4
-  platforms: PlatformLayout[];     // 280, for M1 and "Start from a coded platform"
+  platforms: PlatformLayout[];     // 279, for M1 and "Start from a coded platform"
 }
 
 interface DurationRow {
@@ -71,7 +71,7 @@ Days per time unit: s = 1/86400, min = 1/1440, h = 1/24, d = 1, week = 7.
 5. Any other unit: null, reason "unit not converted".
 
 `per_working_day` = 1 rows are converted the same way and shown with "per working day". Bound, approximate and range
-markers are carried and drawn. On 1.1.0 this converts 127 of 136 rows (research.md §3).
+markers are carried and drawn. On 1.1.0 this converts 126 of 135 rows (research.md §3).
 
 ## 3. URL grammar (REQ-007)
 
@@ -120,8 +120,8 @@ For the visitor's workflow W and a platform P (steps in `step_order`):
 Boundary rule (shared by M1 and "Start from a coded platform"): for consecutive steps on different modules, the mode
 of a material connection from the first module to the second; else of one from the second to the first; else
 data_transfer if a data connection joins them; else "not specified". Where several connections qualify, the one with
-the lowest edge number (k of E<k>, compared as a number) is used. On 1.1.0, of 1667 such boundaries, 1043 have a
-forward material connection, 76 only a reverse one, and 548 no material connection (236 of them a data connection);
+the lowest edge number (k of E<k>, compared as a number) is used. On 1.1.0, of 1660 such boundaries, 1042 have a
+forward material connection, 76 only a reverse one, and 542 no material connection (235 of them a data connection);
 no boundary has two qualifying material modes (one module pair off the boundaries,
 Ha2023/P1 M3→M5, has two). Both sides
 use the same sets, so a workflow started from a platform scores 1, 1, 1 against that platform.

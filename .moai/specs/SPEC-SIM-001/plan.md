@@ -2,8 +2,8 @@
 
 ## A. Context
 
-Branch `feat/workflow-simulation` from `origin/release-1.1.0` (b6bee31), in its own worktree
-`~/research/sdl-workflows-explorer-sim`; the primary checkout (`main`) and `~/research/sdl-workflows-explorer-rel110`
+Branch `feat/workflow-simulation`, cut from `origin/release-1.1.0` (b6bee31) and rebased at the start gate onto
+`origin/main` 817c6ab (the deployed 1.1.0 site), in its own worktree `~/research/sdl-workflows-explorer-sim`; the primary checkout (`main`) and `~/research/sdl-workflows-explorer-rel110`
 (`release-1.1.0`) are not touched. Every run sets
 `SDL_RELEASE_ZIP=/home/cyjoe/research/sdl-db/release/out/sdl-workflows-1.1.0.zip` and checks its SHA-256 against the
 pin in the same run. Data facts: research.md. Shapes, grammar and algorithms: design.md.
@@ -44,7 +44,7 @@ Tier L: 4 milestones after the data step, about 20 files. One write-capable agen
    headings). GREEN: `src/lib/siteText.ts`, `src/views/About.tsx`, `src/styles.css`. Then the plain-language review of
    every new string (listed in progress.md), full suites with the hash check, `npm run build`, screen check of
    `#/workflow` and `#/about` at 1280 px and 375 px, light and dark; sync; push the feature branch to the private
-   origin; report to the orchestrating session. No merge, no deploy.
+   origin (public since the deploy); report to the orchestrating session. No merge, no deploy.
 
 ## C. Risks
 
