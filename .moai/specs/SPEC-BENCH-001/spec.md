@@ -61,7 +61,7 @@ amendment_of: SPEC-BENCH-001
     notes, the published JSON block, "Run the evaluation yourself", the explorer, loading and routing. Tests added by
     this SPEC that assert the 0.3.0 texts are updated to the 0.4.0 texts; tests that predate this SPEC are not touched.
   - Closed: run commit a893de0 (tests first); Vitest 446 and Playwright 63 passing; screen check at 1280 and 375 px
-    recorded in progress.md §G; amendment_close_sha pending-backfill.
+    recorded in progress.md §G; amendment_close_sha 2947c80.
 
 ## 1. Why
 
