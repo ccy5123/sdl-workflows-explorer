@@ -2,7 +2,7 @@
 id: SPEC-SIM-001
 title: "Workflow builder: similar platforms, cycle-time range and a discrete-event simulation from the 1.1.0 timing data"
 version: "0.3.1"
-status: approved
+status: implemented
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
