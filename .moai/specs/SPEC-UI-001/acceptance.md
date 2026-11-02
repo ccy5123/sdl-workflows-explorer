@@ -104,6 +104,21 @@ progress.md.
   selected; they now expect no sheet (and AC-9 opens it with "Show platform evidence"); viewer AC-13 opens the legend
   before reading it; the fit test also zooms first.
 
+### AC-19 to AC-21 Phase 3 follow-up (REQ-021 to REQ-023), `e2e/viewer.spec.ts` "UI AC-…"
+- AC-19: on `Aand2024/P1` the node labels start with "Flow reactor", "Optical instrument" and "Sample handling station";
+  edge labels read "Fixed tubing" and "Data transfer". Tapping M2 shows the type row "Flow reactor" with the code
+  `flow_reactor`; tapping E1 shows "Fixed tubing" with `fixed_tubing`. In the legend, the row whose code is
+  `flow_reactor` reads "Flow reactor", `instrument_optical` "Optical instrument", `fixed_tubing` "Fixed tubing" and
+  `data_transfer` "Data transfer". Unit tests: `buildElements` labels and `code` fields; `formatEvidence` type fields.
+- AC-20: at 1440 × 900 with module M4 selected, `elementFromPoint` at the centre of "Paper DOI", "Show platform
+  evidence", "Fit to view", "Zoom in", "Zoom out" and "Legend" hits that control; the header card, the graph and the
+  steps-and-tables grid end left of the sheet; Cytoscape's width equals the graph box; selecting the first connection
+  row opens the sheet within the screen, and after scrolling back up the DOI link is still uncovered.
+- AC-21: with a step selected, going to Trends and back by the history, to About and back by setting the hash, and
+  straight to `Kim2026/P1` each show no sheet, the empty state and no pressed step.
+- Changed existing tests: `tests/graphElements.test.ts` expected the codes as node and edge labels; `tests/evidence.test.ts`
+  views gain the `type` field.
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

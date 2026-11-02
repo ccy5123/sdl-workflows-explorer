@@ -2,6 +2,7 @@
 // Module ids contain "/", so callers must look elements up with cy.getElementById(), never with "#id" selectors.
 import type { ElementDefinition, StylesheetJson } from "cytoscape";
 import type { PlatformGraph } from "../data/types";
+import { displayLabel } from "./labels";
 import { groupOf, transferModeStyle } from "./moduleGroups";
 import { SITE_TOKENS, type Theme } from "./siteTokens";
 
@@ -22,12 +23,15 @@ export function buildElements(platform: PlatformGraph): ElementDefinition[] {
       classes: "boundary",
     });
   }
+  // Labels show readable names (SPEC-UI-001 REQ-021); `code` keeps the vocabulary code for the legend and the sheet.
   for (const m of platform.modules) {
+    const type = displayLabel("module_type", m.module_type);
     elements.push({
       group: "nodes",
       data: {
         id: m.module_id,
-        label: m.name_in_paper ? `${m.module_type}\n${m.name_in_paper}` : m.module_type,
+        label: m.name_in_paper ? `${type}\n${m.name_in_paper}` : type,
+        code: m.module_type,
         colour: groupOf(m.module_type).colour,
         parent: m.on_platform ? parent : undefined,
       },
@@ -39,13 +43,15 @@ export function buildElements(platform: PlatformGraph): ElementDefinition[] {
     const classes = [`mode-${style.mode}`];
     if (!c.stated) classes.push("inferred");
     if (c.uncertain) classes.push("uncertain");
+    const mode = displayLabel("transfer_mode", c.transfer_mode);
     elements.push({
       group: "edges",
       data: {
         id: c.edge_id,
         source: c.from_module,
         target: c.to_module,
-        label: c.uncertain ? `${style.label} ?` : style.label,
+        label: c.uncertain ? `${mode} ?` : mode,
+        code: c.transfer_mode,
         colour: style.colour,
       },
       classes: classes.join(" "),

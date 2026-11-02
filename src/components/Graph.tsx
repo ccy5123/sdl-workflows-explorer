@@ -30,9 +30,30 @@ const LAYOUT = {
   nodeDimensionsIncludeLabels: true,
 } as cytoscape.LayoutOptions;
 
-function readableFit(cy: Core) {
+function fitFor(cy: Core, width: number) {
   const bb = cy.elements().boundingBox();
-  cy.viewport(readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, cy.width(), cy.height(), PADDING));
+  return readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, width, cy.height(), PADDING);
+}
+
+function readableFit(cy: Core) {
+  cy.viewport(fitFor(cy, cy.width()));
+}
+
+/** Whether the view is the readable fit of a box `width` pixels wide, i.e. the reader has not zoomed or panned. */
+function atReadableFit(cy: Core, width: number) {
+  const v = fitFor(cy, width);
+  const pan = cy.pan();
+  return Math.abs(v.zoom - cy.zoom()) < 1e-6 && Math.abs(v.pan.x - pan.x) < 0.5 && Math.abs(v.pan.y - pan.y) < 0.5;
+}
+
+/** Graph elements of the selection: the module or connection, or the modules of a step. */
+function selectedElements(cy: Core, platform: PlatformGraph, selection: Selection) {
+  if (selection?.kind === "module" || selection?.kind === "connection") return cy.getElementById(selection.id);
+  if (selection?.kind === "step") {
+    const step = platform.steps.find((s) => s.step_id === selection.id);
+    if (step) return cy.nodes(".module").filter((n) => highlightSet(step).has(n.id()));
+  }
+  return cy.collection();
 }
 
 function zoomBy(cy: Core, factor: number) {
@@ -92,6 +113,37 @@ export function Graph({ platform, selection, onSelect }: Props) {
   useEffect(() => {
     cyRef.current?.style(buildStylesheet(theme));
   }, [theme]);
+
+  // The box narrows when the evidence sheet docks beside the content (SPEC-UI-001 REQ-022) and widens when it
+  // closes. Cytoscape resizes itself after a 100 ms debounce and keeps the top-left corner; here it resizes at once.
+  // A view still at its readable fit is fitted again; one the reader moved keeps its centre. Either way the selected
+  // item is brought into view if the narrower box cut it off.
+  const platformRef = useRef(platform);
+  platformRef.current = platform;
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+  useEffect(() => {
+    const el = container.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    let width = el.clientWidth;
+    const observer = new ResizeObserver(() => {
+      const cy = cyRef.current;
+      const next = el.clientWidth;
+      if (!cy || next === width) return;
+      const fitted = atReadableFit(cy, width);
+      cy.resize();
+      if (fitted) readableFit(cy);
+      else cy.panBy({ x: (next - width) / 2, y: 0 });
+      width = next;
+      const picked = selectedElements(cy, platformRef.current, selectionRef.current);
+      if (picked.nonempty()) {
+        const bb = picked.renderedBoundingBox();
+        if (bb.x1 < PADDING || bb.x2 > next - PADDING) cy.panBy({ x: next / 2 - (bb.x1 + bb.x2) / 2, y: 0 });
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const cy = cyRef.current;

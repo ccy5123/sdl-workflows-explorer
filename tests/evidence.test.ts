@@ -31,6 +31,7 @@ describe("formatEvidence", () => {
       locator: "Table S1",
       note: "external NMR service",
       doiUrl: DOI_URL,
+      type: { kind: "module_type", code: "unmapped" },
     });
   });
 
@@ -51,6 +52,7 @@ describe("formatEvidence", () => {
       locator: "—",
       note: "tubing assumed",
       doiUrl: DOI_URL,
+      type: { kind: "transfer_mode", code: "fixed_tubing" },
     });
   });
 
@@ -63,6 +65,7 @@ describe("formatEvidence", () => {
       locator: "§1 ¶2",
       note: null,
       doiUrl: DOI_URL,
+      type: { kind: "unit_operation", code: "react_flow" },
     });
   });
 
@@ -75,6 +78,7 @@ describe("formatEvidence", () => {
       locator: "Fig. 2",
       note: null,
       doiUrl: DOI_URL,
+      type: null,
     };
     expect(formatEvidence(platform, null)).toEqual(expected);
     expect(formatEvidence(platform, { kind: "platform", id: "Test2020/P1" })).toEqual(expected);

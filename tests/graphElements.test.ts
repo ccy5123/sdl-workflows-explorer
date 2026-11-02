@@ -28,12 +28,16 @@ describe("buildElements", () => {
     }
   });
 
-  it("labels nodes with module type and name and colours them by display group", () => {
+  it("labels nodes with the readable module type and name, keeps the code, and colours them by display group", () => {
     const m1 = nodes.find((n) => n.data.id === "Test2020/P1/M1")!;
-    expect(m1.data.label).toBe("software\nplanner");
+    expect(m1.data.label).toBe("Software\nplanner");
+    expect(m1.data.code).toBe("software");
     expect(m1.data.colour).toBe("#CC79A7");
+    const m2 = nodes.find((n) => n.data.id === "Test2020/P1/M2")!;
+    expect(m2.data.label).toMatch(/^Flow reactor/);
     const m3 = nodes.find((n) => n.data.id === "Test2020/P1/M3")!;
-    expect(m3.data.label).toBe("unmapped");
+    expect(m3.data.label).toBe("Other module (unmapped)");
+    expect(m3.data.code).toBe("unmapped");
   });
 
   it("returns one edge per connection, keeping parallel edges", () => {
@@ -54,14 +58,15 @@ describe("buildElements", () => {
     expect(edges.filter((e) => String(e.data.label).includes("?")).map((e) => e.data.id)).toEqual(["Test2020/P1/E3"]);
   });
 
-  it("gives every edge its transfer-mode class, label and colour", () => {
+  it("gives every edge its transfer-mode class, readable label, code and colour", () => {
     expect(classesOf(edge("Test2020/P1/E1"))).toContain("mode-data_transfer");
-    expect(edge("Test2020/P1/E1").data.label).toBe("data");
+    expect(edge("Test2020/P1/E1").data.label).toBe("Data transfer");
+    expect(edge("Test2020/P1/E1").data.code).toBe("data_transfer");
     expect(edge("Test2020/P1/E1").data.colour).toBe("#999999");
     expect(classesOf(edge("Test2020/P1/E2"))).toContain("mode-human_transfer");
-    expect(edge("Test2020/P1/E2").data.label).toBe("human");
+    expect(edge("Test2020/P1/E2").data.label).toBe("Human transfer");
     expect(classesOf(edge("Test2020/P1/E3"))).toContain("mode-fixed_tubing");
-    expect(edge("Test2020/P1/E3").data.label).toBe("tubing ?");
+    expect(edge("Test2020/P1/E3").data.label).toBe("Fixed tubing ?");
   });
 
   it("adds no boundary node when no module is on the platform", () => {

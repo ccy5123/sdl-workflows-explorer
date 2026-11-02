@@ -61,6 +61,21 @@
   1440 px and 375 px in light and dark, sheet and legend open; no sideways scroll at 375 px.
   Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 218 passed (2.5 min).
 
+- Phase 3 follow-up (REQ-021 to REQ-023). RED: `npx vitest run tests/evidence.test.ts tests/graphElements.test.ts`
+  — 5 failed (codes as labels, no `type` field); `npx playwright test e2e/viewer.spec.ts -g "UI AC-19|UI AC-20|UI AC-21"`
+  against the a29d6d7 build — AC-19 failed (node label `flow_reactor…`), AC-20 failed (the sheet covered the "Paper DOI"
+  link), AC-21 passed: the selection already reset on all three paths tried (history back from Trends, hash to About
+  and back, straight to `Kim2026/P1`), so the reported carry-over was not reproduced. The test stays as a guard, and
+  `Platform` is now keyed by the platform id. GREEN after `graphElements.ts` (readable labels, `code` field),
+  `evidence.ts` and `EvidencePanel.tsx` (type row with the code), `Legend.tsx` (each module type under its group and
+  each transfer mode with its code), the sheet CSS (a sticky column beside the content from 1024 px; bottom sheet
+  below) and `Graph.tsx` (on a width change the view is fitted again if it was at its fit, otherwise keeps its centre,
+  and the selection is brought into view). One mid-run e2e pass timed out in three tests while a dev server ran beside
+  it; a headless script against the same build showed no hang, and the reruns passed.
+  Browser check: `Aand2024/P1` 1440 px light (sheet and legend), `Kim2026/P1` 1440 px dark (sheet and legend),
+  `Aand2024/P1` 375 px dark (bottom sheet), `Kim2026/P1` 375 px light (legend), 1024 px light; no sideways scroll.
+  Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 221 passed (2.5 min).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

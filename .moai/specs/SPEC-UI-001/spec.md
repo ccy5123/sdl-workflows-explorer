@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.3.0"
+version: "0.4.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -27,6 +27,10 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   redesign plan's shell section says; the researcher approved the change after seeing the tab row cut off at 375 px.
 - 2026-11-03 0.3.0 REQ-017 to REQ-020: phase 3 of the plan (platform viewer), approved by the researcher. This
   supersedes SPEC-VIEW-001's evidence panel that showed the platform's evidence while nothing was selected.
+- 2026-11-03 0.4.0 REQ-021 to REQ-023: follow-up to phase 3, approved by the researcher before phase 4. Graph labels
+  and the legend use readable names (the phase-3 result still printed codes there); the evidence sheet docks beside
+  the content from 1024 px instead of floating over the header buttons; the selection resets on entering a platform
+  route. REQ-019's bottom sheet now applies below 1024 px instead of 800 px.
 
 ## 1. Why
 
@@ -128,9 +132,21 @@ taken from the built release data.
   rankSep 70, edgeSep 16), so no two module labels overlap. The Okabe–Ito data colours are unchanged.
 - **REQ-019** (state, event-driven) While nothing is selected, the evidence sheet shall not be shown and an empty
   state under the graph says how to select an item. When a module, connection, step, table row or the platform is
-  selected, an evidence sheet (named "Evidence") shall open at the right edge of the screen, or at the bottom below
-  800 px, with the selected item's evidence, and focus moves to its "Close evidence" button. Escape or the close
+  selected, an evidence sheet (named "Evidence") shall open beside the content (REQ-022), or at the bottom of the
+  screen below 1024 px, with the selected item's evidence, and focus moves to its "Close evidence" button. Escape or the close
   button closes it and returns focus to the element that opened it. The page shall not scroll sideways at 375 px.
 - **REQ-020** (ubiquitous) The cycle steps shall be a vertical timeline: a numbered marker on a line, the unit
   operation as a readable label, the performer with an icon (robot, software, human, or not stated), the family and
   the modules. The step buttons keep `.steps .step`, `data-step-order` and `aria-pressed`.
+
+### Phase 3 follow-up
+
+- **REQ-021** (ubiquitous) Graph node labels shall show the module type through `displayLabel` (then the name in the
+  paper), and edge labels the transfer mode through `displayLabel`. The vocabulary code stays readable beside the
+  name in the legend (each module type under its group, each transfer mode) and in the evidence sheet's type row
+  ("Type", "Transfer mode" or "Operation") of a selected module, connection or step.
+- **REQ-022** (state) While the viewport is 1024 px or wider and the sheet is open, the sheet shall take its own column
+  beside the header, graph and tables, sticking below the top bar while the page scrolls, so it covers none of the
+  header or graph controls; the graph follows its narrower box and keeps its centre.
+- **REQ-023** (event-driven) When a platform route is entered, from another route or another platform, nothing shall
+  be selected and the sheet shall be closed.

@@ -57,7 +57,8 @@ export function PlatformView({ index, paperId, platformId, hash }: Props) {
 
   if (load.state === "loading") return <Loading />;
   if (load.state === "missing") return <NotFound hash={hash} />;
-  return <Platform index={index} platform={load.platform} />;
+  // Keyed by the platform, so a selection never carries over to another platform (SPEC-UI-001 REQ-023).
+  return <Platform key={load.platform.platform_id} index={index} platform={load.platform} />;
 }
 
 function Platform({ index, platform }: { index: IndexJson; platform: PlatformGraph }) {

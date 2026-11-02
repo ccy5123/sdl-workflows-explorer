@@ -1827,6 +1827,20 @@ button {
   font-size: 13px;
 }
 
+.legend .legend-types {
+  margin: 2px 0 6px 1.2rem;
+}
+
+.legend .legend-types li {
+  margin-bottom: 0.1rem;
+  font-size: 12.5px;
+}
+
+.legend code {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
 .legend .note {
   font-size: 12.5px;
   color: var(--muted);
@@ -1875,13 +1889,13 @@ button {
   flex-shrink: 0;
 }
 
-/* Evidence sheet: at the right edge below the top bar; a bottom sheet below 800px. */
+/* Evidence sheet: from 1024px a column beside the content that stays in view below the top bar, so it covers no
+   header or graph control; a bottom sheet below 1024px (SPEC-UI-001 REQ-022). */
 .evidence-sheet {
-  position: fixed;
+  position: sticky;
   top: 80px;
-  right: 16px;
   z-index: 15;
-  width: min(380px, calc(100vw - 32px));
+  align-self: start;
   max-height: calc(100vh - 96px);
   overflow-y: auto;
   padding: 16px 18px 18px;
@@ -1890,6 +1904,24 @@ button {
   background: var(--card);
   box-shadow: var(--shadow-lg);
   animation: sheet-in-side var(--dur) ease-out;
+}
+
+@media (min-width: 1024px) {
+  .platform:has(> .evidence-sheet) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 16px;
+  }
+
+  .platform:has(> .evidence-sheet) > * {
+    grid-column: 1;
+  }
+
+  /* Header, graph and the steps-and-tables grid: the sheet spans all three rows and sticks while they scroll. */
+  .platform > .evidence-sheet {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
 }
 
 .evidence-head {
@@ -2081,6 +2113,23 @@ button {
   .viewer {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .evidence-sheet {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 60vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 0;
+    animation-name: sheet-in-bottom;
+  }
+
+  /* Room below the content while the bottom sheet is open, so the last items can scroll above it. */
+  .page-main:has(.evidence-sheet) {
+    padding-bottom: 60vh;
+  }
 }
 
 @media (max-width: 799.98px) {
@@ -2100,22 +2149,6 @@ button {
     margin-top: 0.35rem;
   }
 
-  .evidence-sheet {
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: auto;
-    max-height: 60vh;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    border-bottom: 0;
-    animation-name: sheet-in-bottom;
-  }
-
-  /* Room below the content while the bottom sheet is open, so the last items can scroll above it. */
-  .page-main:has(.evidence-sheet) {
-    padding-bottom: 60vh;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

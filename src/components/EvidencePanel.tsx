@@ -1,5 +1,6 @@
-// Evidence of the selected item (REQ-014, REQ-015) as a sheet: at the right edge of the screen, at the bottom below
-// 800 px (SPEC-UI-001 REQ-019). It exists only while something is selected; the page shows an empty state otherwise.
+// Evidence of the selected item (REQ-014, REQ-015) as a sheet: docked beside the content from 1024 px, at the bottom
+// of the screen below that (SPEC-UI-001 REQ-019, REQ-022). It exists only while something is selected; the page shows
+// an empty state otherwise. The item's type shows its readable name with the vocabulary code (REQ-021).
 // A report link follows for a selected module, step or connection (SPEC-CONTRIB-001 REQ-004).
 // Focus as in the site menu: on open it moves to the close button; when the sheet closes and focus would be lost
 // (Escape, the close button), it returns to the element that opened it.
@@ -7,7 +8,14 @@ import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { CORRECTION_LINK_TEXT, correctionUrl } from "../lib/contribute";
 import type { EvidenceView } from "../lib/evidence";
+import { displayLabel } from "../lib/labels";
 import { IssueLink } from "./IssueLink";
+
+const TYPE_TERM: Record<NonNullable<EvidenceView["type"]>["kind"], string> = {
+  module_type: "Type",
+  transfer_mode: "Transfer mode",
+  unit_operation: "Operation",
+};
 
 interface Props {
   view: EvidenceView;
@@ -48,6 +56,14 @@ export function EvidencePanel({ view, release, onClose }: Props) {
           <dd data-field="id">
             <code>{view.id}</code>
           </dd>
+          {view.type && (
+            <>
+              <dt>{TYPE_TERM[view.type.kind]}</dt>
+              <dd data-field="type">
+                {displayLabel(view.type.kind, view.type.code)} <code>{view.type.code}</code>
+              </dd>
+            </>
+          )}
           <dt>Document</dt>
           <dd data-field="doc">{view.doc}</dd>
           <dt>Page</dt>

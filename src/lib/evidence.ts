@@ -18,9 +18,18 @@ export interface EvidenceView {
   locator: string;
   note: string | null;
   doiUrl: string;
+  /** The item's vocabulary code (module type, transfer mode or unit operation); null for the platform. */
+  type: { kind: "module_type" | "transfer_mode" | "unit_operation"; code: string } | null;
 }
 
-function view(kind: EvidenceView["kind"], id: string, evidence: Evidence, note: string | null, doi: string): EvidenceView {
+function view(
+  kind: EvidenceView["kind"],
+  id: string,
+  evidence: Evidence,
+  note: string | null,
+  doi: string,
+  type: EvidenceView["type"],
+): EvidenceView {
   return {
     kind,
     id,
@@ -29,6 +38,7 @@ function view(kind: EvidenceView["kind"], id: string, evidence: Evidence, note: 
     locator: show(evidence.locator),
     note: note || null,
     doiUrl: `https://doi.org/${doi}`,
+    type,
   };
 }
 
@@ -37,13 +47,13 @@ export function formatEvidence(platform: PlatformGraph, selection: Selection): E
   const doi = platform.doi;
   if (selection?.kind === "module") {
     const m = platform.modules.find((x) => x.module_id === selection.id);
-    if (m) return view("Module", m.module_id, m.evidence, m.unmapped_note, doi);
+    if (m) return view("Module", m.module_id, m.evidence, m.unmapped_note, doi, { kind: "module_type", code: m.module_type });
   } else if (selection?.kind === "connection") {
     const c = platform.connections.find((x) => x.edge_id === selection.id);
-    if (c) return view("Connection", c.edge_id, c.evidence, c.unmapped_note, doi);
+    if (c) return view("Connection", c.edge_id, c.evidence, c.unmapped_note, doi, { kind: "transfer_mode", code: c.transfer_mode });
   } else if (selection?.kind === "step") {
     const s = platform.steps.find((x) => x.step_id === selection.id);
-    if (s) return view("Step", s.step_id, s.evidence, s.unmapped_note, doi);
+    if (s) return view("Step", s.step_id, s.evidence, s.unmapped_note, doi, { kind: "unit_operation", code: s.unit_operation });
   }
-  return view("Platform", platform.platform_id, platform.evidence, null, doi);
+  return view("Platform", platform.platform_id, platform.evidence, null, doi, null);
 }

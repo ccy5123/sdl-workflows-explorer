@@ -359,3 +359,119 @@ test("UI AC-18: the steps form a timeline with a performer icon each", async ({ 
   await expect(steps.nth(4).locator(".step-performer")).toHaveAttribute("title", "software");
   await expect(steps.first().locator(".step-op")).toContainText("Dispense liquid");
 });
+
+// Follow-up to phase 3 (REQ-021 to REQ-023): readable graph labels, a sheet that covers no control, selection reset.
+const nodeLabel = (page: Page, id: string) => page.evaluate((i) => String((window as Win).__cy!.getElementById(i).data("label")), id);
+
+test("UI AC-19: graph labels are readable names; the codes stay in the legend and the sheet", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  expect(await nodeLabel(page, "Aand2024/P1/M2")).toMatch(/^Flow reactor\n/);
+  expect(await nodeLabel(page, "Aand2024/P1/M4")).toMatch(/^Optical instrument\n/);
+  expect(await nodeLabel(page, "Aand2024/P1/M5")).toMatch(/^Sample handling station\n/);
+  expect(await nodeLabel(page, "Aand2024/P1/E1")).toBe("Fixed tubing");
+  expect(await nodeLabel(page, "Aand2024/P1/E3")).toBe("Data transfer");
+
+  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/M2").emit("tap"));
+  await expect(evidence(page, "type")).toContainText("Flow reactor");
+  await expect(evidence(page, "type").locator("code")).toHaveText("flow_reactor");
+  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/E1").emit("tap"));
+  await expect(evidence(page, "type")).toContainText("Fixed tubing");
+  await expect(evidence(page, "type").locator("code")).toHaveText("fixed_tubing");
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: "Legend" }).click();
+  const groups = page.locator('[data-legend="groups"]');
+  await expect(groups.locator(".legend-types li", { has: page.locator("code", { hasText: /^flow_reactor$/ }) })).toContainText("Flow reactor");
+  await expect(groups.locator(".legend-types li", { has: page.locator("code", { hasText: /^instrument_optical$/ }) })).toContainText("Optical instrument");
+  const modes = page.locator('[data-legend="modes"]');
+  await expect(modes.locator("li", { has: page.locator("code", { hasText: /^fixed_tubing$/ }) })).toContainText("Fixed tubing");
+  await expect(modes.locator("li", { has: page.locator("code", { hasText: /^data_transfer$/ }) })).toContainText("Data transfer");
+});
+
+/** Whether the element at the centre of `locator` is that element or inside it, i.e. nothing covers it. */
+const uncovered = (locator: ReturnType<Page["locator"]>) =>
+  locator.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return !!hit && (hit === el || el.contains(hit));
+  });
+
+test("UI AC-20: at 1440 px the open sheet covers no header or graph control", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  await page.evaluate(() => (window as Win).__cy!.getElementById("Aand2024/P1/M4").emit("tap"));
+  await expect(sheet(page)).toBeVisible();
+  const header = page.locator(".platform-header");
+  const controls = [
+    header.getByRole("link", { name: "Paper DOI" }),
+    header.getByRole("button", { name: "Show platform evidence" }),
+    page.getByRole("button", { name: "Fit to view" }),
+    page.getByRole("button", { name: "Zoom in" }),
+    page.getByRole("button", { name: "Zoom out" }),
+    page.getByRole("button", { name: "Legend" }),
+  ];
+  for (const c of controls) expect(await uncovered(c), await c.getAttribute("aria-label") ?? "DOI").toBe(true);
+
+  // The sheet sits beside the content, not over it, and the graph canvas follows its narrower box.
+  const sheetBox = (await sheet(page).boundingBox())!;
+  for (const sel of [".platform-header", ".graph-wrap", ".viewer"]) {
+    const b = (await page.locator(sel).boundingBox())!;
+    expect(b.x + b.width, sel).toBeLessThanOrEqual(sheetBox.x);
+  }
+  const widths = await page.evaluate(() => [(window as Win).__cy!.width(), document.querySelector(".graph")!.clientWidth]);
+  expect(widths[0]).toBe(widths[1]);
+  // The selected module stays in the narrower view.
+  const m4 = await page.evaluate(() => {
+    const cy = (window as Win).__cy!;
+    const b = cy.getElementById("Aand2024/P1/M4").renderedBoundingBox();
+    return { x1: b.x1, x2: b.x2, width: cy.width() };
+  });
+  expect(m4.x1).toBeGreaterThanOrEqual(0);
+  expect(m4.x2).toBeLessThanOrEqual(m4.width);
+
+  // A row far down the page opens the sheet in view; the DOI link still works.
+  await page.locator('[data-table="connections"] tbody tr').first().click();
+  await expect(evidence(page, "kind")).toHaveText("Connection");
+  const box = (await sheet(page).boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y).toBeLessThan(900);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  expect(await uncovered(header.getByRole("link", { name: "Paper DOI" }))).toBe(true);
+});
+
+test("UI AC-21: the selection resets when the platform route is entered again", async ({ page }) => {
+  await page.goto(`/${REF}`);
+  await waitForGraph(page);
+  await page.locator('.step[data-step-order="2"]').click();
+  await expect(sheet(page)).toBeVisible();
+
+  // Another route and back by the history.
+  await page.getByRole("navigation").getByRole("link", { name: "Trends", exact: true }).click();
+  await expect(page).toHaveURL(/#\/trends$/);
+  await page.goBack();
+  await waitForGraph(page);
+  await expect(page.locator(".platform-header h1")).toBeVisible();
+  await expect(sheet(page)).toHaveCount(0);
+  await expect(page.locator(".evidence-empty")).toBeVisible();
+  await expect(page.locator('.step[aria-pressed="true"]')).toHaveCount(0);
+
+  // Another route and back by setting the hash.
+  await page.locator('.step[data-step-order="2"]').click();
+  await expect(sheet(page)).toBeVisible();
+  await page.evaluate(() => (window.location.hash = "#/about"));
+  await expect(page).toHaveURL(/#\/about$/);
+  await page.evaluate((h) => (window.location.hash = h), REF);
+  await waitForGraph(page);
+  await expect(page.locator(".platform-header h1")).toBeVisible();
+  await expect(sheet(page)).toHaveCount(0);
+
+  // Straight to another platform with the same platform number.
+  await page.locator('.step[data-step-order="2"]').click();
+  await expect(sheet(page)).toBeVisible();
+  await page.evaluate((h) => (window.location.hash = h), LARGE);
+  await expect(page.locator(".platform-id")).toContainText("Kim2026/P1");
+  await expect(sheet(page)).toHaveCount(0);
+  await expect(page.locator('.step[aria-pressed="true"]')).toHaveCount(0);
+});
