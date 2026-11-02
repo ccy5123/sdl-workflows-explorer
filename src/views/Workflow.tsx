@@ -1,9 +1,11 @@
 // Workflow builder: one workflow the visitor composes, kept in the hash query, and the three outputs built from it
 // (SPEC-SIM-001 REQ-005 to REQ-020). Loaded lazily; data/simulation.json is fetched by this module on first use.
 import { useEffect, useMemo, useState } from "react";
+import { SimilarPlatforms } from "../components/SimilarPlatforms";
 import { WorkflowEditor } from "../components/WorkflowEditor";
 import type { SimulationJson } from "../data/types";
 import { parseRoute, workflowHash } from "../lib/route";
+import { platformSets, rankPlatforms, workflowSets } from "../lib/similarity";
 import {
   catalogOf,
   decodeWorkflow,
@@ -60,8 +62,26 @@ export function Workflow() {
   );
 }
 
+function Outputs({
+  state,
+  catalog,
+  platforms,
+}: {
+  state: WorkflowState;
+  catalog: Catalog;
+  platforms: ReturnType<typeof platformSets>[];
+}) {
+  const ranked = useMemo(() => rankPlatforms(workflowSets(state, catalog), platforms), [state, catalog, platforms]);
+  return (
+    <>
+      <SimilarPlatforms key={encodeWorkflow(state)} rows={ranked} />
+    </>
+  );
+}
+
 function Builder({ sim }: { sim: SimulationJson }) {
   const catalog = useMemo(() => catalogOf(sim), [sim]);
+  const platforms = useMemo(() => sim.platforms.map((p) => platformSets(p, catalog)), [sim, catalog]);
   const [initial] = useState(() => stateFromLocation(catalog) ?? decodeWorkflow("", catalog));
   const [state, setState] = useState<WorkflowState>(initial.state);
   const [messages, setMessages] = useState<Messages>({ notes: [], error: null });
@@ -120,7 +140,7 @@ function Builder({ sim }: { sim: SimulationJson }) {
           </p>
         ))}
       </div>
-      {state.steps.length === 0 ? <p className="wf-empty">{NEED_A_STEP}</p> : null}
+      {state.steps.length === 0 ? <p className="wf-empty">{NEED_A_STEP}</p> : <Outputs state={state} catalog={catalog} platforms={platforms} />}
     </>
   );
 }

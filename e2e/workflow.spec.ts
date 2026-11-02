@@ -83,3 +83,41 @@ test("AC-8: start from a coded platform", async ({ page }) => {
   await expect(m.locator('table[data-table="wf-steps"] tbody tr')).toHaveCount(6);
   await expect(m.locator(".wf-message")).toContainText("Filled from Aand2024/P1: steps and their unit operations");
 });
+
+test("AC-9, AC-10: similar platforms, sorting, more rows and the compare link", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#/workflow");
+  const m = main(page);
+  await m.getByLabel("Start from a coded platform").selectOption("Aand2024/P1");
+  await m.getByRole("button", { name: "Fill the builder from this platform" }).click();
+  const section = m.locator("section", { has: page.getByRole("heading", { name: "Similar platforms" }) });
+  await expect(section.locator("dl.wf-measures dt")).toHaveText(["Step order", "Module types", "Transfer modes"]);
+  const rows = section.locator('table[data-table="wf-similar"] tbody tr');
+  await expect(rows).toHaveCount(10);
+  const own = section.locator('tr[data-platform="Aand2024/P1"]');
+  await expect(own.locator("td.num").nth(1)).toHaveText("1.00");
+  await expect(own.locator("td.num").nth(2)).toHaveText("1.00");
+  await expect(own.locator("td.num").nth(3)).toHaveText("1.00");
+  await expect(own.getByRole("link", { name: "Aand2024/P1" })).toHaveAttribute("href", "#/platform/Aand2024/P1");
+  await section.getByRole("button", { name: "Show 10 more" }).click();
+  await expect(rows).toHaveCount(20);
+
+  await section.getByRole("button", { name: "Year" }).click();
+  await expect(section.locator('th[aria-sort="ascending"]')).toHaveText("Year");
+  const years = await rows.locator("td:nth-child(5)").allTextContents();
+  expect(years.map(Number)).toEqual([...years.map(Number)].sort((a, b) => a - b));
+
+  const ids = await rows.locator("td:nth-child(2)").allTextContents();
+  await section.getByLabel(`Select ${ids[0]}`).check();
+  await expect(section.locator(".wf-compare")).toHaveText("Select 2 or 3 platforms to compare them side by side (1 selected).");
+  await section.getByLabel(`Select ${ids[1]}`).check();
+  const link = section.locator(".wf-compare a");
+  await expect(link).toHaveAttribute("href", `#/compare/${ids[0]},${ids[1]}`);
+  await section.getByLabel(`Select ${ids[2]}`).check();
+  await section.getByLabel(`Select ${ids[3]}`).check();
+  await expect(section.locator(".wf-compare")).toHaveText("The comparison takes 2 or 3 platforms; 4 are selected.");
+  await section.getByLabel(`Select ${ids[3]}`).uncheck();
+  await section.locator(".wf-compare a").click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Compare/);
+  expect(errors).toEqual([]);
+});

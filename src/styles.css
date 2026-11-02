@@ -1105,3 +1105,26 @@ table.count-table a {
 .workflow .table-scroll {
   position: relative;
 }
+
+.wf-measures {
+  max-width: 60rem;
+  margin: 0.5rem 0;
+}
+
+.wf-measures div {
+  margin: 0.25rem 0;
+}
+
+.wf-measures dt {
+  display: inline;
+  font-weight: 600;
+}
+
+.wf-measures dt::after {
+  content: ": ";
+}
+
+.wf-measures dd {
+  display: inline;
+  margin: 0;
+}
