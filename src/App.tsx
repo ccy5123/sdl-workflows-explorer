@@ -1,8 +1,10 @@
 // Hash router of the site (REQ-001 to REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001, REQ-015; SPEC-TAXO-001
 // REQ-009, REQ-010; SPEC-BENCH-001 REQ-005, REQ-015): home, platform viewer, browser, trends dashboard, taxonomy,
-// benchmark, comparison, or not found.
+// benchmark, comparison, or not found. The footer links to the missing-paper issue form (SPEC-CONTRIB-001 REQ-006).
 import { Suspense, lazy, useEffect, useState } from "react";
+import { IssueLink } from "./components/IssueLink";
 import type { IndexJson } from "./data/types";
+import { PAPER_LINK_TEXT, paperUrl } from "./lib/contribute";
 import { parseRoute } from "./lib/route";
 import { Browse } from "./views/Browse";
 import { Compare } from "./views/Compare";
@@ -94,7 +96,8 @@ export function App() {
       {index && (
         <footer className="site-footer">
           Data version {index.release.version} ·{" "}
-          <a href={`https://doi.org/${index.release.doi}`}>doi:{index.release.doi}</a>
+          <a href={`https://doi.org/${index.release.doi}`}>doi:{index.release.doi}</a> ·{" "}
+          <IssueLink href={paperUrl()}>{PAPER_LINK_TEXT}</IssueLink>
         </footer>
       )}
     </div>

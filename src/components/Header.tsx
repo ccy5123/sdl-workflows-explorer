@@ -1,16 +1,19 @@
-// Platform header (REQ-005, REQ-015).
+// Platform header (REQ-005, REQ-015; SPEC-CONTRIB-001 REQ-003).
 import type { PaperRow, PlatformGraph } from "../data/types";
+import { CORRECTION_LINK_TEXT, correctionUrl } from "../lib/contribute";
 import type { SharedLink } from "../lib/identity";
 import { platformHash } from "../lib/route";
+import { IssueLink } from "./IssueLink";
 
 interface Props {
   platform: PlatformGraph;
   paper: PaperRow | undefined;
   shared: SharedLink[];
+  release: string;
   onSelectPlatform: () => void;
 }
 
-export function Header({ platform, paper, shared, onSelectPlatform }: Props) {
+export function Header({ platform, paper, shared, release, onSelectPlatform }: Props) {
   return (
     <header className="platform-header">
       <h1>{platform.name ?? platform.platform_id}</h1>
@@ -68,6 +71,9 @@ export function Header({ platform, paper, shared, onSelectPlatform }: Props) {
       <button type="button" onClick={onSelectPlatform}>
         Show platform evidence
       </button>
+      <p className="report">
+        <IssueLink href={correctionUrl(platform.platform_id, release)}>{CORRECTION_LINK_TEXT}</IssueLink>
+      </p>
     </header>
   );
 }

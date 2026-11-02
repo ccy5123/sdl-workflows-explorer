@@ -76,13 +76,19 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
 
   return (
     <div className="platform">
-      <Header platform={platform} paper={paper} shared={shared} onSelectPlatform={() => select({ kind: "platform", id: platform.platform_id })} />
+      <Header
+        platform={platform}
+        paper={paper}
+        shared={shared}
+        release={index.release.version}
+        onSelectPlatform={() => select({ kind: "platform", id: platform.platform_id })}
+      />
       <div className="viewer">
         <div className="viewer-main">
           <Graph platform={platform} selection={selection} onSelect={select} />
         </div>
         <div className="viewer-side">
-          <EvidencePanel view={formatEvidence(platform, selection)} />
+          <EvidencePanel view={formatEvidence(platform, selection)} release={index.release.version} />
           <StepList
             steps={steps}
             modules={platform.modules}

@@ -2,7 +2,9 @@
 // browser rows, example platforms and the correspondence to other vocabularies (SPEC-TAXO-001 REQ-009 to REQ-016).
 // Loaded lazily; data/taxonomy.json is fetched by this module on first use and kept for the page's lifetime.
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { IssueLink } from "../components/IssueLink";
 import type { IndexJson, TaxonomyClass, TaxonomyJson, TaxonomySource } from "../data/types";
+import { TAXONOMY_LINK_TEXT, taxonomyUrl } from "../lib/contribute";
 import { offeredValues } from "../lib/filterState";
 import { platformHash, taxonomyHash } from "../lib/route";
 import {
@@ -268,6 +270,10 @@ function ClassPage({ cls, data, index }: { cls: TaxonomyClass; data: TaxonomyJso
         )}
       </dl>
       <p>{cls.definition}</p>
+      {/* SPEC-CONTRIB-001 REQ-005 */}
+      <p className="report">
+        <IssueLink href={taxonomyUrl(cls.class_kind, cls.class)}>{TAXONOMY_LINK_TEXT}</IssueLink>
+      </p>
       <Section title="Counts">
         <ul className="taxo-counts">
           {cls.class_kind !== "field_tag" && <li>{itemsText(cls)}</li>}
