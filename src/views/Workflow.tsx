@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CycleRange } from "../components/CycleRange";
 import { SimilarPlatforms } from "../components/SimilarPlatforms";
+import { SimulationPanel } from "../components/SimulationPanel";
 import { WorkflowEditor } from "../components/WorkflowEditor";
 import type { SimulationJson } from "../data/types";
 import { cycleRange, jointOffers, singleStepGroups, stepSources } from "../lib/cycleRange";
@@ -89,6 +90,7 @@ function Outputs({
       <SimilarPlatforms key={encodeWorkflow(state)} rows={ranked} />
       <CycleRange state={state} catalog={catalog} sim={sim} result={result} offers={offers} jointRows={jointRows}
         topTen={topTen} apply={apply} />
+      <SimulationPanel state={state} catalog={catalog} sources={sources} apply={apply} />
     </>
   );
 }

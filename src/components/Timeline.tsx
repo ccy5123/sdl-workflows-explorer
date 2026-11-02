@@ -1,0 +1,91 @@
+// Gantt chart of run 1, drawn with Observable Plot: one row per device and per transfer agent, one bar per step or
+// transfer (SPEC-SIM-001 REQ-020). The time axis uses the largest unit the run fills at least twice.
+import * as Plot from "@observablehq/plot";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { SimEvent } from "../lib/des";
+import type { WorkflowState } from "../lib/workflowState";
+import { AGENT_LABELS } from "../lib/workflowText";
+
+/** Bars drawn at most; a larger run 1 shows its first bars in time and says so. */
+export const TIMELINE_LIMIT = 3000;
+
+const UNITS: [number, string][] = [
+  [86_400, "d"],
+  [3_600, "h"],
+  [60, "min"],
+  [1, "s"],
+];
+
+export const rowName = (s: WorkflowState, e: SimEvent): string | null => {
+  if (e.module !== null) return `Module ${e.module} (${s.modules[e.module - 1]!.type}), device ${e.device}`;
+  if (e.agent) return `${AGENT_LABELS[e.agent.mode]} ${e.agent.index}`;
+  return null;
+};
+
+export function Timeline({ state, events, makespan }: { state: WorkflowState; events: SimEvent[]; makespan: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current!;
+    setWidth(el.clientWidth);
+    const observer = new ResizeObserver(() => setWidth(el.clientWidth));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const drawn = useMemo(
+    () => events.filter((e) => rowName(state, e) !== null).sort((a, b) => a.start - b.start).slice(0, TIMELINE_LIMIT),
+    [events, state],
+  );
+  const rows = useMemo(
+    () =>
+      [...new Set(drawn.map((e) => rowName(state, e)!))].sort((a, b) => {
+        const agentA = a.startsWith("Module") ? 0 : 1;
+        const agentB = b.startsWith("Module") ? 0 : 1;
+        return agentA - agentB || a.localeCompare(b, "en", { numeric: true });
+      }),
+    [drawn, state],
+  );
+
+  useEffect(() => {
+    const el = ref.current!;
+    if (width === 0) return;
+    const [size, unit] = UNITS.find(([u]) => makespan >= 2 * u) ?? [1, "s"];
+    const bars = drawn.map((e) => ({
+      row: rowName(state, e)!,
+      x1: e.start / size,
+      x2: e.end / size,
+      fill: e.kind === "transfer" ? "var(--chart-ink-secondary)" : `var(--chart-im-${((e.step - 1) % 7) + 1})`,
+      title: `Batch ${e.batch}, ${e.kind === "transfer" ? `transfer after step ${e.step}` : `step ${e.step}`}: ${e.start} s to ${e.end} s`,
+    }));
+    const narrow = width < 640;
+    const svg = Plot.plot({
+      width,
+      height: rows.length * (narrow ? 38 : 24) + 50,
+      marginLeft: narrow ? 8 : 230,
+      marginRight: 12,
+      style: { background: "transparent", color: "var(--chart-ink-secondary)", fontSize: "12px" },
+      x: { label: `Time (${unit})`, labelAnchor: "center", grid: true, domain: [0, makespan / size] },
+      y: { domain: rows, label: null, axis: narrow ? null : "left" },
+      marks: [
+        Plot.barX(bars, { x1: "x1", x2: "x2", y: "row", fill: "fill", title: "title", inset: 1 }),
+        narrow ? Plot.text(rows, { x: 0, y: (d: string) => d, text: (d: string) => d, dy: -13, textAnchor: "start", fill: "var(--chart-ink)" }) : null,
+      ],
+    });
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `Timeline of run 1: ${drawn.length} bars on ${rows.length} rows of devices and transfer agents`);
+    el.replaceChildren(svg);
+    return () => svg.remove();
+  }, [width, drawn, rows, state, makespan]);
+
+  return (
+    <>
+      <div className="wf-timeline" ref={ref} />
+      {events.length > TIMELINE_LIMIT && (
+        <p className="table-note">
+          Showing the first {TIMELINE_LIMIT.toLocaleString("en")} of {events.length.toLocaleString("en")} bars in time.
+        </p>
+      )}
+    </>
+  );
+}

@@ -1181,3 +1181,30 @@ table.count-table a {
   gap: 0.5rem;
   align-items: flex-start;
 }
+
+.wf-assumptions {
+  max-width: 60rem;
+  padding-left: 1.25rem;
+}
+
+.wf-assumptions li {
+  margin: 0.35rem 0;
+}
+
+.wf-assumptions .wf-inputs {
+  margin: 0.25rem 0 0;
+}
+
+.wf-depends {
+  font-weight: 600;
+  max-width: 60rem;
+}
+
+.wf-timeline svg {
+  display: block;
+  max-width: 100%;
+}
+
+.wf-events summary {
+  cursor: pointer;
+}

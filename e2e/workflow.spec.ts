@@ -177,3 +177,57 @@ test("AC-11, AC-13: per-day values, the 0 s case and recorded throughputs", asyn
     "not defined: the cycle time is 0 s, not defined: the cycle time is 0 s, not defined: the cycle time is 0 s",
   );
 });
+
+test("AC-15, AC-16: simulation inputs, results, timeline, events and determinism after reload", async ({ page }) => {
+  const errors = trackErrors(page);
+  const url = "/#/workflow?s=react_flow~1,measure_separation_ms~2&m=flow_reactor,instrument_separation_ms" +
+    "&t=1~robot_arm_gantry~30&n=4&runs=5&seed=7";
+  await page.goto(url);
+  const m = main(page);
+  const section = m.locator("section.wf-sim");
+  const inputs = section.locator('[data-list="assumptions"]');
+  await expect(inputs).toContainText("Transfer modes and times (default: not specified, 0 s)");
+  await expect(inputs).toContainText("steps 1 and 2: robot_arm_gantry, 30 s");
+  await expect(section.getByLabel("Transfer agents: robot arm or gantry")).toHaveValue("1");
+  await expect(section.getByLabel("Queue rule (default: first come, first served)")).toHaveValue("fifo");
+  await expect(section.getByLabel("Batches, 1 to 500 (default 10)")).toHaveValue("4");
+  await expect(section.getByLabel("Seed, 0 to 4,294,967,295 (default 1)")).toHaveValue("7");
+  await expect(section.locator('[data-list="workflow-inputs"]')).toContainText("Devices per module (default 1)");
+  await expect(section.locator('[data-list="rules"]')).toContainText("A chosen joint duration counts as one step");
+  await expect(section.locator('[data-list="rules"]')).toContainText("A batch keeps its device for the next step");
+
+  const requests: string[] = [];
+  page.on("request", (r) => requests.push(r.url()));
+  await section.getByRole("button", { name: "Run simulation" }).click();
+  const results = section.locator('[data-result="simulation"]');
+  await expect(results.locator(".wf-depends")).toContainText("These results follow from the inputs listed above");
+  expect(requests).toEqual([]);
+  const first = {
+    makespan: await results.locator('[data-value="makespan"]').textContent(),
+    perDay: await results.locator('[data-value="sim-per-day"]').textContent(),
+    bottleneck: await results.locator('[data-value="bottleneck"]').textContent(),
+  };
+  await expect(results.locator('table[data-table="wf-utilization"] tbody tr')).toHaveCount(2);
+  await expect(results.locator('table[data-table="wf-waiting"] tbody tr')).toHaveCount(2);
+  await expect(results.locator('[data-value="bottleneck"]')).toContainText("the step whose module has the highest median utilization");
+  await expect(results.locator(".wf-timeline svg")).toHaveCount(1);
+  await expect(results.locator(".wf-timeline svg")).toHaveAttribute("aria-label", /on 3 rows of devices and transfer agents/);
+  await results.locator(".wf-events summary").click();
+  // 4 batches × (2 steps + 1 transfer)
+  await expect(results.locator('table[data-table="wf-events"] tbody tr')).toHaveCount(12);
+
+  await page.goto("about:blank");
+  await page.goto(url);
+  await section.getByRole("button", { name: "Run simulation" }).click();
+  await expect(results.locator('[data-value="makespan"]')).toHaveText(first.makespan!);
+  await expect(results.locator('[data-value="sim-per-day"]')).toHaveText(first.perDay!);
+  await expect(results.locator('[data-value="bottleneck"]')).toHaveText(first.bottleneck!);
+  expect(errors).toEqual([]);
+});
+
+test("AC-15: too many step runs are refused before running", async ({ page }) => {
+  await page.goto("/#/workflow?s=react_flow~1&m=flow_reactor&b=10000&k=1~1&n=500&runs=100");
+  const section = main(page).locator("section.wf-sim");
+  await expect(section.locator(".wf-missing")).toContainText("These inputs need 500,000,000 step runs");
+  await expect(section.getByRole("button", { name: "Run simulation" })).toBeDisabled();
+});

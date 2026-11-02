@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const FILES = ["filterState.ts", "filterUrl.ts", "filterApply.ts", "compare.ts", "trends.ts", "chartTokens.ts", "taxonomy.ts", "benchmark.ts", "contribute.ts", "citation.ts", "siteText.ts", "siteTokens.ts", "workflowState.ts", "workflowText.ts", "similarity.ts", "cycleRange.ts"];
+const FILES = ["filterState.ts", "filterUrl.ts", "filterApply.ts", "compare.ts", "trends.ts", "chartTokens.ts", "taxonomy.ts", "benchmark.ts", "contribute.ts", "citation.ts", "siteText.ts", "siteTokens.ts", "workflowState.ts", "workflowText.ts", "similarity.ts", "cycleRange.ts", "prng.ts", "des.ts"];
 const UI_PACKAGE = String.raw`(?:react|react-dom|@tanstack\/[^"']*|@observablehq\/[^"']*|d3|d3-[^"']*)`;
 const RULES: [string, RegExp][] = [
   ["import from a UI package", new RegExp(String.raw`\bfrom\s*["']${UI_PACKAGE}["']`)],

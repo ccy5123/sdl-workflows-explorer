@@ -75,3 +75,54 @@ export const SOURCE_LABELS: Record<string, string> = {
   recorded: "recorded durations",
   missing: "no recorded duration",
 };
+
+export const SIM_INTRO =
+  "A discrete-event simulation moves time from one event to the next (a batch starting or finishing a step or a " +
+  "transfer) and lets each device of a module, and each transfer agent, serve one batch at a time. Run here, it shows " +
+  "where batches wait when several share the same modules. Everything the data does not record is an input below, " +
+  "with its default.";
+
+export const SIM_RULES: string[] = [
+  "At the start, as many batches as there are parallel units are released; when a batch finishes its last step, the " +
+    "next one is released.",
+  "A step holds one device of its module for all its runs; a step waits, holding nothing, until a device is free, and " +
+    "takes the lowest-numbered free device.",
+  "A batch keeps its device for the next step when that step uses the same module and no transfer is set between " +
+    "them; otherwise it releases the device and the transfer follows.",
+  "A transfer by robot arm or gantry, mobile robot or person also holds one transfer agent of that kind; any other " +
+    "transfer only takes its time.",
+  "A chosen joint duration counts as one step on the module of its first step, with no transfer between its steps; " +
+    "the rule above then applies after its last step.",
+  "Durations are drawn when a step starts. Each run of the simulation has its own random sequence from the seed, so " +
+    "the same inputs and seed give the same results.",
+];
+
+export const SIM_DEPENDS =
+  "These results follow from the inputs listed above, including those that are not in the data. They show what " +
+  "those inputs imply for this layout, not how a real platform performs.";
+
+export const UTILIZATION_TEXT =
+  "Utilization: the share of the time to finish all batches that a module's devices were busy (busy device time " +
+  "divided by devices × that time), median over the runs.";
+
+export const BOTTLENECK_TEXT = "Bottleneck step: the step whose module has the highest median utilization.";
+
+export const GANTT_TEXT =
+  "Timeline of run 1, drawn as a Gantt chart: one row per device and per transfer agent, one bar per step or " +
+  "transfer, placed by its start and end time.";
+
+export const QUEUE_RULES: Record<string, string> = {
+  fifo: "first come, first served",
+  released: "earliest-released batch first",
+};
+
+export const DRAW_RULES: Record<string, string> = {
+  sample: "one recorded value drawn at random for each run of a step",
+  median: "the median recorded value",
+};
+
+export const AGENT_LABELS: Record<string, string> = {
+  robot_arm_gantry: "robot arm or gantry",
+  mobile_robot: "mobile robot",
+  human_transfer: "person",
+};
