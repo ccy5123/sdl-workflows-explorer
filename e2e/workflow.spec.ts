@@ -121,3 +121,59 @@ test("AC-9, AC-10: similar platforms, sorting, more rows and the compare link", 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Compare/);
   expect(errors).toEqual([]);
 });
+
+test("AC-11, AC-12: missing duration, entered value, distributions, sources and joint durations", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#/workflow?s=dispense_solid~1&m=solid_dispenser");
+  const m = main(page);
+  const result = m.locator('[data-result="range"]');
+  await expect(result).toContainText("No cycle time yet: step 1 (dispense_solid) has no recorded duration");
+  await expect(result.locator('[data-value="cycle"]')).toHaveCount(0);
+  await fill(page, "Your duration for step 1, seconds (empty: use the recorded values)", "120");
+  await expect(result.locator('[data-value="cycle"]')).toHaveText("2 min");
+  await expect(result).toContainText("These include the duration entered by you for step 1.");
+  await expect(m.locator('table[data-table="wf-range"] tbody tr').first()).toContainText("entered by you");
+
+  await page.goto("/#/workflow?s=dispense_liquid~1,react_thermal~2&m=liquid_handler,thermal_unit");
+  const step2 = m.locator('section[data-step="2"]');
+  await expect(step2.locator(".wf-n")).toContainText("n = 70 recorded; 68 used, 2 bounds left out");
+  await expect(step2.locator(".wf-strip svg")).toHaveCount(1);
+  await step2.locator(".wf-sources summary").click();
+  const sources = step2.locator('table[data-table="wf-sources"] tbody tr');
+  await expect(sources).toHaveCount(70);
+  await expect(sources.first().locator('a[href^="#/platform/"]')).toHaveCount(1);
+  await expect(sources.first().locator('a[href^="https://doi.org/"]')).toHaveCount(1);
+  await expect(step2.locator('table[data-table="wf-sources"]')).toContainText("≤");
+
+  const step1 = m.locator('section[data-step="1"]');
+  await step1.locator(".wf-offers summary").click();
+  const offers = step1.locator(".wf-offers li");
+  await expect(offers).toHaveCount(4);
+  await offers.first().getByRole("button").click();
+  await expect(m.locator('table[data-table="wf-range"] tbody tr').nth(0)).toContainText("joint duration");
+  await expect(m.locator('table[data-table="wf-range"] tbody tr').nth(1)).toContainText("inside a joint duration");
+  await expect(page).toHaveURL(/j=1~/);
+  expect(errors).toEqual([]);
+});
+
+test("AC-11, AC-13: per-day values, the 0 s case and recorded throughputs", async ({ page }) => {
+  await page.goto("/#/workflow?s=dispense_solid~1&m=solid_dispenser&b=2&p=3&d=1~600");
+  const m = main(page);
+  await expect(m.locator('[data-value="per-day"]')).toHaveText("864, 864, 864");
+  await expect(m.locator('[data-result="range"]')).toContainText("assumes the parallel units never wait for a shared module");
+  const panel = m.locator("section.wf-throughput");
+  const sim = (await page.evaluate(() => fetch("data/simulation.json").then((r) => r.json()))) as {
+    throughputs: { kind: string; per_day: number | null }[];
+  };
+  const n = (kind: string) => sim.throughputs.filter((t) => t.kind === kind && t.per_day !== null).length;
+  await expect(panel.locator('[data-kind="measured"] h4')).toHaveText(`Measured throughputs, n = ${n("measured")}`);
+  await expect(panel.locator('[data-kind="nominal"] h4')).toHaveText(`Nominal throughputs, n = ${n("nominal")}`);
+  await expect(panel.locator("summary").nth(1)).toHaveText("9 throughputs have no per-day value");
+  await panel.locator("summary").nth(1).click();
+  await expect(panel.locator('table[data-table="wf-not-converted"] tbody tr')).toHaveCount(9);
+
+  await page.goto("/#/workflow?s=dispense_solid~1&m=solid_dispenser&d=1~0");
+  await expect(m.locator('[data-value="per-day"]')).toHaveText(
+    "not defined: the cycle time is 0 s, not defined: the cycle time is 0 s, not defined: the cycle time is 0 s",
+  );
+});

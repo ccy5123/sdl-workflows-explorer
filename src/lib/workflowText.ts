@@ -44,3 +44,34 @@ export function compareReason(selected: number): string | null {
   if (selected > 3) return `The comparison takes 2 or 3 platforms; ${selected} are selected.`;
   return `Select 2 or 3 platforms to compare them side by side (${selected} selected).`;
 }
+
+export const RANGE_INTRO =
+  "For each step: the lowest, median and highest single-step duration that papers state for its unit operation, " +
+  "with the number of values and their sources, times the runs the step needs per batch. The cycle time per batch " +
+  "adds these and the transfer times you set. Most unit operations have fewer than 10 recorded durations, measured " +
+  "on different chemistries, scales and devices. Durations stated for several consecutive steps together are kept " +
+  "apart and offered where your steps match them.";
+
+export const BOUNDS_LABEL = "Include recorded bounds (≤ or ≥ values) in the lowest, median and highest values";
+
+export const NO_WAITING =
+  "Experiments per day = batch size × parallel units × 86,400 s / cycle time. This assumes the parallel units never " +
+  "wait for a shared module; the simulation below drops that assumption.";
+
+export const MARKER_KEY =
+  "Markers: ≤ an upper bound, ≥ a lower bound (hollow triangles, left out unless included), ≈ an approximate value, " +
+  "and a line through a value stated as a range (the value is the range's midpoint).";
+
+export const THROUGHPUT_INTRO =
+  "Throughputs that papers state for whole platforms, converted to experiments per day where the unit allows: " +
+  "experiments per time as stated, samples with the platform's recorded experiments per sample, and batches with its " +
+  "recorded batch size. The shaded band is your per-day range; platforms among the 10 most similar to your workflow " +
+  "are ringed.";
+
+export const SOURCE_LABELS: Record<string, string> = {
+  entered: "entered by you",
+  joint: "joint duration",
+  covered: "inside a joint duration",
+  recorded: "recorded durations",
+  missing: "no recorded duration",
+};

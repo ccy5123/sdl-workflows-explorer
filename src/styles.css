@@ -1128,3 +1128,56 @@ table.count-table a {
   display: inline;
   margin: 0;
 }
+
+.wf-strip {
+  width: 100%;
+  max-width: 60rem;
+}
+
+.wf-strip svg {
+  display: block;
+  max-width: 100%;
+}
+
+.wf-step {
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+
+.wf-n,
+.wf-missing {
+  margin: 0.25rem 0;
+}
+
+.wf-missing {
+  color: var(--warn);
+}
+
+.wf-result {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  max-width: 60rem;
+}
+
+.wf-result p {
+  margin: 0.25rem 0;
+}
+
+.wf-sources summary,
+.wf-offers summary,
+.wf-throughput summary {
+  cursor: pointer;
+}
+
+.wf-offers li {
+  margin: 0.35rem 0;
+}
+
+.wf-check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}

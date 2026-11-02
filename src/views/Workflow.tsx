@@ -1,9 +1,11 @@
 // Workflow builder: one workflow the visitor composes, kept in the hash query, and the three outputs built from it
 // (SPEC-SIM-001 REQ-005 to REQ-020). Loaded lazily; data/simulation.json is fetched by this module on first use.
 import { useEffect, useMemo, useState } from "react";
+import { CycleRange } from "../components/CycleRange";
 import { SimilarPlatforms } from "../components/SimilarPlatforms";
 import { WorkflowEditor } from "../components/WorkflowEditor";
 import type { SimulationJson } from "../data/types";
+import { cycleRange, jointOffers, singleStepGroups, stepSources } from "../lib/cycleRange";
 import { parseRoute, workflowHash } from "../lib/route";
 import { platformSets, rankPlatforms, workflowSets } from "../lib/similarity";
 import {
@@ -65,16 +67,28 @@ export function Workflow() {
 function Outputs({
   state,
   catalog,
+  sim,
   platforms,
+  apply,
 }: {
   state: WorkflowState;
   catalog: Catalog;
+  sim: SimulationJson;
   platforms: ReturnType<typeof platformSets>[];
+  apply: (result: EditResult) => boolean;
 }) {
   const ranked = useMemo(() => rankPlatforms(workflowSets(state, catalog), platforms), [state, catalog, platforms]);
+  const topTen = useMemo(() => new Set(ranked.slice(0, 10).map((r) => r.platform.platform_id)), [ranked]);
+  const groups = useMemo(() => singleStepGroups(sim.durations), [sim]);
+  const jointRows = useMemo(() => new Map(sim.durations.filter((d) => d.joint).map((d) => [d.step_id, d])), [sim]);
+  const sources = useMemo(() => stepSources(state, catalog, groups, jointRows), [state, catalog, groups, jointRows]);
+  const result = useMemo(() => cycleRange(state, sources), [state, sources]);
+  const offers = useMemo(() => jointOffers(state, sim.durations), [state, sim]);
   return (
     <>
       <SimilarPlatforms key={encodeWorkflow(state)} rows={ranked} />
+      <CycleRange state={state} catalog={catalog} sim={sim} result={result} offers={offers} jointRows={jointRows}
+        topTen={topTen} apply={apply} />
     </>
   );
 }
@@ -140,7 +154,7 @@ function Builder({ sim }: { sim: SimulationJson }) {
           </p>
         ))}
       </div>
-      {state.steps.length === 0 ? <p className="wf-empty">{NEED_A_STEP}</p> : <Outputs state={state} catalog={catalog} platforms={platforms} />}
+      {state.steps.length === 0 ? <p className="wf-empty">{NEED_A_STEP}</p> : <Outputs state={state} catalog={catalog} sim={sim} platforms={platforms} apply={apply} />}
     </>
   );
 }
