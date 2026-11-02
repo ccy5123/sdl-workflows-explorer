@@ -15,7 +15,10 @@
   `SPEC-SIM-001-review-2.md`.
 - plan-auditor: iteration 3 PASS 0.88 (all must-pass items pass; O1-O3 optional). O1-O3 applied in 0.3.0 without a
   further audit. Report: `SPEC-SIM-001-review-3.md`.
-- Implementation Kickoff Approval: pending (researcher, in this session).
+- Implementation Kickoff Approval: the researcher approved version 0.3.0 through AskUserQuestion on 2026-11-02
+  ("승인 (권장)") and chose autonomous progression ("자율 진행 (권장)": M1 to M3, About, screen check, sync and
+  branch push without intermediate stops, a report to the orchestrating session at each milestone; no merge, no
+  deployment). The run phase still waits for the deploy-done message (plan §B.0).
 
 ## §E.2 Run-phase Evidence
 
