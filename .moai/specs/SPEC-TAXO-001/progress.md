@@ -458,3 +458,20 @@ trends count line with uo, #/trends?uo=sonicate (papers)   5 of 238 papers
 - Docs: `.moai/project/` and `docs/plan.md` are current; no changes. Step 5 of `docs/plan.md` (taxonomy explorer) is
   done with this SPEC; the next step is step 6 (benchmark view), not started.
 - sync_commit_sha: 6547cc5
+
+## Amendment 0.4.0
+
+- 2026-11-02, in-place amendment of the completed 0.3.0 (prior_completed_sha 9993952); spec.md status back to
+  `in-progress`, `amendment_of: SPEC-TAXO-001`. Reason: the researcher's screen check at 800 px and 375 px.
+- Changed requirements: REQ-005, REQ-009, REQ-011, REQ-013, REQ-015, REQ-016. Changed acceptance criteria: AC-5, AC-9,
+  AC-10, AC-11, AC-13, AC-16. Counts stay at 16 REQ and 16 AC.
+- Scope: overview order with an "On this page" jump list (buttons, hash unchanged); a caption sentence on papers with
+  several field tags; site glosses for `exact` and `none` in the Relations table; the class page correspondence as one
+  table Vocabulary | Term | Relation | Source with vocabulary display labels linking to `#/taxonomy?source=<key>`; line
+  breaks in class names and vocabulary labels only after "_" or at a space. No change to the derived data.
+- Figures the new acceptance criteria use were checked on the built `public/data/taxonomy.json` (release 1.0.0):
+  245 entries, 280 targets, 35 vocabulary-class pairs not covered (315 table rows); flow_reactor has an XDL entry;
+  no "searched: …" text contains a `BANNED_SUBSTRINGS` entry. `moai spec lint` on spec.md: 0 errors, 1 expected
+  warning (StatusGitConsistency: frontmatter `in-progress` while git history implies `completed`).
+- Plan-audit cache for this SPEC is invalidated by the spec.md change; the run phase starts with a new plan audit.
+- The run phase records its evidence in §E.2 and §E.3 as additional entries; the sync phase updates §E.4.

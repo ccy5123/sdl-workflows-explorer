@@ -1,8 +1,8 @@
 ---
 id: SPEC-TAXO-001
 title: "Taxonomy explorer: class overview and detail pages with counts, browse links, examples and vocabulary correspondence; unit-operation filter in the browser"
-version: "0.3.0"
-status: completed
+version: "0.4.0"
+status: in-progress
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
@@ -13,6 +13,7 @@ lifecycle: spec-anchored
 tags: "taxonomy, correspondence, filters, routing, data-pipeline"
 tier: M
 depends_on: [SPEC-DATA-001, SPEC-BROWSE-001, SPEC-TRENDS-001]
+amendment_of: SPEC-TAXO-001
 ---
 
 ## HISTORY
@@ -37,6 +38,28 @@ depends_on: [SPEC-DATA-001, SPEC-BROWSE-001, SPEC-TRENDS-001]
   every class except those of (g), including classes with no item; REQ-010 states that a taxonomy route requests no
   file under `data/platforms/`; AC-15 checks the taxonomy view's own "Loading…" after `index.json` has loaded.
   Approved by the researcher through AskUserQuestion on 2026-11-02.
+- 2026-11-02 0.4.0 in-place amendment of the completed 0.3.0 (see Amendments): overview order with a jump list, a
+  caption sentence on papers with several field tags, site glosses for the relations `exact` and `none`, the class
+  page correspondence as one table with vocabulary labels linking to the overview sources table, and line breaks in
+  class and vocabulary names only after "_". Changed: REQ-005, REQ-009, REQ-011, REQ-013, REQ-015, REQ-016;
+  AC-5, AC-9, AC-10, AC-11, AC-13, AC-16.
+
+## Amendments
+
+- 0.4.0 (2026-11-02), amendment of 0.3.0 (status completed, prior_completed_sha 9993952).
+  - Rationale: screen check of the built site at 800 px and 375 px by the researcher; changes approved by the
+    researcher.
+  - Scope: (1) overview order: heading, caption, a jump list to the four kind sections that leaves the hash
+    unchanged, the four kind sections, then "Sources of the correspondence" and "Relations", neither collapsed
+    (REQ-011); (2) a caption sentence stating that a paper can carry several field tags, so the field-tag paper counts
+    need not add up to the number of papers (REQ-011); (3) Relations table meanings for `exact` and `none`, whose
+    data-dictionary meaning is null, given as site glosses kept in `src/lib/taxonomy.ts`, with "—" for any other null
+    meaning (REQ-005, REQ-011); (4) the class page correspondence as one table Vocabulary | Term | Relation | Source,
+    with vocabulary display labels that link to their row of the overview sources table through the new route
+    `#/taxonomy?source=<key>`, and no reference text on class pages (REQ-009, REQ-013, REQ-015); (5) class names and
+    vocabulary labels in taxonomy tables break across lines only after "_" or at a space (REQ-016).
+  - Unchanged: the derived data (`taxonomy.json`, `index.json`), the unit-operation filter, the class page counts,
+    links and examples, loading and not-found behaviour.
 
 ## 1. Why
 
@@ -124,7 +147,10 @@ values of its browse group (`offeredValues(index)`). The **long table** is `core
   - (i) a source in `source_ref` splits at " ; " into a number of parts other than one or three.
 - **REQ-005** (ubiquitous) `taxonomy.json` shall be at most 120,000 bytes and `index.json` at most 260,000 bytes as
   written by `build-data` on release 1.0.0 (measured sizes recorded in `progress.md`). No file under `src/` shall
-  contain a reference text, a doi or a relation meaning of the release; the site reads them from `taxonomy.json`.
+  contain a reference text, a doi or a relation meaning of the release; the site reads the reference texts, the dois
+  and the release's relation meanings only from `taxonomy.json`. Two kinds of site text are not release text and live
+  in `src/lib/taxonomy.ts`: the relation glosses of REQ-011 (for `exact` and `none`, whose data-dictionary meaning is
+  null) and the vocabulary display labels of REQ-013.
 
 ### Unit-operation filter
 
@@ -153,13 +179,19 @@ values of its browse group (`offeredValues(index)`). The **long table** is `core
 
 ### Routing and loading
 
-- **REQ-009** (event) When the URL hash is `#/taxonomy`, the site shall show the taxonomy overview; when it is
-  `#/taxonomy/<kind>/<class>` with exactly two non-empty segments that decode with `decodeURIComponent`, the site shall
-  show the class page for the decoded kind and class. Any other hash beginning `#/taxonomy` (for example
-  `#/taxonomy/`, `#/taxonomy/x`, `#/taxonomy/a/b/c`, `#/taxonomy/a/%E0`, `#/taxonomy?x`, `#/taxonomyx`) gives not
-  found carrying the hash. `parseRoute` never throws, and every existing route test keeps its outcome. A helper
-  `taxonomyHash(kind, cls)` returns `#/taxonomy/<encodeURIComponent(kind)>/<encodeURIComponent(cls)>`. The site
-  navigation shall show the link "Taxonomy" (`#/taxonomy`) directly after "Trends".
+- **REQ-009** (event) When the URL hash is `#/taxonomy`, the site shall show the taxonomy overview with no target
+  source; when it is `#/taxonomy?source=<v>`, where the text after "?" contains no "&", starts with `source=`, and
+  `<v>` is non-empty and decodes with `decodeURIComponent`, the site shall show the taxonomy overview with the decoded
+  `<v>` as its target source (REQ-011); when it is `#/taxonomy/<kind>/<class>` with exactly two non-empty segments that
+  decode with `decodeURIComponent`, the site shall show the class page for the decoded kind and class. Whether the
+  target source is a key of the README source table is decided by the overview, not by the route. Any other hash
+  beginning `#/taxonomy` (for example `#/taxonomy/`, `#/taxonomy/x`, `#/taxonomy/a/b/c`, `#/taxonomy/a/%E0`,
+  `#/taxonomy?x`, `#/taxonomy?source=`, `#/taxonomy?source=%E0`, `#/taxonomy?source=Mehr2020&x=1`,
+  `#/taxonomy?sources=Mehr2020`, `#/taxonomyx`) gives not found carrying the hash. `parseRoute` never throws, and every
+  existing route test keeps its outcome. A helper `taxonomyHash(kind, cls)` returns
+  `#/taxonomy/<encodeURIComponent(kind)>/<encodeURIComponent(cls)>`, and a helper `taxonomySourceHash(key)` returns
+  `#/taxonomy?source=<encodeURIComponent(key)>`. The site navigation shall show the link "Taxonomy" (`#/taxonomy`)
+  directly after "Trends".
 - **REQ-010** (ubiquitous) The taxonomy views shall be loaded with a dynamic import in a chunk whose file name starts
   with `Taxonomy`, and `data/taxonomy.json` shall be requested only when a taxonomy route is opened, at most once per
   page load. Opening `#/`, `#/browse`, `#/trends` or a platform page shall request neither, and a taxonomy route shall
@@ -168,17 +200,31 @@ values of its browse group (`offeredValues(index)`). The **long table** is `core
 
 ### Overview and class pages
 
-- **REQ-011** (ubiquitous) The overview shall show, in this order: the heading "Taxonomy"; a caption "The <C> classes
-  of the release taxonomy: <n> field tags, <n> module types, <n> transfer modes and <n> unit operations. Item counts
-  are papers for field tags, modules for module types, connections for transfer modes and steps for unit
-  operations." with the numbers from `taxonomy.json`; a section "Sources of the correspondence" holding the
-  `sources` as a table with the columns Key, Vocabulary and Reference, the doi in each reference a link to
-  `https://doi.org/<doi>`; a section "Relations" holding the `relations` as a table with the columns Relation and
-  Meaning (an em dash "—" where the meaning is null); and one section per kind in `classes.csv` order, headed
-  "Field tags", "Module types", "Transfer modes", "Unit operations", each holding a table of its classes in
-  `classes.csv` order with the columns Class (the name, a link to `taxonomyHash`), Definition and Items
-  ("<n_items> <unit noun>"). Unit operations are grouped under one sub-heading per family, "Family: <family>", in
-  alphabetical order of family.
+- **REQ-011** (ubiquitous) The overview shall show, in this order:
+  - the heading "Taxonomy";
+  - a caption "The <C> classes of the release taxonomy: <n> field tags, <n> module types, <n> transfer modes and <n>
+    unit operations. Item counts are papers for field tags, modules for module types, connections for transfer modes
+    and steps for unit operations. A paper can carry several field tags, so the paper counts of the field tags need
+    not add up to the number of papers." with the numbers from `taxonomy.json`;
+  - a jump list: a navigation region named "On this page" holding one button per kind in `classes.csv` order, labelled
+    with the kind's section heading ("Field tags", "Module types", "Transfer modes", "Unit operations"); activating a
+    button (click, or Enter while it has focus) scrolls that kind's section heading into view and moves keyboard focus
+    to it, and leaves the URL hash unchanged;
+  - one section per kind in `classes.csv` order, headed "Field tags", "Module types", "Transfer modes", "Unit
+    operations", each holding a table of its classes in `classes.csv` order with the columns Class (the name, a link
+    to `taxonomyHash`), Definition and Items ("<n_items> <unit noun>"); unit operations are grouped under one
+    sub-heading per family, "Family: <family>", in alphabetical order of family;
+  - a section "Sources of the correspondence" holding the `sources` as a table with the columns Key, Vocabulary and
+    Reference, the doi in each reference a link to `https://doi.org/<doi>`. When the overview has a target source
+    (REQ-009) that is one of a row's `keys`, that row carries `aria-current="true"` and is scrolled into view once the
+    taxonomy has loaded, on every navigation to such a hash; no other row carries `aria-current`. A target source that
+    is no key of any row targets no row and scrolls nothing;
+  - a section "Relations" holding the `relations` as a table with the columns Relation and Meaning. Meaning is the
+    release's meaning when it is not null; otherwise the site gloss of the relation: `exact` → "the same concept",
+    `none` → "no counterpart in that vocabulary; the listed source was searched"; a relation whose release meaning is
+    null and that has no site gloss shows an em dash "—".
+
+  Neither of the last two sections is collapsed or hidden behind a disclosure control.
 - **REQ-012** (ubiquitous) A class page shall show the heading `<class>`; the kind ("Field tag", "Module type",
   "Transfer mode", "Unit operation"), and for a unit operation its family; the definition; a section "Counts"; a
   section "Example platforms"; and a section "Correspondence" (REQ-013). "Counts" lists "<n_items> <unit noun>"
@@ -202,16 +248,27 @@ values of its browse group (`offeredValues(index)`). The **long table** is `core
   field tag, in platform id order."; with no example it shows "No platform uses this class.".
 - **REQ-013** (ubiquitous) The section "Correspondence" shall show, for a class whose kind has no class in the wide
   table, "The correspondence table does not map field tags." (the kind's plural name), and for another class whose
-  `correspondence` is null, "The correspondence table has no row for this class.". Otherwise it shows one
-  sub-section per vocabulary of `vocabularies`, in that order, headed by the vocabulary name as recorded, with the
-  README reference of the row its source keys belong to (REQ-004 f) and, below:
-  - for an entry whose single target has relation `none`: "No counterpart in this vocabulary." followed by "Source
-    searched:" and its sources;
-  - for another entry: each target with its relation as text ("Heater/chiller — exact"), then "Sources:" and each
-    source as recorded, "<key> ; <page> ; <locator>" (only the key when page and locator are null);
+  `correspondence` is null, "The correspondence table has no row for this class.". Otherwise it shows one table with
+  the columns Vocabulary, Term, Relation and Source, and no sub-headings. For each vocabulary of `vocabularies`, in
+  that order, the table holds:
+  - for an entry other than a single `none` target: one row per target, in the entry's order; Term is the target as
+    recorded and Relation the recorded match as a word (exact, broader, narrower). The Vocabulary cell and the Source
+    cell appear only in the entry's first row and span all its rows (one cell each, spanning as many rows as the entry
+    has targets). Source is the entry's sources, each written "<key>, <page>, <locator>" (only "<key>" when page and
+    locator are null), joined with "; ";
+  - for an entry whose single target has relation `none`: one row with Term "—", Relation "none" and Source
+    "searched: " followed by the entry's sources written as above;
   - for a vocabulary with no entry for the class (by REQ-004 a, only when the vocabulary does not cover the class's
-    kind): "Not covered: <vocabulary> maps <kinds> only." with the kinds of that vocabulary in plural words joined
-    with ", " and "and" (for OntoLab_SAREF in release 1.0.0: "Not covered: OntoLab_SAREF maps module types only.").
+    kind): one row with Term "—", Relation "not covered" and Source "<label> maps <kinds> only", the kinds of that
+    vocabulary in plural words joined with ", " and "and" (for OntoLab_SAREF in release 1.0.0: "OntoLab/SAREF maps
+    module types only").
+
+  The Vocabulary cell shows the vocabulary's display label, a site constant keyed by the wide-table column name:
+  XDL → "XDL", WCSO → "WCSO", Leong2022 → "MAP (Leong2022)", OntoLab_SAREF → "OntoLab/SAREF", Gottstein2026 →
+  "Gottstein2026 orchestration levels"; a column with no constant shows its column name. Every place on a class page
+  that names a vocabulary uses this label. The label is a link to `taxonomySourceHash(<key>)`, `<key>` the first key
+  of the README source row that the vocabulary's source keys belong to (REQ-004 b and f guarantee one such row). The
+  class page shows neither the README reference nor its doi.
 - **REQ-014** (event) When the class route names a kind and class that are not in `taxonomy.json`, the taxonomy view
   shall show the heading "Class not found", the text "The taxonomy has no class <class> of kind <kind>." and a link
   "Back to the taxonomy" (`#/taxonomy`), without a page error.
@@ -221,14 +278,21 @@ values of its browse group (`offeredValues(index)`). The **long table** is `core
 - **REQ-015** (ubiquitous) For every class with links (REQ-012), `n_platforms` shall equal the N of the count line
   of its platforms link and `n_papers` the N of the count line of its papers link, as computed by `matchingPlatforms`
   and `matchingPapers` of SPEC-BROWSE-001 on the decoded URL. The link function, the count and caption texts, the
-  kind labels and unit nouns, the "not covered" text and the family grouping shall be pure functions or constants in
-  `src/lib/taxonomy.ts`, which imports neither React nor `react-dom` and reads neither `window` nor `document`.
+  kind labels and unit nouns, the jump-list name, the relation glosses and the rule that picks a relation's meaning,
+  the vocabulary display labels, the correspondence table rows of REQ-013 (one function of the class, the
+  `vocabularies` and the `sources`, giving for each row its cells, its vocabulary link and whether its Vocabulary and
+  Source cells start a span and over how many rows), the "not covered" text and the family grouping shall be pure
+  functions or constants in `src/lib/taxonomy.ts`, which imports neither React nor `react-dom` and reads neither
+  `window` nor `document`.
 - **REQ-016** (ubiquitous) The taxonomy views shall show relations and statuses as text, never by colour alone; any
   colour token they add is named `--taxo-*`, declared with a light value under `:root` and a dark value under
   `:root[data-theme="dark"]`, and reaches a WCAG contrast of at least 4.5:1 for text and 3:1 otherwise against the
-  surface of its set. Headings run h1, h2, h3 without skipping a level. Every link is reachable with Tab and
-  operable with Enter. At a viewport width of 375 px no taxonomy page scrolls horizontally at page level; tables
-  either fit or show each row as a stacked block of labelled cells. Captions and notes describe counts and draw no
+  surface of its set. Headings run h1, h2, h3 without skipping a level. Every link and button is reachable with Tab
+  and operable with Enter. At a viewport width of 375 px no taxonomy page scrolls horizontally at page level; tables,
+  the correspondence table of REQ-013 included, either fit or show each row as a stacked block of labelled cells. At
+  viewport widths of 800 px and 375 px, a class-name link in an overview table and a vocabulary label in a
+  correspondence table break across lines only directly after "_" or at a space: between two adjacent characters of
+  such a text there is no line break unless the first is "_" or either is a space. Captions and notes describe counts and draw no
   conclusions: none of the texts built in `src/lib/taxonomy.ts` contains, case-insensitively, any of the
   `BANNED_SUBSTRINGS` of `src/lib/trends.ts` (SPEC-TRENDS-001 REQ-014). All site text is English (checked by review).
 
@@ -272,7 +336,9 @@ values of its browse group (`offeredValues(index)`). The **long table** is `core
 ### Out of Scope — taxonomy content
 
 - Family definitions from `core/uo_family.csv`, the target-column description of the data dictionary, and any text
-  about the vocabularies other than the README source table and the relation meanings.
+  about the vocabularies other than the README source table, the relation meanings, the two relation glosses and the
+  vocabulary display labels (REQ-011, REQ-013).
+- Showing the README reference on class pages (the overview sources table carries it; amendment 0.4.0).
 - Editing, extending or re-deriving the correspondence; mapping field tags or `unmapped` classes.
 - Charts of the class counts; search within the taxonomy.
 

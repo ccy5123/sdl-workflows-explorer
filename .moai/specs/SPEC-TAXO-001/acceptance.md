@@ -11,7 +11,10 @@ from the repository root; output in `progress.md` §E.1). The script re-implemen
 importing project code: it reads `public/data/index.json` and `public/data/platforms/*.json` (release 1.0.0 as derived
 before this SPEC) and the verified release files `modes/taxonomy/classes.csv`, `modes/taxonomy/correspondence.csv`,
 `core/taxonomy_correspondence.csv`, `README.md` and `data_dictionary.csv`. The screenshot check at 1280 px and 375 px
-is done by the orchestrator in the run phase and recorded in `progress.md`; it is not an acceptance criterion.
+(amendment 0.4.0: 800 px and 375 px) is done by the orchestrator in the run phase and recorded in `progress.md`; it is
+not an acceptance criterion. Amendment 0.4.0 changes AC-5, AC-9, AC-10, AC-11, AC-13 and AC-16; the correspondence
+figures it adds (13, 5 and 6 table rows on three class pages; 315 rows over all classes, 280 targets plus 35 "not
+covered") follow from AC-3.
 
 ## Scenarios
 
@@ -109,7 +112,10 @@ entry point itself is not exercised by these tests and is not changed.
   shape: 94,799 bytes; the current file with raw rows: 35,742) and `public/data/index.json` at most 260,000 bytes
   (estimate 247,729; currently 204,900). The run phase records the measured sizes in `progress.md` §E.2.
 - A test scanning every file under `src/` finds none of: `doi:10.`, `10.1126/science.abc2986`, `Mehr et al`,
-  `the target is wider`, `Orchestration levels`.
+  `the target is wider`, `Orchestration levels` (compared case-sensitively; the site label "Gottstein2026
+  orchestration levels" of REQ-013 is site text and does not match).
+- The two relation glosses ("the same concept", "no counterpart in that vocabulary; the listed source was searched")
+  and the five vocabulary display labels occur in `src/lib/taxonomy.ts` and in no other file under `src/`.
 
 ### AC-6 uo in the URL (REQ-006)
 - Decoding: `uo=sonicate,mix` → [mix, sonicate]; `uo=mix,xx,mix` → [mix]; `uo=xx` → []; `uo=mix&uo=xx` → [];
@@ -158,15 +164,22 @@ entry point itself is not exercised by these tests and is not changed.
   `unit_operations` entries. `npm run typecheck` passes.
 
 ### AC-9 Routes (REQ-009)
-- `#/taxonomy` → taxonomy; `#/taxonomy/module_type/flow_reactor` → class page {kind module_type, class flow_reactor};
-  `#/taxonomy/a%20b/c` → {kind "a b", class "c"}; `#/taxonomy/x/y` → class page {x, y} (well-formed, unknown).
+- `#/taxonomy` → taxonomy with no target source; `#/taxonomy/module_type/flow_reactor` → class page {kind module_type,
+  class flow_reactor}; `#/taxonomy/a%20b/c` → {kind "a b", class "c"}; `#/taxonomy/x/y` → class page {x, y}
+  (well-formed, unknown).
+- `#/taxonomy?source=Mehr2020` → taxonomy with target source "Mehr2020"; `#/taxonomy?source=a%20b` → target source
+  "a b"; `#/taxonomy?source=Nobody2020` → taxonomy with target source "Nobody2020" (the route does not check keys).
 - `#/taxonomy/`, `#/taxonomy/x`, `#/taxonomy/a/b/c`, `#/taxonomy/a/`, `#/taxonomy//b`, `#/taxonomy/a/%E0`,
-  `#/taxonomy?x`, `#/taxonomyx` → not found carrying the hash; none throws.
+  `#/taxonomy?x`, `#/taxonomy?`, `#/taxonomy?source=`, `#/taxonomy?source=%E0`, `#/taxonomy?source=Mehr2020&x=1`,
+  `#/taxonomy?source=Mehr2020&`, `#/taxonomy?sources=Mehr2020`, `#/taxonomy?x=1&source=Mehr2020`, `#/taxonomyx` → not
+  found carrying the hash; none throws.
 - `taxonomyHash("unit_operation", "sonicate")` is `#/taxonomy/unit_operation/sonicate`; `taxonomyHash("a b", "c/d")`
-  is `#/taxonomy/a%20b/c%2Fd`, and parsing it returns {kind "a b", class "c/d"}.
+  is `#/taxonomy/a%20b/c%2Fd`, and parsing it returns {kind "a b", class "c/d"}. `taxonomySourceHash("Bai2024")` is
+  `#/taxonomy?source=Bai2024`; `taxonomySourceHash("a b&c")` is `#/taxonomy?source=a%20b%26c`, and parsing it returns
+  target source "a b&c".
 - Every existing case in `tests/route.test.ts` passes without edits to those cases.
 
-### AC-10 Link rule, count consistency and texts (REQ-012, REQ-015, REQ-016)
+### AC-10 Link rule, count consistency and texts (REQ-011, REQ-012, REQ-013, REQ-015, REQ-016)
 - Link function on the real data: module_type/flow_reactor → `#/browse?view=platforms&mt=flow_reactor` and
   `#/browse?mt=flow_reactor`; field_tag/catalysis → `#/browse?view=platforms&field=catalysis` and
   `#/browse?field=catalysis`; unit_operation/sonicate → `#/browse?view=platforms&uo=sonicate` and
@@ -178,26 +191,72 @@ entry point itself is not exercised by these tests and is not changed.
   decoded papers link exactly `n_papers` rows (0 mismatches).
 - Texts: the overview caption on the real data reads "The 69 classes of the release taxonomy: 10 field tags,
   22 module types, 6 transfer modes and 31 unit operations. Item counts are papers for field tags, modules for module
-  types, connections for transfer modes and steps for unit operations."; the not-covered text for OntoLab_SAREF is
-  "Not covered: OntoLab_SAREF maps module types only."; the count texts for 1 are "1 step", "1 platform" and "1 paper"
-  and for 0 "0 platforms" and "0 papers". The family grouping of unit operations is: analyze 1, form 2, handle 2,
-  measure 6, mix 2, plan 2, prepare 4, react 6, separate 5, unmapped 1.
-- Every text built in `src/lib/taxonomy.ts` (the overview caption, the two example captions, the unfiltered and
-  no-platform notes, "No platform uses this class.", the two correspondence messages, the not-covered text, "No
-  counterpart in this vocabulary.", the not-found texts), with the real-data values filled in, contains none of the
-  `BANNED_SUBSTRINGS` of `src/lib/trends.ts`, compared case-insensitively.
+  types, connections for transfer modes and steps for unit operations. A paper can carry several field tags, so the
+  paper counts of the field tags need not add up to the number of papers."; the not-covered Source text for
+  OntoLab_SAREF is "OntoLab/SAREF maps module types only"; the count texts for 1 are "1 step", "1 platform" and
+  "1 paper" and for 0 "0 platforms" and "0 papers". The family grouping of unit operations is: analyze 1, form 2,
+  handle 2, measure 6, mix 2, plan 2, prepare 4, react 6, separate 5, unmapped 1.
+- Relation meanings on the real `relations`: exact → "the same concept", broader → "the target is wider than our
+  class", narrower → "the target is narrower; for Gottstein2026, one of our items may span several of its objects"
+  (the two release texts, read from the data), none → "no counterpart in that vocabulary; the listed source was
+  searched". A relation {match "partial", meaning null} gives "—"; {match "exact", meaning "x"} gives "x" (a release
+  meaning wins over the gloss).
+- Vocabulary labels: XDL → "XDL", WCSO → "WCSO", Leong2022 → "MAP (Leong2022)", OntoLab_SAREF → "OntoLab/SAREF",
+  Gottstein2026 → "Gottstein2026 orchestration levels", "Foo" → "Foo".
+- Correspondence rows on the real data (cells Vocabulary | Term | Relation | Source; "span n" marks the first row of an
+  entry whose Vocabulary and Source cells span n rows, the other rows of that entry have neither cell):
+  - module_type/thermal_unit: 13 rows. XDL span 5: "XDL" | "Heater/chiller" | "exact" | "Mehr2020, p.10, Fig. 5;
+    Mehr2020, p.4, Fig. 2; Mehr2020, p.11, main text", then Low temperature, circulation chiller, heater chiller,
+    stirrer hotplate, each "exact"; WCSO span 3 (heat treatment device, heated magnetic stirrer, temperature change
+    device; Source "Schilling2026, p.5, Fig. 2"); "MAP (Leong2022)" span 3 (furnace, hotplate stirrer, rapid joule
+    heating; Source "Leong2022, p.4, Table 1; Leong2022, p.7, Fig. 4, CS3"); "OntoLab/SAREF" | "—" | "none" |
+    "searched: Bai2024"; "Gottstein2026 orchestration levels" | "setup" | "exact" | "Gottstein2026, pdf p.3,
+    §Vocabulary and formalism (physical terms)".
+  - transfer_mode/mobile_robot: 5 rows. "XDL" | "—" | "none" | "searched: Mehr2020"; "WCSO" | "—" | "none" |
+    "searched: Schilling2026"; "MAP (Leong2022)" | "transportation task" | "broader" | "Leong2022, p.9, Limitations";
+    "OntoLab/SAREF" | "—" | "not covered" | "OntoLab/SAREF maps module types only"; "Gottstein2026 orchestration
+    levels" | "unit_operation" | "exact" | "Gottstein2026, pdf p.4, §Results".
+  - module_type/human: 6 rows; "MAP (Leong2022)" span 2: "Manual task" | "broader" with Source "Leong2022, p.3,
+    Fig. 1; Leong2022, p.7, CS3", then "manual tool" | "narrower"; Gottstein2026: "—" | "none" | "searched:
+    Gottstein2026, pdf p.3, Fig. 1".
+  - Vocabulary links: XDL → `#/taxonomy?source=Mehr2020`, WCSO → `#/taxonomy?source=Schilling2026`, MAP (Leong2022) →
+    `#/taxonomy?source=Leong2022`, OntoLab/SAREF → `#/taxonomy?source=Bai2024`, Gottstein2026 orchestration levels →
+    `#/taxonomy?source=Gottstein2026`.
+  - Over the 56 classes with a correspondence: 315 rows (280 one per target, 35 "not covered"); 280 rows start a
+    Vocabulary/Source span (the 245 rows that start an entry plus the 35 not-covered rows, each spanning one row); the
+    spans cover all 315 rows; the Relation of every row is one of exact, broader, narrower, none, not covered.
+- Every text built in `src/lib/taxonomy.ts` (the overview caption, the jump-list name "On this page", the two
+  relation glosses, the two example captions, the unfiltered and no-platform notes, "No platform uses this class.",
+  the two correspondence messages, the not-covered Source text and the relations "not covered" and "searched: …" with
+  the real sources, the five vocabulary labels, the not-found texts), with the real-data values filled in, contains
+  none of the `BANNED_SUBSTRINGS` of `src/lib/trends.ts`, compared case-insensitively.
 - `tests/libBoundary.test.ts` also checks `src/lib/taxonomy.ts`.
 
 ### AC-11 Overview (REQ-009, REQ-011)
 - The site navigation shows the links Home, Browse, Trends, Taxonomy in this order; following "Taxonomy" gives hash
   `#/taxonomy`, the h1 "Taxonomy" and the caption of AC-10.
+- In `main`, the h1 "Taxonomy" is followed by the caption, then the navigation region "On this page", then the h2
+  headings in this order: "Field tags", "Module types", "Transfer modes", "Unit operations", "Sources of the
+  correspondence", "Relations". `main` contains no `details` element.
+- The region "On this page" holds the buttons "Field tags", "Module types", "Transfer modes", "Unit operations" in
+  this order. Clicking "Unit operations" leaves the hash `#/taxonomy`, and the h2 "Unit operations" is in the viewport
+  and has focus; focusing the button "Transfer modes" and pressing Enter does the same for the h2 "Transfer modes".
 - The table under "Sources of the correspondence" has 5 rows; the Mehr2020 row has a link to
   `https://doi.org/10.1126/science.abc2986`. The table under "Relations" lists exact, broader, narrower, none, with
-  "—" as the meaning of exact and none.
+  the meanings of AC-10 (exact "the same concept", none "no counterpart in that vocabulary; the listed source was
+  searched").
 - The sections "Field tags", "Module types", "Transfer modes", "Unit operations" hold 10, 22, 6 and 31 class rows; the
   row flow_reactor shows "139 modules" and links to `#/taxonomy/module_type/flow_reactor`; the row catalysis shows
   "23 papers". Under "Unit operations" the sub-headings are "Family: analyze" … "Family: unmapped" in the order of
   AC-10, and "Family: mix" holds mix and sonicate.
+- Opening `#/taxonomy?source=Bai2024` in a fresh page shows the overview; the sources row with key Bai2024 is in the
+  viewport and is the only row with `aria-current="true"`. `#/taxonomy?source=Schilling2026_SI` targets the row whose
+  Key cell reads "Schilling2026, Schilling2026_SI". `#/taxonomy?source=Nobody2020` shows the overview with no row
+  carrying `aria-current`. On `#/taxonomy/module_type/thermal_unit`, following the link "OntoLab/SAREF" gives the hash
+  `#/taxonomy?source=Bai2024` with the Bai2024 row in the viewport and carrying `aria-current="true"`. From
+  `#/taxonomy?source=Bai2024`, setting the hash to `#/taxonomy?source=Mehr2020` (the overview stays mounted) moves
+  `aria-current="true"` to the Mehr2020 row, which is then in the viewport, and the Bai2024 row no longer carries
+  `aria-current`. No page error.
 
 ### AC-12 Class pages, one per kind, with matching count lines (REQ-012, REQ-015)
 - `#/taxonomy/module_type/flow_reactor`: h1 "flow_reactor", the kind "Module type", "139 modules"; the link
@@ -218,17 +277,23 @@ entry point itself is not exercised by these tests and is not changed.
   "(1 module)".
 
 ### AC-13 Correspondence on class pages (REQ-013)
-- `#/taxonomy/module_type/thermal_unit`: sub-headings XDL, WCSO, Leong2022, OntoLab_SAREF, Gottstein2026 in this
-  order; under XDL the five targets each with "— exact" and the three sources of AC-3; under OntoLab_SAREF "No
-  counterpart in this vocabulary." and "Source searched:" with `Bai2024`; the XDL sub-section shows the Mehr2020
-  reference with a link to `https://doi.org/10.1126/science.abc2986`.
-- `#/taxonomy/transfer_mode/mobile_robot`: under Leong2022 "transportation task — broader" and
-  `Leong2022 ; p.9 ; Limitations`; under OntoLab_SAREF "Not covered: OntoLab_SAREF maps module types only.".
-- `#/taxonomy/module_type/human`: under Leong2022 "Manual task — broader" and "manual tool — narrower"; under
-  Gottstein2026 "No counterpart in this vocabulary." with source `Gottstein2026 ; pdf p.3 ; Fig. 1`.
-- `#/taxonomy/field_tag/catalysis`: "The correspondence table does not map field tags." and no vocabulary
-  sub-section. `#/taxonomy/unit_operation/unmapped`: "The correspondence table has no row for this class.".
-- The relation of every target is visible text (the word exact, broader or narrower).
+- `#/taxonomy/module_type/thermal_unit`: the section "Correspondence" has no h3 and one table with the column
+  headers Vocabulary, Term, Relation, Source and 13 body rows, as listed in AC-10. The Vocabulary cells read, in
+  order, "XDL", "WCSO", "MAP (Leong2022)", "OntoLab/SAREF", "Gottstein2026 orchestration levels" (five cells), each a
+  link to the hash of AC-10; the XDL Vocabulary and Source cells span 5 rows. The first row reads "XDL" |
+  "Heater/chiller" | "exact" | "Mehr2020, p.10, Fig. 5; Mehr2020, p.4, Fig. 2; Mehr2020, p.11, main text"; the
+  OntoLab/SAREF row reads "OntoLab/SAREF" | "—" | "none" | "searched: Bai2024". Inside `main` there is no link to
+  `https://doi.org/` and no text "doi:" (the site footer's release doi is outside `main`).
+- `#/taxonomy/transfer_mode/mobile_robot`: 5 body rows, as listed in AC-10, among them "MAP (Leong2022)" |
+  "transportation task" | "broader" | "Leong2022, p.9, Limitations" and "OntoLab/SAREF" | "—" | "not covered" |
+  "OntoLab/SAREF maps module types only".
+- `#/taxonomy/module_type/human`: the rows "Manual task" | "broader" and "manual tool" | "narrower" share one
+  Vocabulary cell "MAP (Leong2022)" and one Source cell "Leong2022, p.3, Fig. 1; Leong2022, p.7, CS3"; the Gottstein2026
+  row reads "Gottstein2026 orchestration levels" | "—" | "none" | "searched: Gottstein2026, pdf p.3, Fig. 1".
+- `#/taxonomy/field_tag/catalysis`: "The correspondence table does not map field tags." and no correspondence table.
+  `#/taxonomy/unit_operation/unmapped`: "The correspondence table has no row for this class." and no table.
+- On `#/taxonomy/unit_operation/wash_extract`, every Relation cell is one of the words exact, broader, narrower, none,
+  not covered.
 
 ### AC-14 Unit-operation filter in the browser and the dashboard (REQ-006, REQ-007, REQ-008)
 - On `#/browse?view=platforms`, the filter panel has a group "Unit operations" with 31 checkboxes, after it a radio
@@ -259,11 +324,19 @@ entry point itself is not exercised by these tests and is not changed.
   starting "Could not load the taxonomy:" and no page error.
 
 ### AC-16 Narrow screen, keyboard, headings, colours, gates (REQ-016, all)
-- At 375 × 800, on `#/taxonomy`, `#/taxonomy/module_type/thermal_unit` and `#/taxonomy/unit_operation/sonicate`,
-  `document.documentElement.scrollWidth` is at most 375.
-- On `#/taxonomy`, pressing Tab from the page start reaches the link "Taxonomy" in the navigation, the doi link of
-  Mehr2020 and the class link flow_reactor; pressing Enter on flow_reactor opens its class page, where Tab reaches the
-  link "127 platforms" and the example link "Bedard2018/P11".
+- At 375 × 800, on `#/taxonomy`, `#/taxonomy/module_type/thermal_unit`, `#/taxonomy/transfer_mode/mobile_robot` and
+  `#/taxonomy/unit_operation/sonicate`, `document.documentElement.scrollWidth` is at most 375; on thermal_unit each
+  correspondence row is shown as a stacked block whose cells carry their column label.
+- Line breaks: at 800 × 800 and at 375 × 800, on `#/taxonomy` (every class-name link in the four kind tables) and on
+  `#/taxonomy/module_type/thermal_unit` and `#/taxonomy/transfer_mode/mobile_robot` (every vocabulary link in the
+  correspondence table), a test measures the line box of each character of the link text (one DOM range per
+  character); wherever two adjacent characters lie on different lines, the first is "_" or one of the two is a space.
+  The check holds for instrument_electrochemical, instrument_separation_ms, sample_handling_station,
+  measure_electrochemical and materials_polymer_soft, the five longest class names.
+- On `#/taxonomy`, pressing Tab from the page start reaches the link "Taxonomy" in the navigation, the button "Field
+  tags" of "On this page", the class link flow_reactor and the doi link of Mehr2020; pressing Enter on flow_reactor
+  opens its class page, where Tab reaches the link "127 platforms", the example link "Bedard2018/P11" and the
+  vocabulary link "XDL".
 - On the overview and on the six class pages of AC-12 (module_type/flow_reactor, field_tag/catalysis,
   transfer_mode/data_transfer, unit_operation/sonicate, field_tag/unmapped, module_type/assembly_unit), the heading levels in document order never increase by more
   than one and start at h1.
