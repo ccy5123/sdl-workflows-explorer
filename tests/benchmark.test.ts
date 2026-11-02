@@ -4,6 +4,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { PINNED_DOI, pinnedExclusionReason } from "./pinned-release";
 import type { BenchmarkItemsJson, BenchmarkJson, BenchmarkSummary, BenchmarkTask, IndexJson } from "../src/data/types";
 import {
   BACK_LINK_TEXT,
@@ -323,7 +324,7 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
     expect(platformRows(b, "test")).toHaveLength(116);
   });
 
-  it("AC-8: the reference rows of release 1.0.0", () => {
+  it("AC-8: the reference rows of the pinned release", () => {
     const rows = Object.values(b.reference_results).map(referenceRow);
     expect(rows.map((r) => [r.testItems, r.baseline, r.reference, r.difference, r.interval, r.replicates])).toEqual([
       ["1199 (99)", "0.6681", "0.6881", "+0.0200", "[-0.0097, +0.0529]", "2000"],
@@ -333,7 +334,7 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
   });
 
   it("AC-8: exclusion line, uncertain sentences, caption and the recorded lines", () => {
-    expect(b.exclusion_reasons.map(exclusionLine)).toEqual(["Excluded: 4 papers, used to develop the extraction instructions."]);
+    expect(b.exclusion_reasons.map(exclusionLine)).toEqual([`Excluded: 4 papers, ${pinnedExclusionReason()}.`]);
     expect(b.summaries.map(uncertainSentence)).toEqual([
       "22 labels occur among the items of this task. Items marked uncertain in the release: 171 train, 163 test, 6 excluded.",
       "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 1 excluded.",
@@ -394,7 +395,7 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
       `python modes/benchmark/evaluate.py modes/benchmark --task ${TM} --predictions my_predictions.csv`,
     ]);
     for (const s of ["def ", "import csv", "argparse"]) expect(all).not.toContain(s);
-    expect(index.release.doi).toBe("10.5281/zenodo.23857126");
+    expect(index.release.doi).toBe(PINNED_DOI);
   });
 
   it("AC-8 / REQ-016: no site text of the view contains a banned substring or ranking word", () => {

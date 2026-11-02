@@ -23,6 +23,20 @@
 - Implementation Kickoff Approval: the researcher approved version 0.4.0 through AskUserQuestion on 2026-11-02 and
   chose autonomous progression (run, screen check, sync and branch push without intermediate stops; no merge, no
   deployment).
+
+## §E.2 Run-phase Evidence
+
+- M1 pin and re-baseline. Tests edited first (`tests/pinned-release.ts` new: pinned version, DOI, extract folder and
+  the release's own exclusion reason, shared by Vitest and Playwright). RED: with `release.config.json` back at 1.0.0
+  and `fetch-release` + `build-data` run on the 1.0.0 zip, `npx vitest run` gave 5 failed of 525 (config pin; index,
+  taxonomy and benchmark changes in release-docs.test.ts; AC-4 baselines in benchmark-derive.test.ts). GREEN after the
+  pin commit 194e656 (only `release.config.json`) and `fetch-release` + `build-data` on the 1.1.0 zip (98ea319b…, 90
+  files verified): two more failures appeared, both real-data rows that print a Gottstein2026 locator
+  (`tests/taxonomy.test.ts` AC-10, `tests/taxonomy-derive.test.ts` AC-3). Their literals were moved to the 1.1.0 value
+  ("p.3", "p.4"), as were the same rows in `e2e/taxonomy.spec.ts`. Deviation: `tests/taxonomy.test.ts` was not in
+  spec §2's list, and these rows keep literals rather than reading from the release — reading them from the release
+  would compare the derived rows with themselves. The synthetic fixture rows in `tests/derive.test.ts` keep "pdf p.3".
+  Then Vitest 34 files / 525 passed; `npm run e2e` 162 passed; typecheck 0.
 - Dependencies: SPEC-SITE-001 completed (main at aa10af8).
 - Source of the brief: the orchestrating session of 2026-11-02 relayed the researcher's decision to publish the site
   with release 1.1.0 (Zenodo record 23875743, draft on that day), the pin values, the local bundle path and SHA-256,

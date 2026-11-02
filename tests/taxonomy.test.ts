@@ -347,14 +347,14 @@ describe.skipIf(!dataAvailable)("taxonomy texts and links on the real data (AC-1
       "hotplate stirrer | exact",
       "rapid joule heating | exact",
       "OntoLab/SAREF span 1 | — | none | searched: Bai2024",
-      "Gottstein2026 orchestration levels span 1 | setup | exact | Gottstein2026, pdf p.3, §Vocabulary and formalism (physical terms)",
+      "Gottstein2026 orchestration levels span 1 | setup | exact | Gottstein2026, p.3, §Vocabulary and formalism (physical terms)",
     ]);
     expect(rowsOf("transfer_mode", "mobile_robot").map(show)).toEqual([
       "XDL span 1 | — | none | searched: Mehr2020",
       "WCSO span 1 | — | none | searched: Schilling2026",
       "MAP (Leong2022) span 1 | transportation task | broader | Leong2022, p.9, Limitations",
       "OntoLab/SAREF span 1 | — | not covered | OntoLab/SAREF maps module types only",
-      "Gottstein2026 orchestration levels span 1 | unit_operation | exact | Gottstein2026, pdf p.4, §Results",
+      "Gottstein2026 orchestration levels span 1 | unit_operation | exact | Gottstein2026, p.4, §Results",
     ]);
     const human = rowsOf("module_type", "human").map(show);
     expect(human).toHaveLength(6);
@@ -362,7 +362,7 @@ describe.skipIf(!dataAvailable)("taxonomy texts and links on the real data (AC-1
     expect(human[human.indexOf("MAP (Leong2022) span 2 | Manual task | broader | Leong2022, p.3, Fig. 1; Leong2022, p.7, CS3") + 1]).toBe(
       "manual tool | narrower",
     );
-    expect(human).toContain("Gottstein2026 orchestration levels span 1 | — | none | searched: Gottstein2026, pdf p.3, Fig. 1");
+    expect(human).toContain("Gottstein2026 orchestration levels span 1 | — | none | searched: Gottstein2026, p.3, Fig. 1");
   });
 
   it("links each vocabulary label to its sources row (AC-10)", () => {

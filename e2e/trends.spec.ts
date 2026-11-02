@@ -1,5 +1,6 @@
 // SPEC-TRENDS-001 AC-3 (inverted inputs) and AC-9 to AC-16: the trends dashboard in Chromium against the e2e build.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { PINNED_DOI } from "../tests/pinned-release";
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -257,7 +258,7 @@ test("AC-14: partial year, notes, data card link, no percentages", async ({ page
   await expect(page.locator(".trends > .trends-note")).toHaveText(
     "The counts cover the 238 papers (280 platforms) that passed the screening described in the data card (DATA_CARD.md in the release files on Zenodo), not every paper on self-driving laboratories.",
   );
-  await expect(link(page, "release files on Zenodo")).toHaveAttribute("href", "https://doi.org/10.5281/zenodo.23857126");
+  await expect(link(page, "release files on Zenodo")).toHaveAttribute("href", `https://doi.org/${PINNED_DOI}`);
 
   await page.goto("/#/trends?years=2016-2020");
   await expect(countLine(page)).toHaveText("43 of 238 papers");

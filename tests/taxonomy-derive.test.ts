@@ -1,4 +1,4 @@
-// SPEC-TAXO-001 AC-1 to AC-3 on the real 1.0.0 release: unit operations on platform rows, per-class counts and
+// SPEC-TAXO-001 AC-1 to AC-3 on the real pinned release: unit operations on platform rows, per-class counts and
 // examples, structured correspondence, vocabularies, sources and relations (REQ-001 to REQ-003). The expected numbers
 // are those printed by .moai/specs/SPEC-TAXO-001/expected-counts.mjs. Uses the verified cache in .cache/release/, or
 // SDL_RELEASE_ZIP; skips with a message only when neither is available, as release.test.ts does.
@@ -18,11 +18,11 @@ const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NA
 if (!available) {
   console.warn(
     "taxonomy-derive.test.ts skipped: no verified cache in .cache/release/ and SDL_RELEASE_ZIP is not set " +
-      "(run `npm run fetch-release` or set SDL_RELEASE_ZIP=<path to sdl-workflows-1.0.0.zip>)",
+      "(run `npm run fetch-release` or set SDL_RELEASE_ZIP=<path to the pinned release zip>)",
   );
 }
 
-describe.skipIf(!available)("SPEC-TAXO-001 on the real release 1.0.0", () => {
+describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
   let releaseDir: string;
   let d: Derived;
   const cls = (kind: string, name: string): TaxonomyClass =>
@@ -178,7 +178,7 @@ describe.skipIf(!available)("SPEC-TAXO-001 on the real release 1.0.0", () => {
     expect(cls("module_type", "human").correspondence!.find((e) => e.vocabulary === "Gottstein2026")).toEqual({
       vocabulary: "Gottstein2026",
       targets: [{ target: "none", match: "none" }],
-      sources: [{ key: "Gottstein2026", page: "pdf p.3", locator: "Fig. 1" }],
+      sources: [{ key: "Gottstein2026", page: "p.3", locator: "Fig. 1" }],
     });
   });
 

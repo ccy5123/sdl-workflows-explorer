@@ -1,4 +1,4 @@
-// SPEC-BENCH-001 AC-1 to AC-4 on the real 1.0.0 release: the typed benchmark.json, benchmark-items.json, the build
+// SPEC-BENCH-001 AC-1 to AC-4 on the real pinned release: the typed benchmark.json, benchmark-items.json, the build
 // checks and the file sizes and unchanged files after build-data (REQ-001 to REQ-004). The expected numbers are those
 // printed by .moai/specs/SPEC-BENCH-001/expected-counts.mjs. deriveAll uses the verified cache in .cache/release/, or
 // SDL_RELEASE_ZIP, and skips with a message only when neither is available, as release.test.ts does; the size and
@@ -11,6 +11,7 @@ import { CACHE_DIR, fetchRelease, MARKER_NAME } from "../scripts/fetch-release";
 import { loadConfig } from "../scripts/lib/config";
 import { deriveAll, type Derived } from "../scripts/lib/derive";
 import { tempDir } from "./fixtures/zip";
+import { pinnedExclusionReason } from "./pinned-release";
 
 const config = loadConfig();
 const localZip = process.env.SDL_RELEASE_ZIP || undefined;
@@ -18,14 +19,14 @@ const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NA
 if (!available) {
   console.warn(
     "benchmark-derive.test.ts skipped: no verified cache in .cache/release/ and SDL_RELEASE_ZIP is not set " +
-      "(run `npm run fetch-release` or set SDL_RELEASE_ZIP=<path to sdl-workflows-1.0.0.zip>)",
+      "(run `npm run fetch-release` or set SDL_RELEASE_ZIP=<path to the pinned release zip>)",
   );
 }
 
 const MT = "chrono2023-module_type";
 const TM = "chrono2023-transfer_mode";
 
-describe.skipIf(!available)("SPEC-BENCH-001 on the real release 1.0.0", () => {
+describe.skipIf(!available)("SPEC-BENCH-001 on the real pinned release", () => {
   let releaseDir: string;
   let d: Derived;
   const read = (rel: string) => readFileSync(join(releaseDir, "modes/benchmark", rel), "utf8");
@@ -51,7 +52,7 @@ describe.skipIf(!available)("SPEC-BENCH-001 on the real release 1.0.0", () => {
       "Benchmark: chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.",
     );
     expect(b.split_counts).toEqual({ train: 135, test: 99, excluded: 4 });
-    expect(b.exclusion_reasons).toEqual([{ reason: "used to develop the extraction instructions", n: 4 }]);
+    expect(b.exclusion_reasons).toEqual([{ reason: pinnedExclusionReason(releaseDir), n: 4 }]);
   });
 
   it("AC-1: two tasks with exactly the 15 fields, equal to the parsed task files", () => {
@@ -141,13 +142,14 @@ describe.skipIf(!built)("files after build-data (SPEC-BENCH-001 AC-4)", () => {
     expect(items).toBeLessThanOrEqual(500_000);
   });
 
-  it("leaves index.json, taxonomy.json and the platform files byte-identical to the baseline", () => {
+  // Baselines of release 1.1.0 (SPEC-RELEASE-001 AC-3); tests/release-docs.test.ts checks what changed since 1.0.0.
+  it("keeps index.json, taxonomy.json and the platform files at the baseline of the pinned release", () => {
     const dir = join(DATA_DIR, "platforms");
     const names = readdirSync(dir).sort();
     expect(names).toHaveLength(238);
     const platforms = sha256(Buffer.concat(names.map((n) => readFileSync(join(dir, n)))));
-    expect(sha256(readFileSync(join(DATA_DIR, "index.json")))).toBe("6b644e3cba4bdbd007e85d5fdfc10494329e0aaa4337d2c37c4cb6c15ca5db4d");
-    expect(sha256(readFileSync(join(DATA_DIR, "taxonomy.json")))).toBe("e33f52e3398e1d411f1522c1e3953c41165828a7693e9582c90c6fd9880acdc9");
+    expect(sha256(readFileSync(join(DATA_DIR, "index.json")))).toBe("464b1c6dce9f30f39a89c2f3ac5f32b9d7d0d688d0e9c926a4c7715543a21064");
+    expect(sha256(readFileSync(join(DATA_DIR, "taxonomy.json")))).toBe("f4b111b046402fcb332050a67bc19ff9126dc82003b1e5c1e71e9fbdcd392537");
     expect(platforms).toBe("9001ca64126b7bb996076a0b8b172d5c3d5b293171529dcf9aca08d8599889a8");
   });
 });

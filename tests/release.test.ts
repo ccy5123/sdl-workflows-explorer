@@ -1,4 +1,4 @@
-// AC-1 and AC-10: counts and content shape on the real 1.0.0 release (REQ-009, REQ-011, spec §3).
+// AC-1 and AC-10: counts and content shape on the real pinned release (REQ-009, REQ-011, spec §3).
 // Uses the verified cache in .cache/release/, or SDL_RELEASE_ZIP (hash-checked, extracted into a temp cache).
 // Skips with a message only when neither is available.
 import { existsSync, readdirSync } from "node:fs";
@@ -18,11 +18,11 @@ const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NA
 if (!available) {
   console.warn(
     "release.test.ts skipped: no verified cache in .cache/release/ and SDL_RELEASE_ZIP is not set " +
-      "(run `npm run fetch-release` or set SDL_RELEASE_ZIP=<path to sdl-workflows-1.0.0.zip>)",
+      "(run `npm run fetch-release` or set SDL_RELEASE_ZIP=<path to the pinned release zip>)",
   );
 }
 
-describe.skipIf(!available)("real release 1.0.0", () => {
+describe.skipIf(!available)("real pinned release", () => {
   let releaseDir: string;
   let derived: Derived;
 

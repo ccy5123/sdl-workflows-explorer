@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { PINNED_DOI, PINNED_RELEASE_DIR, PINNED_VERSION, pinnedExclusionReason } from "../tests/pinned-release";
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -12,7 +13,7 @@ function trackErrors(page: Page): string[] {
 const MT = "chrono2023-module_type";
 const TM = "chrono2023-transfer_mode";
 const REFERENCE_TEXT = readFileSync(
-  join(import.meta.dirname, "..", ".cache", "release", "extract", "sdl-workflows-1.0.0", "modes", "benchmark", "reference_results.json"),
+  join(PINNED_RELEASE_DIR, "modes", "benchmark", "reference_results.json"),
   "utf8",
 );
 const CAPTION =
@@ -69,7 +70,7 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
     ["excluded", "4", "38", "15"],
     ["Total", "238", "2621", "983"],
   ]);
-  await expect(page.getByText("Excluded: 4 papers, used to develop the extraction instructions.", { exact: true })).toBeVisible();
+  await expect(page.getByText(`Excluded: 4 papers, ${pinnedExclusionReason()}.`, { exact: true })).toBeVisible();
 
   for (const [task, title, unit, rule, inputs, labels, sentence] of [
     [MT, "Primary module type of a step", "step", MT_RULE, MT_INPUTS, 22,
@@ -102,9 +103,9 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
   expect(await details.evaluate((d) => (d as HTMLDetailsElement).open)).toBe(false);
   expect(await details.locator("pre").textContent()).toBe(REFERENCE_TEXT);
 
-  await expect(region(page, "Run the evaluation yourself").getByRole("link", { name: "https://doi.org/10.5281/zenodo.23857126" })).toHaveAttribute(
+  await expect(region(page, "Run the evaluation yourself").getByRole("link", { name: `https://doi.org/${PINNED_DOI}` })).toHaveAttribute(
     "href",
-    "https://doi.org/10.5281/zenodo.23857126",
+    `https://doi.org/${PINNED_DOI}`,
   );
 
   const platforms = region(page, "Items by platform");
@@ -150,7 +151,7 @@ test("AC-11: label, platform and count links", async ({ page }) => {
 test("AC-12: the explorer, its controls, Show 100 more and the platform filter", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/");
-  await expect(page.getByText("Data version 1.0.0")).toBeVisible();
+  await expect(page.getByText(`Data version ${PINNED_VERSION}`)).toBeVisible();
   const length = await page.evaluate(() => history.length);
   await page.evaluate(() => {
     window.location.hash = "#/benchmark/items";
@@ -212,14 +213,14 @@ test("AC-12: the explorer, its controls, Show 100 more and the platform filter",
 
 test("AC-12: back navigation returns to the page that opened the explorer", async ({ page }) => {
   await page.goto("/#/");
-  await expect(page.getByText("Data version 1.0.0")).toBeVisible();
+  await expect(page.getByText(`Data version ${PINNED_VERSION}`)).toBeVisible();
   await page.evaluate(() => {
     window.location.hash = "#/benchmark/items";
   });
   await expect(countLine(page)).toHaveText("2621 of 2621 items");
   await page.goBack();
   expect(await hash(page)).toBe("#/");
-  await expect(page.getByText("Data version 1.0.0")).toBeVisible();
+  await expect(page.getByText(`Data version ${PINNED_VERSION}`)).toBeVisible();
 });
 
 test("AC-13: requests of each route", async ({ page }) => {
@@ -254,7 +255,7 @@ test("AC-13: Loading… until benchmark.json arrives", async ({ page }) => {
   });
   await page.goto("/#/benchmark");
   await held;
-  await expect(page.getByText("Data version 1.0.0")).toBeVisible();
+  await expect(page.getByText(`Data version ${PINNED_VERSION}`)).toBeVisible();
   await expect(page.locator("main")).toHaveText("Loading…");
   release();
   await expect(h1(page, "Benchmark chrono2023")).toBeVisible();
@@ -375,7 +376,7 @@ test("AC-10 (0.4.0): reference results show one metric line and a Task | Baselin
   const errors = trackErrors(page);
   const task = (id: string) =>
     JSON.parse(
-      readFileSync(join(import.meta.dirname, "..", ".cache", "release", "extract", "sdl-workflows-1.0.0", "modes", "benchmark", "tasks", `${id}.json`), "utf8"),
+      readFileSync(join(PINNED_RELEASE_DIR, "modes", "benchmark", "tasks", `${id}.json`), "utf8"),
     ) as { metric: string; baseline_rule: string; reference_model: string };
   const [mt, tm] = [task(MT), task(TM)];
   await page.goto("/#/benchmark");

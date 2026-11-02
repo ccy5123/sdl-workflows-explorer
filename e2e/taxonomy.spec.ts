@@ -1,5 +1,6 @@
 // SPEC-TAXO-001 AC-11 to AC-13, AC-15 and AC-16: the taxonomy overview and class pages in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
+import { PINNED_VERSION } from "../tests/pinned-release";
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -283,7 +284,7 @@ test("AC-13: the correspondence table of thermal_unit", async ({ page }) => {
   ]);
   expect(rows).toContainEqual(["OntoLab/SAREF", "—", "none", "searched: Bai2024"]);
   expect(rows[12]).toEqual([
-    "Gottstein2026 orchestration levels", "setup", "exact", "Gottstein2026, pdf p.3, §Vocabulary and formalism (physical terms)",
+    "Gottstein2026 orchestration levels", "setup", "exact", "Gottstein2026, p.3, §Vocabulary and formalism (physical terms)",
   ]);
   await expect(page.locator('main a[href^="https://doi.org/"]')).toHaveCount(0);
   expect(await page.locator("main").textContent()).not.toContain("doi:");
@@ -299,7 +300,7 @@ test("AC-13: mobile_robot, human, unmapped kinds and relation words", async ({ p
     ["WCSO", "—", "none", "searched: Schilling2026"],
     ["MAP (Leong2022)", "transportation task", "broader", "Leong2022, p.9, Limitations"],
     ["OntoLab/SAREF", "—", "not covered", "OntoLab/SAREF maps module types only"],
-    ["Gottstein2026 orchestration levels", "unit_operation", "exact", "Gottstein2026, pdf p.4, §Results"],
+    ["Gottstein2026 orchestration levels", "unit_operation", "exact", "Gottstein2026, p.4, §Results"],
   ]);
 
   await page.goto("/#/taxonomy/module_type/human");
@@ -308,7 +309,7 @@ test("AC-13: mobile_robot, human, unmapped kinds and relation words", async ({ p
   const at = rows.findIndex((r) => r[1] === "Manual task");
   expect(rows[at]).toEqual(["MAP (Leong2022)", "Manual task", "broader", "Leong2022, p.3, Fig. 1; Leong2022, p.7, CS3"]);
   expect(rows[at + 1]).toEqual(["manual tool", "narrower"]);
-  expect(rows).toContainEqual(["Gottstein2026 orchestration levels", "—", "none", "searched: Gottstein2026, pdf p.3, Fig. 1"]);
+  expect(rows).toContainEqual(["Gottstein2026 orchestration levels", "—", "none", "searched: Gottstein2026, p.3, Fig. 1"]);
 
   await page.goto("/#/taxonomy/field_tag/catalysis");
   await expect(region(page, "Correspondence")).toContainText("The correspondence table does not map field tags.");
@@ -332,7 +333,7 @@ test("AC-15: lazy chunk and a single taxonomy.json request", async ({ page }) =>
   const taxonomyJson = () => requested.filter((p) => p.endsWith("/data/taxonomy.json"));
 
   await page.goto("/#/");
-  await expect(page.getByText("Data version 1.0.0")).toBeVisible();
+  await expect(page.getByText(`Data version ${PINNED_VERSION}`)).toBeVisible();
   for (const url of ["/#/browse", "/#/trends", "/#/platform/Aand2024/P1"]) {
     await page.goto(url);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -373,7 +374,7 @@ test("AC-15: the taxonomy view shows its own Loading… until taxonomy.json arri
   });
   await page.goto("/#/taxonomy");
   await held;
-  await expect(page.getByText("Data version 1.0.0")).toBeVisible();
+  await expect(page.getByText(`Data version ${PINNED_VERSION}`)).toBeVisible();
   await expect(page.locator("main")).toHaveText("Loading…");
   await expect(h1(page, "Taxonomy")).toHaveCount(0);
   release();
