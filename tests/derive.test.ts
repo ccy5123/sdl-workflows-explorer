@@ -287,17 +287,20 @@ describe("deriveAll on the fixture release", () => {
   });
 
   it("carries no abstract or other text field from the release", () => {
-    const all = JSON.stringify(d);
-    expect(all).not.toContain("abstract");
-    expect(all).not.toContain("This abstract must never be carried");
+    // The release documents quote the data card, which uses the word "abstracts"; the view data must not.
+    const { releaseDocs: _docs, ...viewData } = d;
+    expect(JSON.stringify(viewData)).not.toContain("abstract");
+    expect(JSON.stringify(d)).not.toContain("This abstract must never be carried");
   });
 });
 
 describe("writeDerived", () => {
-  it("writes index.json, taxonomy.json, benchmark.json and one platform file per paper", () => {
+  it("writes index.json, taxonomy.json, benchmark.json, release-docs.json and one platform file per paper", () => {
     const out = join(tempDir(), "data");
     writeDerived(deriveAll(MINI), out);
-    expect(readdirSync(out).sort()).toEqual(["benchmark-items.json", "benchmark.json", "index.json", "platforms", "taxonomy.json"]);
+    expect(readdirSync(out).sort()).toEqual([
+      "benchmark-items.json", "benchmark.json", "index.json", "platforms", "release-docs.json", "taxonomy.json",
+    ]);
     expect(readdirSync(join(out, "platforms")).sort()).toEqual(["PaperA2024.json", "PaperB2025.json"]);
     const index = JSON.parse(readFileSync(join(out, "index.json"), "utf8"));
     expect(index.papers).toHaveLength(2);

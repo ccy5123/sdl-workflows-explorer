@@ -51,6 +51,32 @@ export interface PlatformRow {
   unit_operations: string[];
 }
 
+/** One author of the release's CITATION.cff (SPEC-SITE-001 REQ-001). */
+export interface CitationAuthor {
+  family: string;
+  given: string | null;
+  orcid: string | null;
+}
+
+/** Citation fields parsed from the release's CITATION.cff (SPEC-SITE-001 REQ-001). */
+export interface Citation {
+  title: string;
+  version: string;
+  date_released: string;
+  doi: string;
+  license: string;
+  authors: CitationAuthor[];
+}
+
+/** public/data/release-docs.json: the release's citation and data card (SPEC-SITE-001 REQ-001). */
+export interface ReleaseDocs {
+  citation: Citation;
+  /** CITATION.cff verbatim. */
+  citation_cff: string;
+  /** DATA_CARD.md verbatim. */
+  data_card: string;
+}
+
 export interface IndexJson {
   release: ReleaseInfo;
   counts: Counts;

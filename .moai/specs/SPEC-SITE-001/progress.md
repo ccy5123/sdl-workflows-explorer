@@ -15,6 +15,17 @@
 - Implementation Kickoff Approval: the researcher approved version 0.3.0 through AskUserQuestion on 2026-11-02 and
   chose autonomous progression (run, browser check, sync and push without intermediate stops). Citation: as in
   `CITATION.cff`, no publisher added (researcher's choice).
+
+## §E.2 Run-phase Evidence
+
+- M1 release documents: `tests/citation.test.ts`, `tests/release-docs.test.ts` written first and the `tests/derive.test.ts`
+  edits named in REQ-018 applied. RED: `npx vitest run tests/citation.test.ts tests/release-docs.test.ts
+  tests/derive.test.ts` — citation.test.ts "Failed to load url ../scripts/lib/citation ... Does the file exist?";
+  9 failed (releaseDocs undefined, deriveAll did not throw, writeDerived lacked release-docs.json). GREEN after
+  `scripts/lib/citation.ts`, `src/lib/citation.ts`, `deriveAll`/`writeDerived`, the types and the fixture files: full
+  suite 30 files / 479 passed, with `npm run build-data` run first, so the real-data cases (release-docs.json against
+  index.json; the five derived-file hashes equal to §E.1) ran and passed. Typecheck exit 0. Two test expectations were
+  corrected during GREEN: the unsupported-line case is line 3 of the CFF, not line 4.
 - Baseline re-measured 2026-11-02 at 69d2dc7: `npx tsc --noEmit` exit 0; `npx vitest run` 28 files, 459 passed;
   `npm run e2e` 68 passed.
 - Derived-file hashes at 69d2dc7 (`sha256sum` of `public/data/` after build-data; AC-1):

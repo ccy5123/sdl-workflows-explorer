@@ -1,6 +1,7 @@
 // Verified release tables -> index / platform / taxonomy / benchmark JSON (REQ-009, REQ-010; SPEC-TAXO-001 REQ-001 to
 // REQ-004: unit operations on platform rows, per-class counts and examples, the checked correspondence; SPEC-BENCH-001
-// REQ-001 to REQ-003: typed tasks, split and item summaries, benchmark-items.json and the checked benchmark files).
+// REQ-001 to REQ-003: typed tasks, split and item summaries, benchmark-items.json and the checked benchmark files;
+// SPEC-SITE-001 REQ-001, REQ-002: release-docs.json with the citation and the data card).
 // Every output object is built field by field from the lists in REQ-009, so no other release column
 // (for example an abstract) can reach the derived data.
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -28,6 +29,7 @@ import type {
   PlatformFile,
   PlatformGraph,
   PlatformRow,
+  ReleaseDocs,
   ReleaseInfo,
   Step,
   TaxonomyExample,
@@ -36,6 +38,7 @@ import type {
   TaxonomySource,
   TaxonomyVocabulary,
 } from "../../src/data/types";
+import { parseCitationCff } from "./citation";
 import { type CsvRow, nullIfEmpty, readCsv, splitList, toBool01, toInt } from "./csv";
 
 export interface Derived {
@@ -44,6 +47,7 @@ export interface Derived {
   taxonomy: TaxonomyJson;
   benchmark: BenchmarkJson;
   benchmarkItems: BenchmarkItemsJson;
+  releaseDocs: ReleaseDocs;
 }
 
 // ---- CSV access -------------------------------------------------------------------------------
@@ -170,6 +174,27 @@ function readRelease(dir: string): ReleaseInfo {
     taxonomy_version: col(0, "taxonomy_version"),
     license: col(0, "license"),
   };
+}
+
+/** CITATION.cff and DATA_CARD.md, verbatim and parsed; the citation must name the release core/release.csv names. */
+function readReleaseDocs(dir: string, release: ReleaseInfo): ReleaseDocs {
+  const read = (rel: string): string => {
+    const path = join(dir, rel);
+    if (!existsSync(path)) throw new Error(`${rel}: missing from the release`);
+    return readFileSync(path, "utf8");
+  };
+  const citation_cff = read("CITATION.cff");
+  const data_card = read("DATA_CARD.md");
+  const citation = parseCitationCff(citation_cff);
+  if (citation.version !== release.version) {
+    throw new Error(
+      `CITATION.cff: version "${citation.version}" differs from core/release.csv release_version "${release.version}"`,
+    );
+  }
+  if (citation.doi !== release.doi) {
+    throw new Error(`CITATION.cff: doi "${citation.doi}" differs from core/release.csv zenodo_doi "${release.doi}"`);
+  }
+  return { citation, citation_cff, data_card };
 }
 
 function readPapers(dir: string): PaperRow[] {
@@ -874,7 +899,9 @@ export function deriveAll(releaseDir: string): Derived {
     material_connections: connections.filter((c) => c.is_material).length,
     candidates: readCsv(join(releaseDir, "modes/trends/candidates.csv")).length,
   };
-  const index = { release: readRelease(releaseDir), counts, papers, platforms: platformRows };
+  const release = readRelease(releaseDir);
+  const releaseDocs = readReleaseDocs(releaseDir, release);
+  const index = { release, counts, papers, platforms: platformRows };
   const platformFiles = buildPlatformFiles(papers, graphs, campaigns);
   const taxonomy = buildTaxonomy(releaseDir, papers, platformRows, graphs);
   const { benchmark, items } = buildBenchmark(releaseDir, papers, platformRows, graphs, taxonomy.classes);
@@ -884,6 +911,7 @@ export function deriveAll(releaseDir: string): Derived {
     taxonomy,
     benchmark,
     benchmarkItems: items,
+    releaseDocs,
   };
 }
 
@@ -894,5 +922,6 @@ export function writeDerived(derived: Derived, outDir: string): void {
   write("taxonomy.json", derived.taxonomy);
   write("benchmark.json", derived.benchmark);
   write("benchmark-items.json", derived.benchmarkItems);
+  write("release-docs.json", derived.releaseDocs);
   for (const [paperId, file] of Object.entries(derived.platformFiles)) write(`platforms/${paperId}.json`, file);
 }

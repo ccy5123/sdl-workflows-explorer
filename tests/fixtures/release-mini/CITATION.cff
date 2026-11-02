@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this dataset, please cite it as below."
+type: dataset
+title: "mini: a two-paper fixture release"
+version: "1.0.0"
+date-released: "2026-11-01"
+license: CC-BY-4.0
+doi: "10.5281/zenodo.1"
+authors:
+  - family-names: "Tester"
+    given-names: "Ada Mae"
+    affiliation: "Fixture Lab"
+    email: "ada@example.org"
+    orcid: "https://orcid.org/0000-0000-0000-0001"
+  - family-names: "Second"
+    given-names: "Jean-Luc"
