@@ -4,14 +4,14 @@
   "record_id": "23875743",
   "file_name": "sdl-workflows-1.1.0.zip",
   "url": "https://zenodo.org/api/records/23875743/files/sdl-workflows-1.1.0.zip/content",
-  "sha256": "98ea319bb1884c2b2404a818504580a529fc4b8dd02d01f7712c84ee60a2d357",
+  "sha256": "673b2dbb4c79ef4eb8f7af8c298d640c1cf4e393ab78359bbce0b4cff7c897f6",
   "counts": {
-    "papers": 238,
-    "platforms": 280,
-    "modules": 1603,
-    "steps": 2621,
-    "connections": 1687,
-    "material_connections": 1076,
+    "papers": 237,
+    "platforms": 279,
+    "modules": 1597,
+    "steps": 2610,
+    "connections": 1681,
+    "material_connections": 1074,
     "candidates": 2172
   }
 }
