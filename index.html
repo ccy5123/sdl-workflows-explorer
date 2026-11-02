@@ -6,8 +6,16 @@
     <meta name="color-scheme" content="light dark" />
     <title>SDL Workflows Explorer</title>
     <script>
-      // Theme before the first paint, so a dark system scheme never flashes light (SPEC-SITE-001 REQ-008).
-      document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      // Theme before the first paint, so a dark theme never flashes light: the visitor's stored choice, else the
+      // system scheme (SPEC-SITE-001 REQ-008; SPEC-UI-001 REQ-005). Mirrors resolveTheme in src/lib/siteTokens.ts.
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem("sdl-theme");
+        } catch (e) {}
+        var dark = matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme = stored === "light" || stored === "dark" ? stored : dark ? "dark" : "light";
+      })();
     </script>
   </head>
   <body>

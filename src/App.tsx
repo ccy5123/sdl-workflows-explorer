@@ -1,9 +1,12 @@
 // Hash router of the site (REQ-001 to REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001, REQ-015; SPEC-TAXO-001
 // REQ-009, REQ-010; SPEC-BENCH-001 REQ-005, REQ-015): home, platform viewer, browser, trends dashboard, taxonomy,
 // benchmark, workflow builder (SPEC-SIM-001 REQ-005), comparison, about (SPEC-SITE-001 REQ-005), or not found. The
-// footer links to the author's site and to the missing-paper issue form (SPEC-CONTRIB-001 REQ-006).
+// footer links to the author's site and to the missing-paper issue form (SPEC-CONTRIB-001 REQ-006). The sticky top bar,
+// its version chip and theme toggle, and the compact footer are SPEC-UI-001 REQ-004 and REQ-005.
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IssueLink } from "./components/IssueLink";
+import { Loading } from "./components/Loading";
+import { ThemeToggle } from "./components/ThemeToggle";
 import type { IndexJson } from "./data/types";
 import { PAPER_LINK_TEXT, paperUrl } from "./lib/contribute";
 import { navCurrent, parseRoute, routeTitle } from "./lib/route";
@@ -86,21 +89,49 @@ export function App() {
       >
         Skip to main content
       </a>
-      <nav className="site-nav">
-        <a href="#/" className="site-title">
-          SDL Workflows Explorer
-        </a>
-        {navLink("#/", "Home")}
-        {navLink("#/browse", "Browse")}
-        {navLink("#/trends", "Trends")}
-        {navLink("#/taxonomy", "Taxonomy")}
-        {navLink("#/benchmark", "Benchmark")}
-        {navLink("#/workflow", "Workflow")}
-        {navLink("#/about", "About")}
-      </nav>
-      <main id="main" ref={mainRef} tabIndex={-1}>
+      <header className="topbar">
+        <div className="topbar-inner">
+          <nav className="site-nav" aria-label="Main">
+            <a href="#/" className="site-title">
+              <span className="logo-mark" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <circle cx="5" cy="12" r="2.5" />
+                  <circle cx="19" cy="6" r="2.5" />
+                  <circle cx="19" cy="18" r="2.5" />
+                  <path d="M7.4 11 16.6 7M7.4 13l9.2 4" />
+                </svg>
+              </span>
+              <span>
+                SDL Workflows <span className="site-title-sub">Explorer</span>
+              </span>
+            </a>
+            <ul className="nav-tabs">
+              <li>{navLink("#/", "Home")}</li>
+              <li>{navLink("#/browse", "Browse")}</li>
+              <li>{navLink("#/trends", "Trends")}</li>
+              <li>{navLink("#/taxonomy", "Taxonomy")}</li>
+              <li>{navLink("#/benchmark", "Benchmark")}</li>
+              <li>{navLink("#/workflow", "Workflow")}</li>
+              <li>{navLink("#/about", "About")}</li>
+            </ul>
+          </nav>
+          <div className="topbar-actions">
+            {index && (
+              <a
+                className="version-chip"
+                href={`https://doi.org/${index.release.doi}`}
+                title={`Data release ${index.release.version} on Zenodo`}
+              >
+                v{index.release.version}
+              </a>
+            )}
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+      <main id="main" className="page-main" ref={mainRef} tabIndex={-1}>
         {error && <p role="alert">Could not load the data: {error}</p>}
-        {!index && !error && <p>Loading…</p>}
+        {!index && !error && <Loading />}
         {index && route.kind === "home" && <Home index={index} />}
         {index && route.kind === "about" && <About index={index} />}
         {index && route.kind === "platform" && (
@@ -108,22 +139,22 @@ export function App() {
         )}
         {index && route.kind === "browse" && <Browse index={index} onNavigate={navigate} />}
         {index && route.kind === "trends" && (
-          <Suspense fallback={<p>Loading…</p>}>
+          <Suspense fallback={<Loading />}>
             <Trends index={index} />
           </Suspense>
         )}
         {index && (route.kind === "taxonomy" || route.kind === "taxonomyClass") && (
-          <Suspense fallback={<p>Loading…</p>}>
+          <Suspense fallback={<Loading />}>
             <Taxonomy index={index} route={route} />
           </Suspense>
         )}
         {index && (route.kind === "benchmark" || route.kind === "benchmarkItems") && (
-          <Suspense fallback={<p>Loading…</p>}>
+          <Suspense fallback={<Loading />}>
             <Benchmark key={route.kind} index={index} route={route} />
           </Suspense>
         )}
         {index && route.kind === "workflow" && (
-          <Suspense fallback={<p>Loading…</p>}>
+          <Suspense fallback={<Loading />}>
             <Workflow />
           </Suspense>
         )}
@@ -132,10 +163,16 @@ export function App() {
       </main>
       {index && (
         <footer className="site-footer">
-          Data version {index.release.version} ·{" "}
-          <a href={`https://doi.org/${index.release.doi}`}>doi:{index.release.doi}</a> ·{" "}
-          <a href={AUTHOR.url}>{AUTHOR.name}</a> ·{" "}
-          <IssueLink href={paperUrl()}>{PAPER_LINK_TEXT}</IssueLink>
+          <div className="footer-inner">
+            <span>
+              SDL Workflows Explorer · Data version {index.release.version} ·{" "}
+              <a href={`https://doi.org/${index.release.doi}`}>doi:{index.release.doi}</a>
+            </span>
+            <span className="footer-links">
+              <a href={AUTHOR.url}>{AUTHOR.name}</a>
+              <IssueLink href={paperUrl()}>{PAPER_LINK_TEXT}</IssueLink>
+            </span>
+          </div>
         </footer>
       )}
     </div>

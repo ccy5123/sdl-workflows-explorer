@@ -33,7 +33,8 @@ describe("shared table and spacing values (AC-19)", () => {
 
   it("finds the cell rules of every table kind", () => {
     const all = cellRules.map((r) => r.selector).join(" | ");
-    for (const kind of ["table.data", ".counts", ".taxo-table", ".bench-table", "table.count-table"]) {
+    // The home counts table (.counts) became stat tiles in SPEC-UI-001; the kind stays in TABLE for older markup.
+    for (const kind of ["table.data", ".taxo-table", ".bench-table", "table.count-table"]) {
       expect(all, kind).toContain(kind);
     }
   });

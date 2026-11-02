@@ -1,16 +1,35 @@
 /* Site styles. Plain CSS; panels stack vertically below 800px. Colour tokens equal SITE_TOKENS in
-   src/lib/siteTokens.ts (SPEC-SITE-001 REQ-008, REQ-009); data-theme on <html> follows prefers-color-scheme. */
+   src/lib/siteTokens.ts (SPEC-SITE-001 REQ-008, REQ-009; SPEC-UI-001 REQ-001, mock variant B). data-theme on <html>
+   follows the visitor's stored choice, else prefers-color-scheme (SPEC-UI-001 REQ-005). */
 :root {
   --bg: #ffffff;
-  --text: #1f2328;
-  --muted: #57606a;
-  --line: #d0d7de;
-  --panel: #f6f8fa;
-  --accent: #0969da;
-  --highlight: #ddf4ff;
+  --panel: #f6f7f9;
+  --card: #ffffff;
+  --text: #0e1116;
+  --muted: #586170;
+  --line: #e4e7ec;
+  --line-strong: #cdd2da;
+  --accent: #4338ca;
+  --accent-ink: #ffffff;
+  --accent-text: #3730a3;
+  --highlight: #eef0ff;
   --warn: #b35900;
   --danger: #cf222e;
   --unmapped: #000000;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --shadow-lg: 0 12px 32px -8px rgba(16, 24, 40, 0.14), 0 2px 6px rgba(16, 24, 40, 0.06);
+  /* Typefaces (SPEC-UI-001 REQ-003): Arial for UI text (not shipped), JetBrains Mono for ids and codes, Latin Modern
+     Roman for statistics and formulas; the last two are self-hosted from public/fonts/. */
+  --font-ui: Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --font-math: "Latin Modern Roman", "Latin Modern Math", "Times New Roman", serif;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --content-width: 1200px;
+  --gutter: 24px;
+  --dur: 150ms;
   /* Shared table and spacing values (SPEC-SITE-001 REQ-012). */
   --table-border: var(--line);
   --cell-pad-y: 0.3rem;
@@ -18,37 +37,86 @@
   --th-weight: 600;
   --section-gap: 1.5rem;
   color-scheme: light;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.5;
+  font-family: var(--font-ui);
+  line-height: 1.55;
   color: var(--text);
 }
 
 :root[data-theme="dark"] {
-  --bg: #1a1a19;
-  --text: #f0efec;
-  --muted: #b8b7ae;
-  --line: #4a4a46;
-  --panel: #242422;
-  --accent: #6cb4ff;
-  --highlight: #1d3350;
+  --bg: #0b0d12;
+  --panel: #11141a;
+  --card: #151922;
+  --text: #eceef2;
+  --muted: #a0a8b6;
+  --line: #252b36;
+  --line-strong: #363d4a;
+  --accent: #8c94ff;
+  --accent-ink: #0b0d12;
+  --accent-text: #b9beff;
+  --highlight: #1d2142;
   --warn: #e8a25c;
   --danger: #ff7b72;
-  --unmapped: #f0efec;
+  --unmapped: #eceef2;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-latin-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Latin Modern Roman";
+  src: url("/fonts/lmroman10-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Latin Modern Roman";
+  src: url("/fonts/lmroman10-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  /* Keeps a focused or scrolled-to element clear of the sticky top bar. */
+  scroll-padding-top: 88px;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
+}
+
+a:hover {
+  color: var(--text);
 }
 
 :focus-visible {
@@ -56,17 +124,38 @@ a {
   outline-offset: 2px;
 }
 
-code {
+code,
+kbd,
+samp,
+.mono {
   /* An explicit stack avoids the browser's shrunken default monospace and odd fallbacks in CJK locales. */
-  font-family: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, "Liberation Mono", monospace;
-  font-size: 0.92em;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+code {
   overflow-wrap: anywhere;
 }
 
-.page {
-  max-width: 76rem;
+/* Statistics and formulas (SPEC-UI-001 REQ-003): Latin Modern, 10% larger than the surrounding text because its
+   strokes are thinner and its x-height smaller. Variables in <i> are italic; numbers and intervals stay upright. */
+.math {
+  font-family: var(--font-math);
+  font-size: 1.1em;
+  font-style: normal;
+  font-weight: 400;
+  font-variant-numeric: lining-nums;
+}
+
+.math i {
+  font-style: italic;
+}
+
+/* Page shell (SPEC-UI-001 REQ-004): sticky top bar, content column, compact footer. */
+.page-main {
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding: 1rem;
+  padding: 28px var(--gutter) 56px;
 }
 
 /* Skip link: off screen until it receives focus (SPEC-SITE-001 REQ-010). */
@@ -77,8 +166,8 @@ code {
   padding: 0.5rem 0.75rem;
   background: var(--bg);
   border: 1px solid var(--accent);
-  border-radius: 4px;
-  z-index: 10;
+  border-radius: var(--radius-sm);
+  z-index: 30;
 }
 
 .skip-link:focus {
@@ -93,78 +182,442 @@ main:focus-visible {
   outline: 3px solid var(--accent);
 }
 
-.site-nav a[aria-current="page"] {
-  font-weight: 700;
-  text-decoration: none;
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-inner {
+  position: relative;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
 }
 
 .site-nav {
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 28px;
 }
 
 .site-title {
-  font-weight: 700;
-  font-size: 1.15rem;
-  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
   color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.site-title-sub {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.logo-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-tabs {
+  list-style: none;
+  margin: 0;
+  /* Room for the focus outline inside the scroll box. */
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.nav-tabs a {
+  display: block;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--dur) ease, color var(--dur) ease;
+}
+
+.nav-tabs a:hover {
+  color: var(--text);
+  background: var(--panel);
+}
+
+.nav-tabs a[aria-current="page"] {
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.version-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.version-chip:hover {
+  border-color: var(--line-strong);
+}
+
+/* Below 800px the tabs take their own row and scroll sideways inside it; the actions stay top right. */
+@media (max-width: 800px) {
+  html {
+    scroll-padding-top: 120px;
+  }
+
+  .topbar-inner {
+    padding: 8px 16px 4px;
+    min-height: 0;
+  }
+
+  .site-nav {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .site-title {
+    height: 40px;
+  }
+
+  .nav-tabs {
+    flex-basis: 100%;
+    margin: 0 -4px;
+  }
+
+  .topbar-actions {
+    position: absolute;
+    top: 10px;
+    right: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .version-chip {
+    display: none;
+  }
 }
 
 .site-footer {
-  margin-top: 2rem;
-  padding-top: 0.75rem;
+  margin-top: 24px;
   border-top: 1px solid var(--line);
-  font-size: 0.9rem;
+  background: var(--panel);
   color: var(--muted);
+  font-size: 13px;
+}
+
+.footer-inner {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 22px var(--gutter);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 24px;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --gutter: 16px;
+  }
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   margin: 0 0 0.25rem;
 }
 
 h2 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
   margin: 0 0 calc(var(--section-gap) / 3);
 }
 
 h3 {
-  font-size: 0.95rem;
+  font-size: 1rem;
   margin: 0.75rem 0 0.25rem;
 }
 
-/* Home */
-.counts {
-  border-collapse: collapse;
-  margin-bottom: 1.5rem;
-  min-width: min(100%, 24rem);
-}
+/* Components (SPEC-UI-001 REQ-006). One section each; every transition is switched off under reduced motion. */
 
-.counts caption {
-  text-align: left;
+/* Button: primary, secondary, ghost, icon; sizes sm and lg. Also used on links. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 14px;
   font-weight: 600;
-  padding-bottom: 0.5rem;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur) ease, border-color var(--dur) ease, color var(--dur) ease,
+    transform var(--dur) ease;
 }
 
-.counts th,
-.counts td {
-  padding: var(--cell-pad-y) var(--cell-pad-x);
-  border-bottom: 1px solid var(--table-border);
+.btn:active {
+  transform: translateY(1px);
 }
 
-.counts th {
-  text-align: left;
-  font-weight: var(--th-weight);
+.btn-sm {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
 }
 
-/* Home and about (SPEC-SITE-001). Verbatim release files wrap instead of scrolling sideways. */
-.home section,
+.btn-lg {
+  height: 46px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+
+.btn-primary,
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-primary:hover {
+  background: var(--accent-text);
+}
+
+.btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.btn-secondary:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--accent-text);
+}
+
+.btn-ghost:hover {
+  background: var(--highlight);
+  color: var(--accent-text);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border-color: var(--line);
+  background: var(--card);
+  color: var(--text);
+}
+
+.btn-icon:hover {
+  background: var(--panel);
+}
+
+/* Chip: neutral, accent and outline; a group-coloured dot can lead it. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.chip-accent {
+  border-color: transparent;
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.chip-outline {
+  background: transparent;
+  color: var(--muted);
+}
+
+.chip-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Card; a card-link is a whole card that is one link. */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.card-link {
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--dur) ease, box-shadow var(--dur) ease, transform var(--dur) ease;
+}
+
+.card-link:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+/* StatTile: one count with its name and a note. */
+.stat-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.stat-value {
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.stat-note {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Skeleton: a shimmering placeholder while data loads; its text is for screen readers only. */
+.skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--panel) 25%, var(--line) 50%, var(--panel) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* CopyButton: a secondary button whose label turns to "Copied" for a moment. */
+.copy-button[data-copied="true"] {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .card-link,
+  .nav-tabs a {
+    transition: none;
+  }
+
+  .btn:active,
+  .card-link:hover {
+    transform: none;
+  }
+
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* Home (SPEC-UI-001 REQ-010) */
+
+/* About (SPEC-SITE-001). Verbatim release files wrap instead of scrolling sideways. */
 .about section {
   margin-top: var(--section-gap);
 }
 
-.home-intro,
 .about p {
   max-width: 48rem;
 }
@@ -174,70 +627,17 @@ h3 {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   margin: 0.5rem 0;
-  padding: 0.5rem;
+  padding: 0.75rem;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  font-family: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, "Liberation Mono", monospace;
-  font-size: 0.85rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
 }
 
 .home details summary,
 .about details summary {
   cursor: pointer;
-}
-
-.citation {
-  padding-left: 1rem;
-  border-left: 3px solid var(--line);
-}
-
-table.views th[scope="row"] {
-  white-space: nowrap;
-  vertical-align: top;
-}
-
-/* On a phone each view's description goes under its name instead of in a narrow second column. */
-@media (max-width: 600px) {
-  table.views thead {
-    display: none;
-  }
-
-  table.views tr,
-  table.views th[scope="row"],
-  table.views td {
-    display: block;
-  }
-
-  table.views th[scope="row"] {
-    border-bottom: 0;
-    padding-bottom: 0;
-  }
-}
-
-/* A button that reads as a link: an in-page action, not a navigation. */
-.link-button {
-  font: inherit;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.filter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-width: 28rem;
-}
-
-.filter input {
-  font: inherit;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
 }
 
 .result-count {
@@ -986,7 +1386,7 @@ table.count-table a {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 4px;
-  font-family: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.9rem;
 }
 

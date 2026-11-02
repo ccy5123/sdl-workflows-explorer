@@ -107,29 +107,29 @@ describe("buildStylesheet by theme (SPEC-SITE-001)", () => {
     (sheet.find((b) => "selector" in b && b.selector === selector) as { style: Record<string, unknown> } | undefined)
       ?.style;
 
-  it("defaults to the light stylesheet of 69d2dc7", () => {
+  it("defaults to the light stylesheet (SPEC-UI-001 token values)", () => {
     const light = buildStylesheet("light");
     expect(buildStylesheet()).toEqual(light);
-    expect(blockOf(light, "node")).toMatchObject({ color: "#1f2328", "border-color": "#57606a" });
-    expect(blockOf(light, "node.boundary")).toMatchObject({ "background-color": "#f6f8fa", "border-color": "#57606a" });
-    expect(blockOf(light, "edge")).toMatchObject({ color: "#1f2328", "text-background-color": "#ffffff" });
-    expect(blockOf(light, "node.highlighted")).toMatchObject({ "border-color": "#1f2328" });
-    expect(blockOf(light, ".picked")).toMatchObject({ "overlay-color": "#0969da" });
+    expect(blockOf(light, "node")).toMatchObject({ color: "#0e1116", "border-color": "#586170" });
+    expect(blockOf(light, "node.boundary")).toMatchObject({ "background-color": "#f6f7f9", "border-color": "#586170" });
+    expect(blockOf(light, "edge")).toMatchObject({ color: "#0e1116", "text-background-color": "#ffffff" });
+    expect(blockOf(light, "node.highlighted")).toMatchObject({ "border-color": "#0e1116" });
+    expect(blockOf(light, ".picked")).toMatchObject({ "overlay-color": "#4338ca" });
     expect(blockOf(light, "edge.mode-unmapped")).toBeUndefined();
   });
 
   it("uses dark label, border, boundary and edge-label colours in dark", () => {
     const dark = buildStylesheet("dark");
-    expect(blockOf(dark, "node")).toMatchObject({ color: "#f0efec" });
-    expect(blockOf(dark, "edge")).toMatchObject({ color: "#f0efec", "text-background-color": "#1a1a19" });
-    expect(blockOf(dark, "node.boundary")?.["background-color"]).not.toBe("#f6f8fa");
-    expect(blockOf(dark, "node.highlighted")).toMatchObject({ "border-color": "#f0efec" });
+    expect(blockOf(dark, "node")).toMatchObject({ color: "#eceef2" });
+    expect(blockOf(dark, "edge")).toMatchObject({ color: "#eceef2", "text-background-color": "#0b0d12" });
+    expect(blockOf(dark, "node.boundary")?.["background-color"]).not.toBe("#f6f7f9");
+    expect(blockOf(dark, "node.highlighted")).toMatchObject({ "border-color": "#eceef2" });
   });
 
   it("draws unmapped connections in the dark text colour in dark", () => {
     expect(blockOf(buildStylesheet("dark"), "edge.mode-unmapped")).toMatchObject({
-      "line-color": "#f0efec",
-      "target-arrow-color": "#f0efec",
+      "line-color": "#eceef2",
+      "target-arrow-color": "#eceef2",
     });
   });
 });
