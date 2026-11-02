@@ -32,16 +32,90 @@ test("AC-6: the version chip links to the release DOI", async ({ page }) => {
   await expect(chip).toHaveAttribute("href", `https://doi.org/${index.release.doi}`);
 });
 
-test("AC-6: at 375 px the tabs sit in their own row below the site name", async ({ page }) => {
+// SPEC-UI-001 AC-14: below 800 px the tabs collapse into a menu (REQ-016).
+const VIEW_LINKS = ["Home", "Browse", "Trends", "Taxonomy", "Benchmark", "Workflow", "About"];
+
+const pageOverflow = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+test("AC-14: at 375 px a menu button replaces the tabs in one row", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/#/");
   await expect(page.locator(READY)).toBeVisible();
-  const [title, tabs, toggle] = await Promise.all(
-    [".site-title", ".nav-tabs", ".theme-toggle"].map((s) => page.locator(s).boundingBox()),
+  await expect(page.locator(".nav-tabs")).toBeHidden();
+  const button = page.getByRole("button", { name: "Menu" });
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAttribute("aria-expanded", "false");
+  const [title, toggle, menu] = await Promise.all(
+    [".site-title", ".theme-toggle", ".menu-button"].map((s) => page.locator(s).boundingBox()),
   );
-  expect(tabs!.y).toBeGreaterThanOrEqual(title!.y + title!.height - 1);
-  expect(toggle!.x + toggle!.width).toBeLessThanOrEqual(375);
-  expect(toggle!.y).toBeLessThan(tabs!.y);
+  for (const box of [toggle!, menu!]) {
+    expect(Math.abs(box.y + box.height / 2 - (title!.y + title!.height / 2))).toBeLessThan(4);
+    expect(box.x + box.width).toBeLessThanOrEqual(375);
+  }
+  expect(await pageOverflow(page)).toBe(0);
+});
+
+test("AC-14: the menu opens with every view, moves focus in, navigates and closes", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#/");
+  await expect(page.locator(READY)).toBeVisible();
+  const mainTop = await page.locator("main").evaluate((m) => m.getBoundingClientRect().top);
+  const button = page.getByRole("button", { name: "Menu" });
+  await button.click();
+  await expect(button).toHaveAttribute("aria-expanded", "true");
+  const panel = page.locator(`#${await button.getAttribute("aria-controls")}`);
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("link")).toHaveText(VIEW_LINKS);
+  await expect(panel.locator('[aria-current="page"]')).toHaveText("Home");
+  await expect(panel.getByRole("link", { name: "Home" })).toBeFocused();
+  // The panel floats over the page: nothing below the top bar moves.
+  expect(await page.locator("main").evaluate((m) => m.getBoundingClientRect().top)).toBe(mainTop);
+  expect(await pageOverflow(page)).toBe(0);
+
+  await panel.getByRole("link", { name: "Trends" }).click();
+  await expect(page).toHaveURL(/#\/trends$/);
+  await expect(panel).toBeHidden();
+  await expect(button).toHaveAttribute("aria-expanded", "false");
+  await expect(button).toBeFocused();
+
+  await button.click();
+  await expect(panel.locator('[aria-current="page"]')).toHaveText("Trends");
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(button).toBeFocused();
+
+  await button.click();
+  await expect(panel).toBeVisible();
+  await page.mouse.click(180, 600);
+  await expect(panel).toBeHidden();
+
+  await button.click();
+  await expect(panel).toBeVisible();
+  await page.evaluate(() => (window.location.hash = "#/about"));
+  await expect(page.locator("main h1")).toHaveText("About the data");
+  await expect(panel).toBeHidden();
+  expect(await pageOverflow(page)).toBe(0);
+});
+
+test("AC-14: at 800 px and above the tabs stay and the menu button is hidden", async ({ page }) => {
+  for (const width of [799, 800, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/#/");
+    await expect(page.locator(READY)).toBeVisible();
+    const wide = width >= 800;
+    await expect(page.locator(".nav-tabs"), `${width} px`).toBeVisible({ visible: wide });
+    await expect(page.locator(".menu-button"), `${width} px`).toBeVisible({ visible: !wide });
+    if (wide) {
+      // Every tab is shown in one row: the tab list does not scroll and the bar keeps its single-row height.
+      const { scroll, client, bar } = await page.evaluate(() => {
+        const tabs = document.querySelector(".nav-tabs")!;
+        return { scroll: tabs.scrollWidth, client: tabs.clientWidth, bar: document.querySelector(".topbar")!.getBoundingClientRect().height };
+      });
+      expect(scroll, `${width} px`).toBeLessThanOrEqual(client);
+      expect(bar, `${width} px`).toBeLessThan(72);
+    }
+  }
 });
 
 test("AC-7: the theme toggle switches, survives a reload and switches back", async ({ page }) => {

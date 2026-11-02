@@ -40,6 +40,16 @@
 - Wording: the hero heading reads "self-driving lab platforms" instead of the mock's "self-driving labs", because
   279 counts coded platforms (some share an identity across papers), not distinct laboratories.
 
+- Follow-up REQ-016, menu below 800 px. RED: `npx playwright test e2e/shell.spec.ts -g "AC-14"` — 3 failed (tabs
+  visible at 375 px, no "Menu" button). GREEN after `components/SiteMenu.tsx` (own component; Radix not needed for one
+  list of links), `NAV_ITEMS` in `App.tsx` shared by tabs and menu, and the menu styles: shell spec 21 passed. The
+  test replaced the earlier "tabs in their own row at 375 px" check. The browser check at 800 px then showed the tabs
+  wrapping under the site name: an older `.site-nav { flex-wrap: wrap }` rule from SPEC-BROWSE-001 overrode the new
+  one. It was removed; from 800 to 1023 px the version chip hides, "Explorer" is hidden from view (kept for screen
+  readers) and the gaps tighten, so all seven tabs fit; the width test now checks that at 800 and 1440 px.
+  Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 210 passed. Screens checked: 375 px light
+  and dark (menu closed and open, no sideways scroll), 800 px, 1440 px light and dark.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

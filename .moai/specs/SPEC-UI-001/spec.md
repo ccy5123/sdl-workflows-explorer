@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 2: design tokens and shell, readable labels, Home"
-version: "0.1.0"
+version: "0.2.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -23,6 +23,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   `ArialLight`, `ArialDark`, `ArialPhone`, file `project/Main.dc.html` with `fontset="arial"`, accent `indigo`).
   Phases 3 to 6 (platform viewer, Browse and Trends filters, other views, accessibility pass) each need their own
   approval and are out of scope. Not deployed: Pages waits for the researcher's approval of a preview build.
+- 2026-11-03 0.2.0 REQ-016: below 800 px the tabs collapse into a menu instead of a sideways-scrolling row, as the
+  redesign plan's shell section says; the researcher approved the change after seeing the tab row cut off at 375 px.
 
 ## 1. Why
 
@@ -53,8 +55,8 @@ taken from the built release data.
   shipped beside them, set 10% larger than the surrounding text; variables are italic, numbers and intervals upright.
 - **REQ-004** (ubiquitous) Every page shall have a sticky top bar with a logo mark and the site name as a link to Home,
   the view links as tabs with a pill on the current one (`aria-current="page"`, same names and rules as SPEC-SITE-001
-  REQ-010), a chip with the release version linking to the release DOI, and a theme toggle. Below 800 px the tabs move
-  to a second row that scrolls sideways inside itself. The footer is a compact block of two groups: the site name,
+  REQ-010), a chip with the release version linking to the release DOI, and a theme toggle. Below 800 px the tabs
+  give way to a menu (REQ-016). The footer is a compact block of two groups: the site name,
   data version and DOI; the author link and the issue-form link. The skip link stays the first focus stop.
 - **REQ-005** (event-driven) When the visitor presses the theme toggle, the site shall switch between the light and
   dark sets and remember the choice in this browser; without a remembered choice the theme follows the system colour
@@ -103,3 +105,12 @@ taken from the built release data.
 - **REQ-014** (ubiquitous) `npm test`, `npm run typecheck` and `npm run e2e` pass. The existing tests that change are
   named in acceptance.md AC-12; no other existing assertion is weakened.
 - **REQ-015** (unwanted) The sdl-db workspace shall not be modified, and nothing is pushed or deployed.
+
+### Follow-up: menu below 800 px
+
+- **REQ-016** (state, event-driven) While the viewport is narrower than 800 px, the top bar shall show a menu button
+  (named "Menu", with `aria-expanded` and `aria-controls`) beside the theme toggle instead of the tabs. When pressed,
+  it shall open a panel over the page, without moving the page, listing every view with the current one marked
+  `aria-current="page"`, and move focus to the first link. The panel shall close on Escape and on choosing a view
+  (focus back on the button), on a route change, on a click outside it and when focus leaves it. Its entry animation
+  is off under `prefers-reduced-motion: reduce`. From 800 px up the tabs stay, all in one row.

@@ -79,6 +79,15 @@ progress.md.
   taxonomy view (still one request in all); `e2e/viewer.spec.ts` names the "Platforms" heading exactly (the hero
   heading also contains the word) and expects the platform id in the JetBrains Mono stack.
 
+### AC-14 Menu below 800 px (REQ-016)
+- At 375 px: the tabs are hidden; the "Menu" button (`aria-expanded="false"`) sits in the top bar's one row; the page
+  does not scroll sideways. Opening it shows a panel (the element `aria-controls` names) with the seven view links,
+  "Home" marked current and focused; the main region does not move. Choosing "Trends" opens `#/trends`, closes the
+  panel and focuses the button; Escape closes it and focuses the button; a click outside closes it; a route change
+  while open closes it.
+- At 799 px the menu button shows and the tabs are hidden; at 800 and 1440 px the tabs show in one row (the tab list
+  does not scroll, the bar is under 72 px high) and the menu button is hidden.
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

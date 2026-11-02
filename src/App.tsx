@@ -6,6 +6,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IssueLink } from "./components/IssueLink";
 import { Loading } from "./components/Loading";
+import { SiteMenu, type NavItem } from "./components/SiteMenu";
 import { ThemeToggle } from "./components/ThemeToggle";
 import type { IndexJson } from "./data/types";
 import { PAPER_LINK_TEXT, paperUrl } from "./lib/contribute";
@@ -26,6 +27,17 @@ const Taxonomy = lazy(() => import("./views/Taxonomy").then((m) => ({ default: m
 const Benchmark = lazy(() => import("./views/Benchmark").then((m) => ({ default: m.Benchmark })));
 // The workflow builder and its outputs load in their own chunk and fetch data/simulation.json themselves.
 const Workflow = lazy(() => import("./views/Workflow").then((m) => ({ default: m.Workflow })));
+
+/** The view links: tabs from 800 px up, the menu panel below (SPEC-UI-001 REQ-004, REQ-016). */
+const NAV_ITEMS: readonly NavItem[] = [
+  { href: "#/", text: "Home" },
+  { href: "#/browse", text: "Browse" },
+  { href: "#/trends", text: "Trends" },
+  { href: "#/taxonomy", text: "Taxonomy" },
+  { href: "#/benchmark", text: "Benchmark" },
+  { href: "#/workflow", text: "Workflow" },
+  { href: "#/about", text: "About" },
+];
 
 /** Current hash, and a navigate function that shows the new view in the same render as the click. */
 function useHash(): [string, (next: string) => void] {
@@ -106,13 +118,9 @@ export function App() {
               </span>
             </a>
             <ul className="nav-tabs">
-              <li>{navLink("#/", "Home")}</li>
-              <li>{navLink("#/browse", "Browse")}</li>
-              <li>{navLink("#/trends", "Trends")}</li>
-              <li>{navLink("#/taxonomy", "Taxonomy")}</li>
-              <li>{navLink("#/benchmark", "Benchmark")}</li>
-              <li>{navLink("#/workflow", "Workflow")}</li>
-              <li>{navLink("#/about", "About")}</li>
+              {NAV_ITEMS.map((item) => (
+                <li key={item.href}>{navLink(item.href, item.text)}</li>
+              ))}
             </ul>
           </nav>
           <div className="topbar-actions">
@@ -126,6 +134,7 @@ export function App() {
               </a>
             )}
             <ThemeToggle />
+            <SiteMenu items={NAV_ITEMS} current={current} hash={hash} />
           </div>
         </div>
       </header>

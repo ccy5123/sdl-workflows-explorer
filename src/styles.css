@@ -299,41 +299,96 @@ main:focus-visible {
   border-color: var(--line-strong);
 }
 
-/* Below 800px the tabs take their own row and scroll sideways inside it; the actions stay top right. */
-@media (max-width: 800px) {
-  html {
-    scroll-padding-top: 120px;
-  }
+/* Menu (SPEC-UI-001 REQ-016): below 800px the tabs give way to a menu button whose panel floats under the top bar. */
+/* Scoped to the top bar so it outranks the .btn display rule further down. */
+.topbar-actions .menu-button {
+  display: none;
+}
 
-  .topbar-inner {
-    padding: 8px 16px 4px;
-    min-height: 0;
-  }
+.site-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: var(--gutter);
+  width: min(280px, calc(100vw - 2 * var(--gutter)));
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  animation: menu-in var(--dur) ease-out;
+}
 
-  .site-nav {
-    flex-wrap: wrap;
-    row-gap: 4px;
-  }
+.site-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
-  .site-title {
-    height: 40px;
-  }
+.site-menu a {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
 
-  .nav-tabs {
-    flex-basis: 100%;
-    margin: 0 -4px;
-  }
+.site-menu a:hover {
+  background: var(--panel);
+}
 
-  .topbar-actions {
-    position: absolute;
-    top: 10px;
-    right: 16px;
+.site-menu a[aria-current="page"] {
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 
-@media (max-width: 420px) {
+/* From 800 to 1023px the seven tabs still fit in one row: no version chip, no "Explorer", tighter gaps. */
+@media (max-width: 1023.98px) {
   .version-chip {
     display: none;
+  }
+
+  /* Hidden from view only, so the link keeps its full name for screen readers. */
+  .site-title-sub {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .topbar-inner,
+  .site-nav {
+    gap: 12px;
+  }
+
+  .nav-tabs a {
+    padding: 7px 10px;
+  }
+}
+
+@media (max-width: 799.98px) {
+  .topbar-inner {
+    min-height: 56px;
+    padding: 0 var(--gutter);
+  }
+
+  .nav-tabs {
+    display: none;
+  }
+
+  .topbar-actions .menu-button {
+    display: inline-flex;
   }
 }
 
@@ -606,7 +661,8 @@ h3 {
     transform: none;
   }
 
-  .skeleton {
+  .skeleton,
+  .site-menu {
     animation: none;
   }
 }
@@ -1839,14 +1895,6 @@ button {
   .facts dt {
     margin-top: 0.35rem;
   }
-}
-
-/* Navigation links (SPEC-BROWSE-001) */
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 1rem;
 }
 
 /* Browser */
