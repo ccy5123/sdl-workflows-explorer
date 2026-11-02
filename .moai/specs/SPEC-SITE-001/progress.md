@@ -85,6 +85,47 @@
     number column and AC-13 exempts it; (3) comparison headings sat directly under the previous table — `.compare h2`
     takes `--section-gap`.
   - After the fixes: full Vitest 34 files / 522 passed; `npm run e2e` exit 0, 162 passed; typecheck exit 0.
+
+## §E.3 Run-phase Audit-Ready Signal
+
+- run_status: audit-ready
+- run_complete_at: 2026-11-02
+- Run commits: 2815ae0 (M1), 2fa0627 (M2), 36e5bd9 (M3), 0ad67cf (M4), d5ddcf8 (M5), 4f06584 (screen-check fixes).
+- AC-1 to AC-5, AC-11, AC-19: PASS (`tests/release-docs.test.ts`, `tests/citation.test.ts`, `tests/siteText.test.ts`,
+  `tests/siteTokens.test.ts`, `tests/graphElements.test.ts`, `tests/pages.test.ts`, `tests/tableStyles.test.ts`).
+  AC-6 to AC-10, AC-12 to AC-14: PASS (`e2e/site.spec.ts`, `e2e/theme.spec.ts`, `e2e/a11y.spec.ts`,
+  `e2e/pages.spec.ts`). AC-17, AC-18: PASS (M6 above).
+- AC-15: `git diff 69d2dc7 --stat --diff-filter=M -- e2e tests` lists exactly `e2e/taxonomy.spec.ts`,
+  `e2e/trends.spec.ts`, `tests/derive.test.ts` (the REQ-018 edits) and `tests/graphElements.test.ts`,
+  `tests/libBoundary.test.ts`, `tests/route.test.ts` (additions: new cases, new module-list entries, new import names).
+- AC-16 (before push): `git diff 69d2dc7 -- release.config.json` empty; `gh repo view` visibility PRIVATE;
+  `gh api repos/ccy5123/sdl-workflows-explorer/pages` HTTP 404 (Pages not enabled); `gh run list --workflow pages.yml`
+  HTTP 404 (workflow not on GitHub yet, so never run). `docs/deploy.md` names the REQ-017 steps in order.
+- Gaps (recorded above): no separate RED run for `unsourcedNumbers` (M2) and for `e2e/pages.spec.ts` (M5).
+- Not changed: `docs/plan.md` and `.moai/project/product.md` keep step 7's wording; deployment is prepared, not done,
+  and `docs/deploy.md` carries the remaining steps.
+
+## §E.4 Sync-phase Audit-Ready Signal
+
+- sync_at: 2026-11-02
+- sync_commit_sha: pending-backfill
+- Verification at sync (HEAD 4f06584): `npx tsc --noEmit` exit 0; `npx vitest run` 34 files / 522 passed (459
+  before); `npm run e2e` exit 0, 162 passed (68 before).
+- Project docs: `.moai/project/tech.md` deployment section updated (base per mode, workflow, deploy.md) and a theme
+  and accessibility section added.
+- Nothing deployed, Pages not enabled, the workflow not run, the repository private, `release.config.json` pinned to
+  1.0.0; nothing in `~/research/sdl-db` edited.
+
+## §F Phase 4 Mode Selection
+
+- Inputs: Tier L; about 40 files; TypeScript, CSS, YAML and Markdown; one domain (a static site) with shared files
+  (`styles.css`, `App.tsx`) touched by most milestones; concurrency benefit low.
+- Evaluation: direct — selected; serial (manager-develop per milestone) — not selected: worktree isolation fails on
+  this WSL UNC path (hand-overs of steps 4, 5 and CONTRIB) and the milestones share files; fanout — not selected
+  (coding-heavy); sweep — not selected (not a uniform mechanical edit).
+- Decision: direct
+- Justification: each milestone is a test-first unit on shared files; the orchestrating session ran them in order,
+  as in SPEC-CONTRIB-001.
 - Baseline re-measured 2026-11-02 at 69d2dc7: `npx tsc --noEmit` exit 0; `npx vitest run` 28 files, 459 passed;
   `npm run e2e` 68 passed.
 - Derived-file hashes at 69d2dc7 (`sha256sum` of `public/data/` after build-data; AC-1):

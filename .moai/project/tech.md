@@ -32,5 +32,13 @@
 
 ## Deployment
 
-GitHub Pages at `https://ccy5123.github.io/sdl-workflows-explorer/` (no custom domain), built by GitHub Actions
-(step 7). Vite `base` is relative (`./`) so the same build works under any path.
+GitHub Pages at `https://ccy5123.github.io/sdl-workflows-explorer/` (no custom domain), built and deployed by
+`.github/workflows/pages.yml`, which runs only when started by hand. Vite `base` is `/sdl-workflows-explorer/` for
+the production build and `./` for the e2e build; Playwright also serves the production build under the base path
+(SPEC-SITE-001). Not deployed yet: the steps are in `docs/deploy.md`.
+
+## Theme and accessibility
+
+Light and dark colour tokens (`src/lib/siteTokens.ts`, mirrored in `src/styles.css`) follow `prefers-color-scheme`
+through `data-theme` on `<html>`; tests keep the CSS equal to the tokens and check WCAG contrast. Shared table and
+spacing properties, a skip link, `aria-current` on the current nav link and a title per route (SPEC-SITE-001).

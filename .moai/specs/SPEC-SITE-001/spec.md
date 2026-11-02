@@ -2,7 +2,7 @@
 id: SPEC-SITE-001
 title: "Home and about pages, design and accessibility pass, GitHub Pages readiness"
 version: "0.3.0"
-status: draft
+status: completed
 created: 2026-11-02
 updated: 2026-11-02
 author: cyjoe
