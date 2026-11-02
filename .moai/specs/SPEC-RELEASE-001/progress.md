@@ -70,6 +70,28 @@
     `modes/benchmark/evaluate.py`, `my_predictions.csv`) name release files as files, which the rule allows; "CSV" and
     "DOI" on the home page are left unexpanded (field vocabulary of the site's readers; `Home.tsx` is outside this
     SPEC's change set by AC-5).
+- M4 deployment notes, verification and screen check. `docs/deploy.md` follows the REQ-007 order (check the published
+  file against the pin, re-pin and re-measure if it differs, approval, merge, then public, Pages, workflow). Comment
+  wording in `src/lib/platformFilter.ts`, `tests/benchmark-derive.test.ts` and `tests/release-docs.test.ts` adjusted so
+  the AC-6 and AC-2 greps print exactly what they require.
+- Screen check (AC-7), production build served by `vite preview --mode production` under `/sdl-workflows-explorer/`:
+  - Scripted: `#/about`, `#/browse`, `#/trends?split=sw`, `#/platform/Aand2024/P1`, `#/benchmark` at 1280 px light,
+    375 px dark and 375 px light: `scrollWidth` = `clientWidth` on each, `data-theme` follows the scheme; on `#/about`
+    the seven headings are present and visible; the footer reads "Data version 1.1.0 · doi:10.5281/zenodo.23875743".
+    At 1280 px the Browse note, the Trends captions (software autonomy split ends with the Tom et al. (2024) sentence;
+    integration-mode split ends with the definition) and the module-table note were read back.
+  - Seen: About at 1280 light (Timing data, Human-intervention reporting and Limits as in plan §B) and 375 dark;
+    Browse note at 375 dark; module table at 375 light.
+  - Finding, fixed test first: at 375 px the longer header "Part of the platform" squeezed the module ids into one
+    letter per line (Aand2024/P1/M1 over 14 lines). RED: new `e2e/viewer.spec.ts` "screen check" (modules: 14 lines
+    per id). GREEN after `table.data td > code { white-space: nowrap }`: ids on one line, the table scrolls inside its
+    container, page `scrollWidth` 375 = `clientWidth`.
+- Final verification (HEAD e5abc27 plus these edits): `sha256sum` of the bundle 98ea319b…, 2,484,010 bytes; typecheck
+  0; Vitest 34 files / 545 passed; `npm run build` exit 0 (`dist/index.html` loads `/sdl-workflows-explorer/assets/`);
+  `npm run e2e` 166 passed; `git grep -l -e "1\.0\.0" -e 23857126 -- tests e2e` prints exactly the AC-2 list (fixture
+  and synthetic files; the two fixture cases in `tests/release-docs.test.ts`); `git grep -n "1\.0\.0" -- src` prints
+  nothing; `git diff main -- scripts src/App.tsx src/lib/route.ts src/views/About.tsx src/views/Home.tsx` is empty;
+  `public/data/` holds the same six names as a build of `main`.
 - Dependencies: SPEC-SITE-001 completed (main at aa10af8).
 - Source of the brief: the orchestrating session of 2026-11-02 relayed the researcher's decision to publish the site
   with release 1.1.0 (Zenodo record 23875743, draft on that day), the pin values, the local bundle path and SHA-256,

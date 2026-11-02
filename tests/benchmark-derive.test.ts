@@ -142,7 +142,7 @@ describe.skipIf(!built)("files after build-data (SPEC-BENCH-001 AC-4)", () => {
     expect(items).toBeLessThanOrEqual(500_000);
   });
 
-  // Baselines of release 1.1.0 (SPEC-RELEASE-001 AC-3); tests/release-docs.test.ts checks what changed since 1.0.0.
+  // Baselines of release 1.1.0 (SPEC-RELEASE-001 AC-3); tests/release-docs.test.ts checks what changed from the previous release.
   it("keeps index.json, taxonomy.json and the platform files at the baseline of the pinned release", () => {
     const dir = join(DATA_DIR, "platforms");
     const names = readdirSync(dir).sort();

@@ -1,4 +1,4 @@
-// Home-page platform list filter (REQ-003): case-insensitive match on platform id, name and paper id.
+// Home-page platform list filter (REQ-003): case-insensitive match on the platform id, name and paper id.
 import type { PlatformRow } from "../data/types";
 
 export function filterPlatforms<T extends Pick<PlatformRow, "platform_id" | "platform_name" | "paper_id">>(

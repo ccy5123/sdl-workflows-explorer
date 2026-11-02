@@ -253,6 +253,12 @@ table.views th[scope="row"] {
   font-size: 0.9rem;
 }
 
+/* Item ids in a table cell stay on one line; a table too wide for the screen scrolls inside .table-scroll. */
+table.data td > code {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
 /* Tables */
 .table-scroll {
   overflow-x: auto;

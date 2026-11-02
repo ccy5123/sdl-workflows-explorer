@@ -94,12 +94,13 @@ describe.skipIf(!built)("release-docs.json of the pinned release (AC-1)", () => 
     expect(docs.data_card.startsWith(`# Data card: sdl-workflows ${PINNED_VERSION}`)).toBe(true);
   });
 
-  // Release 1.1.0 against 1.0.0 (SPEC-RELEASE-001 REQ-003, AC-3). 1.0.0 hashes from SPEC-SITE-001 progress.md §E.1.
+  // Release 1.1.0 against the previous release (SPEC-RELEASE-001 REQ-003, AC-3); the previous release's hashes are
+  // those of SPEC-SITE-001 progress.md §E.1.
   const sha = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
   const file = (rel: string) => sha(readFileSync(join(DATA_DIR, rel)));
   const json = (rel: string) => JSON.parse(readFileSync(join(DATA_DIR, rel), "utf8")) as Record<string, unknown>;
 
-  it("leaves benchmark-items.json and the platform files byte-identical to 1.0.0", () => {
+  it("leaves benchmark-items.json and the platform files byte-identical to the previous release", () => {
     expect(file("benchmark-items.json")).toBe("7a709c166912e849597d17302fb4fc09c3befc98b01f3265a8365deb19bb9aeb");
     const dir = join(DATA_DIR, "platforms");
     const names = readdirSync(dir).sort();

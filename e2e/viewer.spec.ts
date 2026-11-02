@@ -213,3 +213,22 @@ test("plain language: the module table's Part of the platform column and its not
     "Part of the platform: yes for modules of the platform, no for equipment outside it that the loop uses.",
   );
 });
+
+// Screen check (SPEC-RELEASE-001 AC-7): at 375 px the longer header must not squeeze the ids into one letter per line.
+test("screen check: module and connection ids stay on one line at 375 px", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#/platform/Aand2024/P1");
+  await expect(page.locator('[data-table="modules"] tbody tr')).toHaveCount(5);
+  for (const name of ["modules", "connections"]) {
+    const lines = await page.locator(`[data-table="${name}"] tbody td > code`).evaluateAll((codes) =>
+      codes.map((c) => new Set([...c.getClientRects()].map((r) => Math.round(r.top))).size),
+    );
+    expect(lines.length, name).toBeGreaterThan(0);
+    expect(lines.every((n) => n === 1), `${name}: ${lines.join(",")}`).toBe(true);
+  }
+  const { scroll, client } = await page.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    client: document.documentElement.clientWidth,
+  }));
+  expect(scroll).toBeLessThanOrEqual(client);
+});
