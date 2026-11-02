@@ -1,0 +1,3 @@
+task_id,item_id,paper_id,platform_id,split,label,field_tag,unit_operation,prev_unit_operation,next_unit_operation,from_unit_operation,to_unit_operation,from_family,to_family,uncertain
+mini-transfer_mode,PaperA2024/P2/E1,PaperA2024,PaperA2024/P2,train,fixed_tubing,chem,,,,dispense_liquid,measure_optical,prepare,measure,0
+mini-transfer_mode,PaperA2024/P2/E2,PaperA2024,PaperA2024/P2,train,fixed_tubing,chem,,,,measure_optical,dispense_liquid,measure,prepare,1

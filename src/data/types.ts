@@ -189,8 +189,88 @@ export interface TaxonomyJson {
   relations: TaxonomyRelation[];
 }
 
-export interface BenchmarkJson {
-  tasks: unknown[];
-  split_counts: Record<string, number>;
-  reference_results: unknown;
+// ---- Benchmark (SPEC-BENCH-001 REQ-001, REQ-002) ----
+
+export const SPLITS = ["train", "test", "excluded"] as const;
+export type Split = (typeof SPLITS)[number];
+export type BenchmarkTarget = "module_type" | "transfer_mode";
+
+/** Papers or items per split. */
+export interface SplitCounts {
+  train: number;
+  test: number;
+  excluded: number;
 }
+
+/** One task file of modes/benchmark/tasks/, field by field as recorded. */
+export interface BenchmarkTask {
+  task_id: string;
+  benchmark_id: string;
+  target: BenchmarkTarget;
+  item_rule: string;
+  inputs: string;
+  metric: string;
+  baseline_rule: string;
+  baseline_top1: number;
+  reference_model: string;
+  reference_model_top1: number;
+  diff_ci95_low: number;
+  diff_ci95_high: number;
+  n_test_items: number;
+  n_test_papers: number;
+  recorded_in: string;
+}
+
+export interface BenchmarkLabelCount extends SplitCounts {
+  label: string;
+}
+
+/** Items, uncertain items and per-label counts of one task by split. */
+export interface BenchmarkSummary {
+  task_id: string;
+  items: SplitCounts;
+  uncertain: SplitCounts;
+  /** Labels occurring among the task's items, by total count descending, then label. */
+  labels: BenchmarkLabelCount[];
+}
+
+/** Items per task (in task order) of one platform, and the split of its paper. */
+export interface BenchmarkPlatform {
+  platform_id: string;
+  split: Split;
+  n: number[];
+}
+
+/** One entry of reference_results.json, field by field as recorded. */
+export interface ReferenceResult {
+  task_id: string;
+  n_test_items: number;
+  n_test_papers: number;
+  baseline_top1: number;
+  reference_model_top1: number;
+  diff_ci95_low: number;
+  diff_ci95_high: number;
+  replicates: number;
+}
+
+export interface BenchmarkJson {
+  benchmark_id: string;
+  split_rule: string;
+  split_counts: SplitCounts;
+  exclusion_reasons: { reason: string; n: number }[];
+  tasks: BenchmarkTask[];
+  summaries: BenchmarkSummary[];
+  platforms: BenchmarkPlatform[];
+  reference_results: Record<string, ReferenceResult>;
+  /** reference_results.json byte for byte. */
+  reference_results_text: string;
+}
+
+/** The rows of one item file, in file order; `uncertain` is the number 0 or 1, every other value a string. */
+export interface BenchmarkItems {
+  columns: string[];
+  rows: (string | number)[][];
+}
+
+/** benchmark-items.json: one entry per task id. */
+export type BenchmarkItemsJson = Record<string, BenchmarkItems>;

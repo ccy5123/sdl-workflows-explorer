@@ -1,4 +1,6 @@
 object,kind,column,type,description,files
+benchmark_split,table,benchmark_id,TEXT,Benchmark: mini trains on papers first public in 2024 and tests on papers first public in 2025.,modes/benchmark/split.csv
+benchmark_split,table,split,TEXT,"train, test, or excluded (see exclusion_reason).",modes/benchmark/split.csv
 taxonomy_correspondence,table,target,TEXT,class in that vocabulary ('none' when there is none),core/taxonomy_correspondence.csv
 taxonomy_correspondence,table,match,TEXT,"exact; broader (the target is wider than our class); narrower (the target is narrower; for Gottstein2026, one of our items may span several of its objects); none",core/taxonomy_correspondence.csv
 taxonomy_correspondence,table,source_ref,TEXT,"source key ; PDF page ; table, figure or section",core/taxonomy_correspondence.csv

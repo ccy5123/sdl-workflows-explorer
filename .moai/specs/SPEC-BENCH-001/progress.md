@@ -139,3 +139,45 @@ benchmark-items.json estimate (bytes)                      418205
 problems                                                   0
 (exit 0)
 ```
+
+## §E.2 Run-phase Evidence
+
+- Fixture extension (`tests/fixtures/release-mini/`, AC-1 to AC-3): new `modes/benchmark/items_module_type.csv` (the
+  five steps with a first module: PaperA2024/P1/S1 fluidics, P1/S2 software uncertain, P2/S1 fluidics, P2/S2 robot_arm,
+  PaperB2025/P1/S1 software) and `items_transfer_mode.csv` (the two material connections PaperA2024/P2/E1 and E2, E2
+  uncertain, both fixed_tubing); the task files carry all 15 fields and `reference_results.json` all 8 fields per entry
+  (`n_test_items`, `n_test_papers` and `baseline_top1` unchanged: 1 / 1 / 1.0 and 0 / 0 / 0.0); `data_dictionary.csv`
+  gains the `benchmark_split` rows `benchmark_id` and `split`. Graphs, papers, platforms and taxonomy are unchanged.
+- Fixture-derived values asserted in `tests/derive.test.ts` ("benchmark on the fixture release"):
+  - `benchmark_id` "mini"; `split_rule` "Benchmark: mini trains on papers first public in 2024 and tests on papers
+    first public in 2025."; `split_counts` {train: 1, test: 1, excluded: 0}; `exclusion_reasons` [].
+  - `summaries`: mini-module_type items {4, 1, 0}, uncertain {1, 0, 0}, labels fluidics (2, 0, 0), software (1, 1, 0),
+    robot_arm (1, 0, 0); mini-transfer_mode items {2, 0, 0}, uncertain {1, 0, 0}, labels fixed_tubing (2, 0, 0).
+  - `platforms`: PaperA2024/P1 train [2, 0]; PaperA2024/P2 train [2, 2]; PaperB2025/P1 test [1, 0].
+  - `reference_results` deep-equals the parsed fixture file, keys in file order; `reference_results_text` equals it.
+  - `benchmark-items.json`: mini-module_type 5 rows, first ["PaperA2024/P1/S1", "train", "fluidics", "chem",
+    "dispense_liquid", "START", "analyze_data", 0], uncertain column [0, 1, 0, 0, 0]; mini-transfer_mode 2 rows
+    ["PaperA2024/P2/E1", "train", "fixed_tubing", "chem", "dispense_liquid", "measure_optical", "prepare", "measure", 0]
+    and ["PaperA2024/P2/E2", ..., "measure_optical", "dispense_liquid", "measure", "prepare", 1].
+- Edits of existing tests (AC-16):
+  - `tests/derive.test.ts` "derives the benchmark tasks, split counts and reference results as published":
+    `split_counts` expectation `{ train: 1, test: 1 }` → `{ train: 1, test: 1, excluded: 0 }`; the task-id map no longer
+    casts (`t.task_id`, typed shape); the `reference_results` expectation is unchanged in form (deep-equals the extended
+    fixture file).
+  - `tests/derive.test.ts` "writes index.json, taxonomy.json, benchmark.json and one platform file per paper": the
+    output-directory listing gains `benchmark-items.json`.
+  - `tests/release.test.ts` AC-10 benchmark test: no edit was needed; it passes unchanged on the typed shape.
+- Build after the change (`npm run build-data`, exit 0): `benchmark.json` 22,561 bytes, `benchmark-items.json` 418,205
+  bytes (both equal to the plan estimates); `index.json` sha256 6b644e3c…ca5db4d, `taxonomy.json` e33f52e3…80acdc9 and
+  the 238 platform files concatenated 9001ca64…99889a8, equal to the §E.1 baseline.
+
+## §F Phase 4 Mode Selection
+
+- Inputs: Tier M; about 12 to 15 files (scripts, src, tests, e2e, fixture); domains: data pipeline, routing, view,
+  tests; TypeScript and CSS; concurrency benefit low (coding-heavy, files depend on the shared types).
+- Evaluation: direct — not selected (multi-file feature); serial — selected; fanout — not selected (coding-heavy work
+  with shared types; Anthropic's coding-task parallelism caveat); sweep — not selected (not a uniform mechanical edit).
+- Decision: serial
+- Justification: one general-purpose implementation agent in the main checkout works through plan.md §B in order, test
+  first per unit. manager-develop is not used because its worktree isolation fails on this WSL UNC path (hand-over
+  notes of steps 4 and 5). The orchestrator re-runs the verification batch and checks the view in the browser.

@@ -1,5 +1,5 @@
 // AC-9: derivation on a two-paper fixture release (REQ-009, REQ-010).
-import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { deriveAll, writeDerived } from "../scripts/lib/derive";
@@ -276,11 +276,11 @@ describe("deriveAll on the fixture release", () => {
   });
 
   it("derives the benchmark tasks, split counts and reference results as published", () => {
-    expect(d.benchmark.tasks.map((t) => (t as { task_id: string }).task_id)).toEqual([
+    expect(d.benchmark.tasks.map((t) => t.task_id)).toEqual([
       "mini-module_type",
       "mini-transfer_mode",
     ]);
-    expect(d.benchmark.split_counts).toEqual({ train: 1, test: 1 });
+    expect(d.benchmark.split_counts).toEqual({ train: 1, test: 1, excluded: 0 });
     expect(d.benchmark.reference_results).toEqual(
       JSON.parse(readFileSync(join(MINI, "modes/benchmark/reference_results.json"), "utf8")),
     );
@@ -297,7 +297,7 @@ describe("writeDerived", () => {
   it("writes index.json, taxonomy.json, benchmark.json and one platform file per paper", () => {
     const out = join(tempDir(), "data");
     writeDerived(deriveAll(MINI), out);
-    expect(readdirSync(out).sort()).toEqual(["benchmark.json", "index.json", "platforms", "taxonomy.json"]);
+    expect(readdirSync(out).sort()).toEqual(["benchmark-items.json", "benchmark.json", "index.json", "platforms", "taxonomy.json"]);
     expect(readdirSync(join(out, "platforms")).sort()).toEqual(["PaperA2024.json", "PaperB2025.json"]);
     const index = JSON.parse(readFileSync(join(out, "index.json"), "utf8"));
     expect(index.papers).toHaveLength(2);
@@ -482,5 +482,243 @@ describe("deriveAll taxonomy checks (SPEC-TAXO-001 AC-4)", () => {
     const unmapped = deriveAll(dir).taxonomy.classes.find((c) => c.class_kind === "transfer_mode" && c.class === "unmapped")!;
     expect([unmapped.n_items, unmapped.n_platforms, unmapped.n_papers]).toEqual([0, 0, 0]);
     expect(unmapped.examples).toEqual([]);
+  });
+});
+
+// SPEC-BENCH-001 AC-1 and AC-2 on the fixture: the typed benchmark.json and benchmark-items.json (REQ-001, REQ-002).
+// The expected values are listed in .moai/specs/SPEC-BENCH-001/progress.md §E.2.
+describe("benchmark on the fixture release (SPEC-BENCH-001 AC-1, AC-2)", () => {
+  const d = deriveAll(MINI);
+  const b = d.benchmark;
+  const BENCHMARK_KEYS = [
+    "benchmark_id", "split_rule", "split_counts", "exclusion_reasons", "tasks", "summaries", "platforms",
+    "reference_results", "reference_results_text",
+  ];
+  const TASK_FIELDS = [
+    "task_id", "benchmark_id", "target", "item_rule", "inputs", "metric", "baseline_rule", "baseline_top1",
+    "reference_model", "reference_model_top1", "diff_ci95_low", "diff_ci95_high", "n_test_items", "n_test_papers",
+    "recorded_in",
+  ];
+  const REFERENCE_FIELDS = [
+    "task_id", "n_test_items", "n_test_papers", "baseline_top1", "reference_model_top1", "diff_ci95_low",
+    "diff_ci95_high", "replicates",
+  ];
+  const read = (rel: string) => readFileSync(join(MINI, "modes/benchmark", rel), "utf8");
+
+  it("holds exactly the keys of REQ-001 with the split, its rule and no exclusion reason", () => {
+    expect(Object.keys(b)).toEqual(BENCHMARK_KEYS);
+    expect(b.benchmark_id).toBe("mini");
+    expect(b.split_rule).toBe("Benchmark: mini trains on papers first public in 2024 and tests on papers first public in 2025.");
+    expect(b.split_counts).toEqual({ train: 1, test: 1, excluded: 0 });
+    expect(b.exclusion_reasons).toEqual([]);
+  });
+
+  it("builds each task field by field, equal to the parsed task file", () => {
+    for (const task of b.tasks) {
+      expect(Object.keys(task)).toEqual(TASK_FIELDS);
+      expect(task).toEqual(JSON.parse(read(`tasks/${task.task_id}.json`)));
+    }
+    expect(b.tasks.map((t) => t.target)).toEqual(["module_type", "transfer_mode"]);
+  });
+
+  it("summarises items, uncertain items and labels by split", () => {
+    expect(b.summaries).toEqual([
+      {
+        task_id: "mini-module_type",
+        items: { train: 4, test: 1, excluded: 0 },
+        uncertain: { train: 1, test: 0, excluded: 0 },
+        labels: [
+          { label: "fluidics", train: 2, test: 0, excluded: 0 },
+          { label: "software", train: 1, test: 1, excluded: 0 },
+          { label: "robot_arm", train: 1, test: 0, excluded: 0 },
+        ],
+      },
+      {
+        task_id: "mini-transfer_mode",
+        items: { train: 2, test: 0, excluded: 0 },
+        uncertain: { train: 1, test: 0, excluded: 0 },
+        labels: [{ label: "fixed_tubing", train: 2, test: 0, excluded: 0 }],
+      },
+    ]);
+  });
+
+  it("lists every platform of index.json in id order with its split and items per task", () => {
+    expect(b.platforms).toEqual([
+      { platform_id: "PaperA2024/P1", split: "train", n: [2, 0] },
+      { platform_id: "PaperA2024/P2", split: "train", n: [2, 2] },
+      { platform_id: "PaperB2025/P1", split: "test", n: [1, 0] },
+    ]);
+  });
+
+  it("keeps reference_results keyed in file order, typed, and the file text byte for byte", () => {
+    expect(Object.keys(b.reference_results)).toEqual(["mini-module_type", "mini-transfer_mode"]);
+    for (const entry of Object.values(b.reference_results)) expect(Object.keys(entry)).toEqual(REFERENCE_FIELDS);
+    expect(b.reference_results).toEqual(JSON.parse(read("reference_results.json")));
+    expect(b.reference_results_text).toBe(read("reference_results.json"));
+  });
+
+  it("writes the item rows of each task in file order with the columns of its target", () => {
+    expect(Object.keys(d.benchmarkItems)).toEqual(["mini-module_type", "mini-transfer_mode"]);
+    const mt = d.benchmarkItems["mini-module_type"]!;
+    expect(mt.columns).toEqual([
+      "item_id", "split", "label", "field_tag", "unit_operation", "prev_unit_operation", "next_unit_operation", "uncertain",
+    ]);
+    expect(mt.rows).toHaveLength(5);
+    expect(mt.rows[0]).toEqual(["PaperA2024/P1/S1", "train", "fluidics", "chem", "dispense_liquid", "START", "analyze_data", 0]);
+    expect(mt.rows.map((r) => r[7])).toEqual([0, 1, 0, 0, 0]);
+    const tm = d.benchmarkItems["mini-transfer_mode"]!;
+    expect(tm.columns).toEqual([
+      "item_id", "split", "label", "field_tag", "from_unit_operation", "to_unit_operation", "from_family", "to_family", "uncertain",
+    ]);
+    expect(tm.rows).toEqual([
+      ["PaperA2024/P2/E1", "train", "fixed_tubing", "chem", "dispense_liquid", "measure_optical", "prepare", "measure", 0],
+      ["PaperA2024/P2/E2", "train", "fixed_tubing", "chem", "measure_optical", "dispense_liquid", "measure", "prepare", 1],
+    ]);
+  });
+
+  it("writeDerived writes benchmark-items.json as parsed", () => {
+    const out = join(tempDir(), "data");
+    writeDerived(d, out);
+    expect(JSON.parse(readFileSync(join(out, "benchmark-items.json"), "utf8"))).toEqual(d.benchmarkItems);
+    expect(JSON.parse(readFileSync(join(out, "benchmark.json"), "utf8"))).toEqual(b);
+  });
+});
+
+// SPEC-BENCH-001 AC-3: each disagreement of REQ-003 (a) to (i) makes deriveAll throw, naming the file and the row,
+// task or field concerned.
+describe("deriveAll benchmark checks (SPEC-BENCH-001 AC-3)", () => {
+  const TASK_MT = "modes/benchmark/tasks/mini-module_type.json";
+  const TASK_TM = "modes/benchmark/tasks/mini-transfer_mode.json";
+  const REF = "modes/benchmark/reference_results.json";
+  const SPLIT = "modes/benchmark/split.csv";
+  const ITEMS_MT = "modes/benchmark/items_module_type.csv";
+  const ITEMS_TM = "modes/benchmark/items_transfer_mode.csv";
+
+  /** Copy of the fixture with each [file, from, to] edit applied; every `from` must occur exactly once. */
+  function edited(...edits: [string, string, string][]): string {
+    const dir = join(tempDir(), "rel");
+    cpSync(MINI, dir, { recursive: true });
+    for (const [rel, from, to] of edits) {
+      const path = join(dir, rel);
+      const text = readFileSync(path, "utf8");
+      expect(text.split(from)).toHaveLength(2);
+      writeFileSync(path, text.replace(from, to));
+    }
+    return dir;
+  }
+
+  it("control: the fixture passes", () => {
+    expect(() => deriveAll(MINI)).not.toThrow();
+  });
+
+  it("(a) fails on a task file renamed", () => {
+    const dir = edited();
+    renameSync(join(dir, TASK_TM), join(dir, "modes/benchmark/tasks/mini-transfer.json"));
+    expect(() => deriveAll(dir)).toThrow(/tasks\/mini-transfer\.json: task_id "mini-transfer_mode" is not the file name/);
+  });
+
+  it("(a) fails on a task benchmark_id that is not the split's", () => {
+    expect(() => deriveAll(edited([TASK_MT, '"benchmark_id": "mini"', '"benchmark_id": "other"']))).toThrow(
+      /mini-module_type\.json: benchmark_id "other" is not the benchmark_id "mini" of modes\/benchmark\/split\.csv/,
+    );
+  });
+
+  it("(a) fails on a reference entry whose task_id differs from its key", () => {
+    expect(() => deriveAll(edited([REF, '{"task_id": "mini-transfer_mode"', '{"task_id": "mini-x"']))).toThrow(
+      /reference_results\.json entry mini-transfer_mode: task_id "mini-x" is not its key/,
+    );
+  });
+
+  it("(a) fails when the task ids and the reference keys differ, and on a shared target", () => {
+    expect(() => deriveAll(edited([REF, '"mini-transfer_mode": {', '"mini-other": {']))).toThrow(
+      /reference_results\.json: keys mini-module_type, mini-other differ from the task ids mini-module_type, mini-transfer_mode/,
+    );
+    expect(() => deriveAll(edited([TASK_TM, '"target": "transfer_mode"', '"target": "module_type"']))).toThrow(
+      /mini-transfer_mode\.json: target module_type is also the target of mini-module_type/,
+    );
+    expect(() => deriveAll(edited([TASK_TM, '"target": "transfer_mode"', '"target": "unit_operation"']))).toThrow(
+      /mini-transfer_mode\.json: target "unit_operation" is not module_type or transfer_mode/,
+    );
+  });
+
+  it("(b) fails on a task file without metric and on baseline_top1 given as a string", () => {
+    expect(() => deriveAll(edited([TASK_MT, '"metric": "top-1 accuracy over the test items", ', ""]))).toThrow(
+      /mini-module_type\.json: field "metric" is missing/,
+    );
+    expect(() => deriveAll(edited([TASK_MT, '"baseline_top1": 1.0', '"baseline_top1": "1.0"']))).toThrow(
+      /mini-module_type\.json: field "baseline_top1" must be a number/,
+    );
+    expect(() => deriveAll(edited([REF, '"replicates": 10', '"replicates": "10"']))).toThrow(
+      /reference_results\.json entry mini-module_type: field "replicates" must be a number/,
+    );
+  });
+
+  it("(c) fails on n_test_items changed in reference_results.json only", () => {
+    expect(() => deriveAll(edited([REF, '"n_test_items": 1', '"n_test_items": 2']))).toThrow(
+      /reference_results\.json entry mini-module_type: n_test_items 2 differs from 1 in modes\/benchmark\/tasks\/mini-module_type\.json/,
+    );
+  });
+
+  it("(d) fails on a paper listed twice and on a paper missing from split.csv", () => {
+    expect(() => deriveAll(edited([SPLIT, "mini,PaperB2025,test,\n", "mini,PaperB2025,test,\nmini,PaperB2025,test,\n"]))).toThrow(
+      /split\.csv row 4: paper PaperB2025 is listed twice/,
+    );
+    expect(() => deriveAll(edited([SPLIT, "mini,PaperB2025,test,\n", ""]))).toThrow(
+      /split\.csv: paper PaperB2025 of index\.json is missing/,
+    );
+    expect(() => deriveAll(edited([SPLIT, "mini,PaperB2025,test,", "mini,PaperB2025,dev,"]))).toThrow(
+      /split\.csv row 3: split "dev" is not train, test or excluded/,
+    );
+    expect(() => deriveAll(edited([SPLIT, "mini,PaperB2025,test,", "mini,PaperB2025,test,too new"]))).toThrow(
+      /split\.csv row 3: exclusion_reason on a row whose split is test/,
+    );
+    expect(() => deriveAll(edited([SPLIT, "mini,PaperB2025,test,", "mini2,PaperB2025,test,"]))).toThrow(
+      /split\.csv: more than one benchmark_id: mini, mini2/,
+    );
+  });
+
+  it("(e) fails on an item whose split differs from its paper's", () => {
+    expect(() => deriveAll(edited([ITEMS_MT, "PaperB2025/P1,test,software", "PaperB2025/P1,train,software"]))).toThrow(
+      /items_module_type\.csv row 6 \(PaperB2025\/P1\/S1\): split "train" differs from the split "test" of paper PaperB2025 in modes\/benchmark\/split\.csv/,
+    );
+    expect(() => deriveAll(edited([ITEMS_MT, "PaperB2025,PaperB2025/P1,test,software,chem,analyze_data,START,END,,,,,0", "PaperB2025,PaperB2025/P1,test,software,chem,analyze_data,START,END,,,,,2"]))).toThrow(
+      /items_module_type\.csv row 6 \(PaperB2025\/P1\/S1\): uncertain "2" is not 0 or 1/,
+    );
+    expect(() => deriveAll(edited([ITEMS_TM, "mini-transfer_mode,PaperA2024/P2/E1", "mini-module_type,PaperA2024/P2/E1"]))).toThrow(
+      /items_transfer_mode\.csv row 2 \(PaperA2024\/P2\/E1\): task_id "mini-module_type" is not the task mini-transfer_mode/,
+    );
+  });
+
+  it("(f) fails on a module_type label that is not the first module's type and on a non-material connection", () => {
+    expect(() => deriveAll(edited([ITEMS_MT, "PaperA2024/P2/S1,PaperA2024,PaperA2024/P2,train,fluidics", "PaperA2024/P2/S1,PaperA2024,PaperA2024/P2,train,robot_arm"]))).toThrow(
+      /items_module_type\.csv row 4 \(PaperA2024\/P2\/S1\): label "robot_arm" is not the module type "fluidics" of the step's first module/,
+    );
+    expect(() => deriveAll(edited([ITEMS_TM, "PaperA2024/P2/E2", "PaperA2024/P2/E3"]))).toThrow(
+      /items_transfer_mode\.csv row 3 \(PaperA2024\/P2\/E3\): the connection is not material/,
+    );
+  });
+
+  it("(g) fails on a label that is not a class and on a from_family that is not the unit operation's family", () => {
+    expect(() => deriveAll(edited([ITEMS_MT, "train,fluidics,chem,dispense_liquid,START,analyze_data", "train,pump,chem,dispense_liquid,START,analyze_data"]))).toThrow(
+      /items_module_type\.csv row 2 \(PaperA2024\/P1\/S1\): label "pump" is not a module_type class/,
+    );
+    expect(() => deriveAll(edited([ITEMS_TM, "dispense_liquid,measure_optical,prepare,measure,0", "dispense_liquid,measure_optical,react,measure,0"]))).toThrow(
+      /items_transfer_mode\.csv row 2 \(PaperA2024\/P2\/E1\): from_family "react" is not the family "prepare" of dispense_liquid/,
+    );
+  });
+
+  it("(h) fails when the test items disagree with n_test_items in both the task and the reference", () => {
+    expect(() => deriveAll(edited([TASK_MT, '"n_test_items": 1', '"n_test_items": 2'], [REF, '"n_test_items": 1', '"n_test_items": 2']))).toThrow(
+      /items_module_type\.csv: 1 test items, but n_test_items is 2 in modes\/benchmark\/tasks\/mini-module_type\.json/,
+    );
+  });
+
+  it("(i) fails when the data-dictionary row of the split rule or an item file is missing", () => {
+    expect(() => deriveAll(edited(["data_dictionary.csv", "benchmark_split,table,benchmark_id,", "benchmark_split,table,benchmark_key,"]))).toThrow(
+      /data_dictionary\.csv: the row of object benchmark_split, column benchmark_id is missing/,
+    );
+    const dir = edited();
+    rmSync(join(dir, ITEMS_TM));
+    expect(() => deriveAll(dir)).toThrow(/items_transfer_mode\.csv: the item file of task mini-transfer_mode is missing/);
   });
 });

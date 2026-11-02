@@ -1,11 +1,21 @@
 // Verified release tables -> index / platform / taxonomy / benchmark JSON (REQ-009, REQ-010; SPEC-TAXO-001 REQ-001 to
-// REQ-004: unit operations on platform rows, per-class counts and examples, the checked correspondence).
+// REQ-004: unit operations on platform rows, per-class counts and examples, the checked correspondence; SPEC-BENCH-001
+// REQ-001 to REQ-003: typed tasks, split and item summaries, benchmark-items.json and the checked benchmark files).
 // Every output object is built field by field from the lists in REQ-009, so no other release column
 // (for example an abstract) can reach the derived data.
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { SPLITS } from "../../src/data/types";
 import type {
+  BenchmarkItems,
+  BenchmarkItemsJson,
   BenchmarkJson,
+  BenchmarkSummary,
+  BenchmarkTarget,
+  BenchmarkTask,
+  ReferenceResult,
+  Split,
+  SplitCounts,
   Connection,
   CorrespondenceEntry,
   CorrespondenceSource,
@@ -33,6 +43,7 @@ export interface Derived {
   platformFiles: Record<string, PlatformFile>;
   taxonomy: TaxonomyJson;
   benchmark: BenchmarkJson;
+  benchmarkItems: BenchmarkItemsJson;
 }
 
 // ---- CSV access -------------------------------------------------------------------------------
@@ -537,23 +548,318 @@ function buildTaxonomy(dir: string, papers: PaperRow[], rows: PlatformRow[], gra
   };
 }
 
-function buildBenchmark(dir: string): BenchmarkJson {
-  const tasksDir = join(dir, "modes/benchmark/tasks");
-  const tasks = readdirSync(tasksDir)
-    .filter((name) => name.endsWith(".json"))
-    .sort()
-    .map((name) => JSON.parse(readFileSync(join(tasksDir, name), "utf8")) as unknown);
-  const splitCounts: Record<string, number> = {};
-  for (const row of readCsv(join(dir, "modes/benchmark/split.csv"))) {
-    const split = row.split ?? "";
-    splitCounts[split] = (splitCounts[split] ?? 0) + 1;
+// ---- Benchmark (SPEC-BENCH-001 REQ-001 to REQ-003) ---------------------------------------------
+
+const BENCH = "modes/benchmark";
+const SPLIT_REL = `${BENCH}/split.csv`;
+const REF_REL = `${BENCH}/reference_results.json`;
+
+/** Item file and REQ-002 columns of each target; the item files also carry the other target's columns, empty. */
+const TARGETS = {
+  module_type: {
+    file: `${BENCH}/items_module_type.csv`,
+    columns: ["item_id", "split", "label", "field_tag", "unit_operation", "prev_unit_operation", "next_unit_operation", "uncertain"],
+  },
+  transfer_mode: {
+    file: `${BENCH}/items_transfer_mode.csv`,
+    columns: ["item_id", "split", "label", "field_tag", "from_unit_operation", "to_unit_operation", "from_family", "to_family", "uncertain"],
+  },
+} as const satisfies Record<BenchmarkTarget, { file: string; columns: readonly string[] }>;
+const isTarget = (t: string): t is BenchmarkTarget => Object.hasOwn(TARGETS, t);
+const isSplit = (s: string): s is Split => (SPLITS as readonly string[]).includes(s);
+
+const TASK_FIELDS = [
+  "task_id", "benchmark_id", "target", "item_rule", "inputs", "metric", "baseline_rule", "baseline_top1",
+  "reference_model", "reference_model_top1", "diff_ci95_low", "diff_ci95_high", "n_test_items", "n_test_papers",
+  "recorded_in",
+] as const;
+const REFERENCE_FIELDS = [
+  "task_id", "n_test_items", "n_test_papers", "baseline_top1", "reference_model_top1", "diff_ci95_low",
+  "diff_ci95_high", "replicates",
+] as const;
+const TEXT_FIELDS = new Set(["task_id", "benchmark_id", "target", "item_rule", "inputs", "metric", "baseline_rule", "reference_model", "recorded_in"]);
+/** Values a task file and its reference_results.json entry both record (REQ-003 c). */
+const SHARED_FIELDS = ["n_test_items", "n_test_papers", "baseline_top1", "reference_model_top1", "diff_ci95_low", "diff_ci95_high"] as const;
+
+const isNumber = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+
+/** The listed fields of a JSON object, text fields strings and the others numbers (REQ-003 b). */
+function typedFields<T>(raw: unknown, fields: readonly string[], where: string): T {
+  const o = asObj(raw, where);
+  const out: Obj = {};
+  for (const f of fields) {
+    if (!Object.hasOwn(o, f)) throw new Error(`${where}: field "${f}" is missing`);
+    out[f] = TEXT_FIELDS.has(f) ? field(o, f, where, isStr, "a string") : field(o, f, where, isNumber, "a number");
   }
-  const reference = JSON.parse(readFileSync(join(dir, "modes/benchmark/reference_results.json"), "utf8")) as unknown;
-  return { tasks, split_counts: splitCounts, reference_results: reference };
+  return out as T;
+}
+
+const zeroCounts = (): SplitCounts => ({ train: 0, test: 0, excluded: 0 });
+
+interface SplitTable {
+  benchmarkId: string;
+  splitOf: Map<string, Split>;
+  counts: SplitCounts;
+  reasons: { reason: string; n: number }[];
+}
+
+/** split.csv, checked against itself and the papers of index.json (REQ-003 d). */
+function readSplit(dir: string, papers: PaperRow[]): SplitTable {
+  const { rows, col } = table(dir, SPLIT_REL);
+  const splitOf = new Map<string, Split>();
+  const ids = new Set<string>();
+  const counts = zeroCounts();
+  const reasons = new Map<string, number>();
+  const known = new Set(papers.map((p) => p.paper_id));
+  rows.forEach((_, i) => {
+    const at = `${SPLIT_REL} row ${i + 2}`;
+    const paper = col(i, "paper_id");
+    const split = col(i, "split");
+    const reason = col(i, "exclusion_reason");
+    if (splitOf.has(paper)) throw new Error(`${at}: paper ${paper} is listed twice`);
+    if (!isSplit(split)) throw new Error(`${at}: split "${split}" is not train, test or excluded`);
+    if (reason !== "" && split !== "excluded") throw new Error(`${at}: exclusion_reason on a row whose split is ${split}`);
+    if (!known.has(paper)) throw new Error(`${at}: paper ${paper} is not a paper of index.json`);
+    ids.add(col(i, "benchmark_id"));
+    splitOf.set(paper, split);
+    counts[split]++;
+    if (reason !== "") reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
+  });
+  if (ids.size !== 1) throw new Error(`${SPLIT_REL}: more than one benchmark_id: ${[...ids].join(", ")}`);
+  const missing = papers.find((p) => !splitOf.has(p.paper_id));
+  if (missing) throw new Error(`${SPLIT_REL}: paper ${missing.paper_id} of index.json is missing`);
+  return {
+    benchmarkId: [...ids][0]!,
+    splitOf,
+    counts,
+    reasons: [...reasons].map(([reason, n]) => ({ reason, n })),
+  };
+}
+
+/** The data dictionary's description of the split (REQ-001 split_rule, REQ-003 i). */
+function readSplitRule(dir: string): string {
+  const row = readCsv(join(dir, "data_dictionary.csv")).find((r) => r.object === "benchmark_split" && r.column === "benchmark_id");
+  if (!row) throw new Error("data_dictionary.csv: the row of object benchmark_split, column benchmark_id is missing");
+  return row.description ?? "";
+}
+
+/** Task files in file-name order (REQ-003 a, b). */
+function readTasks(dir: string, benchmarkId: string): BenchmarkTask[] {
+  const tasksRel = `${BENCH}/tasks`;
+  const names = readdirSync(join(dir, tasksRel)).filter((name) => name.endsWith(".json")).sort(byString);
+  const byTarget = new Map<string, string>();
+  return names.map((name) => {
+    const rel = `${tasksRel}/${name}`;
+    const task = typedFields<BenchmarkTask>(JSON.parse(readFileSync(join(dir, rel), "utf8")), TASK_FIELDS, rel);
+    if (task.task_id !== name.slice(0, -".json".length)) {
+      throw new Error(`${rel}: task_id "${task.task_id}" is not the file name without .json`);
+    }
+    if (task.benchmark_id !== benchmarkId) {
+      throw new Error(`${rel}: benchmark_id "${task.benchmark_id}" is not the benchmark_id "${benchmarkId}" of ${SPLIT_REL}`);
+    }
+    if (!isTarget(task.target)) throw new Error(`${rel}: target "${task.target}" is not module_type or transfer_mode`);
+    const other = byTarget.get(task.target);
+    if (other) throw new Error(`${rel}: target ${task.target} is also the target of ${other}`);
+    byTarget.set(task.target, task.task_id);
+    return task;
+  });
+}
+
+/** reference_results.json keyed in file order, checked against the task files (REQ-003 a, b, c). */
+function readReference(dir: string, tasks: BenchmarkTask[]): { results: Record<string, ReferenceResult>; text: string } {
+  const text = readFileSync(join(dir, REF_REL), "utf8");
+  const raw = asObj(JSON.parse(text), REF_REL);
+  const keys = Object.keys(raw);
+  const taskIds = tasks.map((t) => t.task_id);
+  if ([...keys].sort(byString).join("\n") !== [...taskIds].sort(byString).join("\n")) {
+    throw new Error(`${REF_REL}: keys ${keys.join(", ")} differ from the task ids ${taskIds.join(", ")}`);
+  }
+  const results: Record<string, ReferenceResult> = {};
+  for (const key of keys) {
+    const at = `${REF_REL} entry ${key}`;
+    const entry = typedFields<ReferenceResult>(raw[key], REFERENCE_FIELDS, at);
+    if (entry.task_id !== key) throw new Error(`${at}: task_id "${entry.task_id}" is not its key`);
+    results[key] = entry;
+  }
+  for (const task of tasks) {
+    const entry = results[task.task_id]!;
+    for (const f of SHARED_FIELDS) {
+      if (entry[f] !== task[f]) {
+        throw new Error(`${REF_REL} entry ${task.task_id}: ${f} ${entry[f]} differs from ${task[f]} in ${BENCH}/tasks/${task.task_id}.json`);
+      }
+    }
+  }
+  return { results, text };
+}
+
+interface ReleaseContext {
+  split: SplitTable;
+  platformIds: Set<string>;
+  graphs: Map<string, GraphCore>;
+  /** `kind:class` of every class of classes.csv. */
+  classKeys: Set<string>;
+  /** Family of each unit-operation class ("" when none). */
+  families: Map<string, string>;
+}
+
+/** Item rows of one task, each checked against the split, index.json, the platform graph and the taxonomy (REQ-003 e to i). */
+function readItems(dir: string, task: BenchmarkTask, ctx: ReleaseContext): BenchmarkItems {
+  const { file, columns } = TARGETS[task.target];
+  if (!existsSync(join(dir, file))) throw new Error(`${file}: the item file of task ${task.task_id} is missing`);
+  const { rows, col } = table(dir, file);
+  const seen = new Set<string>();
+  const isClass = (kind: string, cls: string) => ctx.classKeys.has(`${kind}:${cls}`);
+  const out = rows.map((_, i) => {
+    const itemId = col(i, "item_id");
+    const at = `${file} row ${i + 2} (${itemId})`;
+    const value = (name: string) => col(i, name);
+    // (e) identity, split and flag
+    if (value("task_id") !== task.task_id) throw new Error(`${at}: task_id "${value("task_id")}" is not the task ${task.task_id} of this file`);
+    if (seen.has(itemId)) throw new Error(`${at}: item_id occurs twice`);
+    seen.add(itemId);
+    const segments = itemId.split("/");
+    const paper = value("paper_id");
+    const platform = value("platform_id");
+    if (segments[0] !== paper) throw new Error(`${at}: the first segment of item_id is not paper_id ${paper}`);
+    if (segments.slice(0, 2).join("/") !== platform) throw new Error(`${at}: the first two segments of item_id are not platform_id ${platform}`);
+    if (!ctx.platformIds.has(platform)) throw new Error(`${at}: platform ${platform} is not a platform of index.json`);
+    const paperSplit = ctx.split.splitOf.get(paper);
+    if (value("split") !== paperSplit) {
+      throw new Error(`${at}: split "${value("split")}" differs from the split "${paperSplit}" of paper ${paper} in ${SPLIT_REL}`);
+    }
+    const flag = value("uncertain");
+    if (flag !== "0" && flag !== "1") throw new Error(`${at}: uncertain "${flag}" is not 0 or 1`);
+    const uncertain = flag === "1";
+    // (g) classes of the target's columns
+    const label = value("label");
+    if (!isClass(task.target, label)) throw new Error(`${at}: label "${label}" is not a ${task.target} class`);
+    const fieldTag = value("field_tag");
+    if (fieldTag !== "" && !isClass("field_tag", fieldTag)) throw new Error(`${at}: field_tag "${fieldTag}" is not a field_tag class`);
+    const unitOperation = (name: string, ends: string[] = []) => {
+      const v = value(name);
+      if (!ends.includes(v) && !isClass("unit_operation", v)) {
+        throw new Error(`${at}: ${name} "${v}" is not a unit_operation class${ends.length ? ` or ${ends.join("")}` : ""}`);
+      }
+    };
+    // (f) the item against its platform graph
+    const graph = ctx.graphs.get(platform);
+    if (task.target === "module_type") {
+      unitOperation("unit_operation");
+      unitOperation("prev_unit_operation", ["START"]);
+      unitOperation("next_unit_operation", ["END"]);
+      const step = graph?.steps.find((s) => s.step_id === itemId);
+      if (!step) throw new Error(`${at}: the item is not a step of platform ${platform} in modes/builder/platform_graphs.jsonl`);
+      if (step.unit_operation !== value("unit_operation")) {
+        throw new Error(`${at}: unit_operation "${value("unit_operation")}" is not the step's unit operation "${step.unit_operation}"`);
+      }
+      const first = graph!.modules.find((m) => m.module_id === step.modules[0]);
+      if (!first) throw new Error(`${at}: the step has no first module`);
+      if (first.module_type !== label) {
+        throw new Error(`${at}: label "${label}" is not the module type "${first.module_type}" of the step's first module`);
+      }
+      if (step.uncertain !== uncertain) throw new Error(`${at}: uncertain ${flag} differs from the step's uncertain ${step.uncertain}`);
+    } else {
+      for (const side of ["from", "to"] as const) {
+        unitOperation(`${side}_unit_operation`);
+        const uo = value(`${side}_unit_operation`);
+        const family = ctx.families.get(uo) ?? "";
+        if (value(`${side}_family`) !== family) {
+          throw new Error(`${at}: ${side}_family "${value(`${side}_family`)}" is not the family "${family}" of ${uo}`);
+        }
+      }
+      const conn = graph?.connections.find((c) => c.edge_id === itemId);
+      if (!conn) throw new Error(`${at}: the item is not a connection of platform ${platform} in modes/builder/platform_graphs.jsonl`);
+      if (!conn.is_material) throw new Error(`${at}: the connection is not material`);
+      if (conn.transfer_mode !== label) throw new Error(`${at}: label "${label}" is not the connection's transfer mode "${conn.transfer_mode}"`);
+      if (conn.uncertain !== uncertain) throw new Error(`${at}: uncertain ${flag} differs from the connection's uncertain ${conn.uncertain}`);
+    }
+    return columns.map((c) => (c === "uncertain" ? Number(flag) : value(c)));
+  });
+  // (h) test items and papers against the task file
+  const splitAt = columns.indexOf("split");
+  const test = out.filter((r) => r[splitAt] === "test");
+  const testPapers = new Set(test.map((r) => String(r[0]).split("/")[0])).size;
+  const taskRel = `${BENCH}/tasks/${task.task_id}.json`;
+  if (test.length !== task.n_test_items) throw new Error(`${file}: ${test.length} test items, but n_test_items is ${task.n_test_items} in ${taskRel}`);
+  if (testPapers !== task.n_test_papers) throw new Error(`${file}: ${testPapers} test papers, but n_test_papers is ${task.n_test_papers} in ${taskRel}`);
+  return { columns: [...columns], rows: out };
+}
+
+function summarise(task: BenchmarkTask, items: BenchmarkItems): BenchmarkSummary {
+  const at = (name: string) => items.columns.indexOf(name);
+  const [splitAt, labelAt, uncertainAt] = [at("split"), at("label"), at("uncertain")];
+  const counts = zeroCounts();
+  const uncertain = zeroCounts();
+  const labels = new Map<string, SplitCounts>();
+  for (const row of items.rows) {
+    const split = row[splitAt] as Split;
+    const label = row[labelAt] as string;
+    counts[split]++;
+    if (row[uncertainAt] === 1) uncertain[split]++;
+    const c = labels.get(label) ?? zeroCounts();
+    c[split]++;
+    labels.set(label, c);
+  }
+  const total = (c: SplitCounts) => c.train + c.test + c.excluded;
+  return {
+    task_id: task.task_id,
+    items: counts,
+    uncertain,
+    labels: [...labels]
+      .map(([label, c]) => ({ label, ...c }))
+      .sort((a, b) => total(b) - total(a) || byString(a.label, b.label)),
+  };
+}
+
+// @MX:NOTE: [AUTO] REQ-003 — the benchmark files are checked against each other, the graphs and the taxonomy here, so
+// a disagreement stops build-data before any file is written
+function buildBenchmark(
+  dir: string,
+  papers: PaperRow[],
+  rows: PlatformRow[],
+  graphs: GraphCore[],
+  classes: TaxonomyJson["classes"],
+): { benchmark: BenchmarkJson; items: BenchmarkItemsJson } {
+  const splitRule = readSplitRule(dir);
+  const split = readSplit(dir, papers);
+  const tasks = readTasks(dir, split.benchmarkId);
+  const reference = readReference(dir, tasks);
+  const ctx: ReleaseContext = {
+    split,
+    platformIds: new Set(rows.map((r) => r.platform_id)),
+    graphs: new Map(graphs.map((g) => [g.platform_id, g])),
+    classKeys: new Set(classes.map((c) => `${c.class_kind}:${c.class}`)),
+    families: new Map(classes.filter((c) => c.class_kind === "unit_operation").map((c) => [c.class, c.family ?? ""])),
+  };
+  const items: BenchmarkItemsJson = {};
+  for (const task of tasks) items[task.task_id] = readItems(dir, task, ctx);
+  const platformOf = (row: (string | number)[]) => String(row[0]).split("/").slice(0, 2).join("/");
+  const perPlatform = tasks.map((t) => {
+    const n = new Map<string, number>();
+    for (const row of items[t.task_id]!.rows) n.set(platformOf(row), (n.get(platformOf(row)) ?? 0) + 1);
+    return n;
+  });
+  return {
+    benchmark: {
+      benchmark_id: split.benchmarkId,
+      split_rule: splitRule,
+      split_counts: split.counts,
+      exclusion_reasons: split.reasons,
+      tasks,
+      summaries: tasks.map((t) => summarise(t, items[t.task_id]!)),
+      platforms: [...rows]
+        .sort((a, b) => byString(a.platform_id, b.platform_id))
+        .map((r) => ({ platform_id: r.platform_id, split: split.splitOf.get(r.paper_id)!, n: perPlatform.map((n) => n.get(r.platform_id) ?? 0) })),
+      reference_results: reference.results,
+      reference_results_text: reference.text,
+    },
+    items,
+  };
 }
 
 // @MX:ANCHOR: [AUTO] deriveAll — single source of the derived JSON; used by build-data, the count check and tests
-// @MX:REASON: every view reads this output; field lists must stay in step with REQ-009 and src/data/types.ts
+// @MX:REASON: every view reads this output; field lists must stay in step with REQ-009, SPEC-BENCH-001 REQ-001/REQ-002
+// and src/data/types.ts
 export function deriveAll(releaseDir: string): Derived {
   const papers = readPapers(releaseDir);
   const graphs = readGraphs(releaseDir);
@@ -568,11 +874,16 @@ export function deriveAll(releaseDir: string): Derived {
     material_connections: connections.filter((c) => c.is_material).length,
     candidates: readCsv(join(releaseDir, "modes/trends/candidates.csv")).length,
   };
+  const index = { release: readRelease(releaseDir), counts, papers, platforms: platformRows };
+  const platformFiles = buildPlatformFiles(papers, graphs, campaigns);
+  const taxonomy = buildTaxonomy(releaseDir, papers, platformRows, graphs);
+  const { benchmark, items } = buildBenchmark(releaseDir, papers, platformRows, graphs, taxonomy.classes);
   return {
-    index: { release: readRelease(releaseDir), counts, papers, platforms: platformRows },
-    platformFiles: buildPlatformFiles(papers, graphs, campaigns),
-    taxonomy: buildTaxonomy(releaseDir, papers, platformRows, graphs),
-    benchmark: buildBenchmark(releaseDir),
+    index,
+    platformFiles,
+    taxonomy,
+    benchmark,
+    benchmarkItems: items,
   };
 }
 
@@ -582,5 +893,6 @@ export function writeDerived(derived: Derived, outDir: string): void {
   write("index.json", derived.index);
   write("taxonomy.json", derived.taxonomy);
   write("benchmark.json", derived.benchmark);
+  write("benchmark-items.json", derived.benchmarkItems);
   for (const [paperId, file] of Object.entries(derived.platformFiles)) write(`platforms/${paperId}.json`, file);
 }

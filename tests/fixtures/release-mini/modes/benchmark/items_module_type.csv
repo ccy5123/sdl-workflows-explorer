@@ -1,0 +1,6 @@
+task_id,item_id,paper_id,platform_id,split,label,field_tag,unit_operation,prev_unit_operation,next_unit_operation,from_unit_operation,to_unit_operation,from_family,to_family,uncertain
+mini-module_type,PaperA2024/P1/S1,PaperA2024,PaperA2024/P1,train,fluidics,chem,dispense_liquid,START,analyze_data,,,,,0
+mini-module_type,PaperA2024/P1/S2,PaperA2024,PaperA2024/P1,train,software,chem,analyze_data,dispense_liquid,END,,,,,1
+mini-module_type,PaperA2024/P2/S1,PaperA2024,PaperA2024/P2,train,fluidics,chem,dispense_liquid,START,measure_optical,,,,,0
+mini-module_type,PaperA2024/P2/S2,PaperA2024,PaperA2024/P2,train,robot_arm,chem,measure_optical,dispense_liquid,analyze_data,,,,,0
+mini-module_type,PaperB2025/P1/S1,PaperB2025,PaperB2025/P1,test,software,chem,analyze_data,START,END,,,,,0
