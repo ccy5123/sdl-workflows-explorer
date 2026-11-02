@@ -55,6 +55,14 @@
   and `num` on numeric cells (Browse via `Col.num`, Compare, CountTable, Home); `overflow-wrap: normal` in taxonomy
   and benchmark table cells; skip link, `main#main`, `aria-current`, `document.title` via `routeTitle`. Full Vitest
   33 files / 516 passed; full Playwright 152 passed (86 + 66); typecheck exit 0.
+- M5 Pages readiness: `tests/pages.test.ts` (AC-11, AC-14 configuration) and `e2e/pages.spec.ts` (AC-14) written first.
+  RED: pages.test 6 failed (base was `./` in every mode, no second preview server, no `pages.yml`). `e2e/pages.spec.ts`
+  had no separate RED run (its server and `dist-pages/` did not exist until the configuration was written) — gap.
+  GREEN after `vite.config.ts` (base per mode), `playwright.config.ts` (two preview servers, each pinned with
+  `--mode`), the `e2e` script, `.gitignore` `dist-pages/`, `.github/workflows/pages.yml` (`workflow_dispatch` only) and
+  `docs/deploy.md`: pages.test 6 passed; `dist-pages/index.html` loads `/sdl-workflows-explorer/assets/index-*.js`;
+  `npm run e2e` exit 0, 161 passed (152 + 9); full Vitest 34 files / 522 passed; typecheck exit 0. Also removed a JSX
+  comment left in `Benchmark.tsx` by M4.
 - Baseline re-measured 2026-11-02 at 69d2dc7: `npx tsc --noEmit` exit 0; `npx vitest run` 28 files, 459 passed;
   `npm run e2e` 68 passed.
 - Derived-file hashes at 69d2dc7 (`sha256sum` of `public/data/` after build-data; AC-1):

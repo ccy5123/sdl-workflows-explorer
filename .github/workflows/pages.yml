@@ -1,0 +1,49 @@
+# Builds the site from the data release pinned in release.config.json (downloaded from Zenodo and checked against
+# its SHA-256 and MANIFEST.sha256) and deploys it to GitHub Pages at
+# https://ccy5123.github.io/sdl-workflows-explorer/. Started by hand only; see docs/deploy.md for when and how.
+name: Deploy to GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Fetch and verify the data release
+        run: npm run fetch-release
+      - name: Derive the site data
+        run: npm run build-data
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build the site under /sdl-workflows-explorer/
+        run: npx vite build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

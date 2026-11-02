@@ -11,7 +11,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "e2e": "vite build --mode e2e --outDir dist-e2e && playwright test"
+    "e2e": "vite build --mode e2e --outDir dist-e2e && vite build --outDir dist-pages && playwright test"
   },
   "dependencies": {
     "@observablehq/plot": "0.6.17",

@@ -247,5 +247,7 @@ coverage/
 
 # SPEC-VIEW-001: e2e build and Playwright output
 dist-e2e/
+# SPEC-SITE-001: production build served under the Pages base by Playwright
+dist-pages/
 test-results/
 playwright-report/
