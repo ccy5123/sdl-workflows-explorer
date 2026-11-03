@@ -243,12 +243,14 @@ export const SECTION_HEADINGS = {
 
 export const SPLIT_LABELS: Readonly<Record<Split, string>> = { train: "Train", test: "Test", excluded: "Excluded" };
 
-const TASK_WORDS: Record<BenchmarkTarget, { title: string; unit: string }> = {
-  module_type: { title: "Primary module type of a step", unit: "step" },
-  transfer_mode: { title: "Transfer mode of a material connection", unit: "material connection" },
+const TASK_WORDS: Record<BenchmarkTarget, { title: string; short: string; unit: string }> = {
+  module_type: { title: "Primary module type of a step", short: "Module type", unit: "step" },
+  transfer_mode: { title: "Transfer mode of a material connection", short: "Transfer mode", unit: "material connection" },
 };
 
 export const taskTitle = (target: BenchmarkTarget): string => TASK_WORDS[target].title;
+/** Column head of a task's item counts, by the task's target ("Module type items"); the task id stays in `title`. */
+export const taskItemsHead = (target: BenchmarkTarget): string => `${TASK_WORDS[target].short} items`;
 export const itemUnit = (target: BenchmarkTarget): string => TASK_WORDS[target].unit;
 
 /** Caption under the page heading (REQ-016). */

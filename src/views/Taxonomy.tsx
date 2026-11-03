@@ -4,6 +4,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HowItWorks } from "../components/HowItWorks";
 import { IssueLink } from "../components/IssueLink";
+import { Label } from "../components/Label";
 import { Loading } from "../components/Loading";
 import { loadJsonOnce } from "../components/useJson";
 import type { IndexJson, TaxonomyClass, TaxonomyJson, TaxonomySource } from "../data/types";
@@ -58,7 +59,18 @@ function Reference({ source }: { source: TaxonomySource }) {
   );
 }
 
-function Section({ title, level = 2, children }: { title: string; level?: 2 | 3; children: ReactNode }) {
+/** `title` names the section (and its heading id); `heading`, when given, is what the heading shows instead. */
+function Section({
+  title,
+  heading,
+  level = 2,
+  children,
+}: {
+  title: string;
+  heading?: ReactNode;
+  level?: 2 | 3;
+  children: ReactNode;
+}) {
   const id = headingId(title);
   const Heading = level === 2 ? "h2" : "h3";
   return (
@@ -66,7 +78,7 @@ function Section({ title, level = 2, children }: { title: string; level?: 2 | 3;
     <section aria-labelledby={id} className={level === 2 ? "card panel" : undefined}>
       {/* tabIndex -1: the jump list moves focus to a kind's heading. */}
       <Heading id={id} tabIndex={-1}>
-        {title}
+        {heading ?? title}
       </Heading>
       {children}
     </section>
@@ -162,7 +174,16 @@ function Overview({ data, source }: { data: TaxonomyJson; source: string | undef
         <Section key={kind} title={kindHeading(kind)}>
           {kind === "unit_operation" ? (
             familyGroups(classes).map((g) => (
-              <Section key={g.family} title={`Family: ${g.family}`} level={3}>
+              <Section
+                key={g.family}
+                title={`Family: ${g.family}`}
+                heading={
+                  <>
+                    Family: <Label kind="family" code={g.family} />
+                  </>
+                }
+                level={3}
+              >
                 <ClassTable classes={g.classes} />
               </Section>
             ))
@@ -273,7 +294,9 @@ function ClassPage({ cls, data, index }: { cls: TaxonomyClass; data: TaxonomyJso
         {cls.class_kind === "unit_operation" && cls.family !== null && (
           <>
             <dt>Family</dt>
-            <dd>{cls.family}</dd>
+            <dd>
+              <Label kind="family" code={cls.family} />
+            </dd>
           </>
         )}
       </dl>

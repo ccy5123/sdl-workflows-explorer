@@ -134,7 +134,7 @@ function StepDetail({
         <div className="wf-entry">
           {step.kind === "missing" && (
             <p className="wf-missing">
-              No single-step duration is recorded for {step.uo}. Enter a duration for step {i} to get a cycle time.
+              No single-step duration is recorded for <Label kind="unit_operation" code={step.uo} inText />. Enter a duration for step {i} to get a cycle time.
             </p>
           )}
           <CommitField
@@ -169,7 +169,14 @@ function StepDetail({
           <ul>
             {offers.map((d) => (
               <li key={d.step_id}>
-                Steps {i} to {i + d.joint!.step_ids.length - 1} ({d.joint!.unit_operations.join(" → ")}): {valueText(d)} per run,{" "}
+                Steps {i} to {i + d.joint!.step_ids.length - 1} (
+                {d.joint!.unit_operations.map((uo, k) => (
+                  <span key={k}>
+                    {k > 0 && " → "}
+                    <Label kind="unit_operation" code={uo} inText />
+                  </span>
+                ))}
+                ): {valueText(d)} per run,{" "}
                 <a href={platformHash(d.platform_id)}>{d.platform_id}</a>,{" "}
                 <a href={`https://doi.org/${d.doi}`}>doi:{d.doi}</a>, {d.evidence.doc}
                 {d.evidence.page !== null ? ` p. ${d.evidence.page}` : ""}
@@ -238,7 +245,9 @@ export function CycleRange({
             {result.steps.map((x) => (
               <tr key={x.step}>
                 <td className="num">{x.step}</td>
-                <td>{x.uo}</td>
+                <td>
+                  <Label kind="unit_operation" code={x.uo} />
+                </td>
                 <td className={x.kind === "entered" ? "wf-entered" : undefined}>{SOURCE_LABELS[x.kind]}</td>
                 <td className="num">{x.recorded.length}</td>
                 <td className="num">{x.used.length}</td>
@@ -265,7 +274,12 @@ export function CycleRange({
       <div className="wf-result" data-result="range">
         {cycle === null ? (
           <p className="wf-missing">
-            No cycle time yet: {result.missing.map((i) => `step ${i} (${state.steps[i - 1]!.uo})`).join(", ")}{" "}
+            No cycle time yet:{" "}
+            {result.missing.map((i, k) => (
+              <span key={i}>
+                {k > 0 && ", "}step {i} (<Label kind="unit_operation" code={state.steps[i - 1]!.uo} inText />)
+              </span>
+            ))}{" "}
             {result.missing.length > 1 ? "have" : "has"} no recorded duration and no value entered. Enter a duration for{" "}
             {result.missing.length > 1 ? "them" : "it"} below.
           </p>

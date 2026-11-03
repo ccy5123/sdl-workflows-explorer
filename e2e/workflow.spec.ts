@@ -127,7 +127,7 @@ test("AC-11, AC-12: missing duration, entered value, distributions, sources and 
   await page.goto("/#/workflow?s=dispense_solid~1&m=solid_dispenser");
   const m = main(page);
   const result = m.locator('[data-result="range"]');
-  await expect(result).toContainText("No cycle time yet: step 1 (dispense_solid) has no recorded duration");
+  await expect(result).toContainText("No cycle time yet: step 1 (Dispense solid) has no recorded duration");
   await expect(result.locator('[data-value="cycle"]')).toHaveCount(0);
   await fill(page, "Your duration for step 1, seconds (empty: use the recorded values)", "120");
   await expect(result.locator('[data-value="cycle"]')).toHaveText("2 min");

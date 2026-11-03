@@ -30,7 +30,8 @@ import {
   SIM_RULES,
   UTILIZATION_TEXT,
 } from "../lib/workflowText";
-import { rowName, Timeline, TIMELINE_LIMIT } from "./Timeline";
+import { Label } from "./Label";
+import { rowLabel, rowName, Timeline, TIMELINE_LIMIT } from "./Timeline";
 import { CommitField } from "./WorkflowEditor";
 
 function Choice({
@@ -221,7 +222,7 @@ export function SimulationPanel({
                 {Object.entries(current.utilization).map(([m, u]) => (
                   <tr key={m}>
                     <td>
-                      {m} ({state.modules[Number(m) - 1]!.type})
+                      {m} (<Label kind="module_type" code={state.modules[Number(m) - 1]!.type} inText />)
                     </td>
                     <td className="num">{state.modules[Number(m) - 1]!.devices}</td>
                     <td className="num">
@@ -244,7 +245,7 @@ export function SimulationPanel({
                 {Object.entries(current.waiting).map(([step, w]) => (
                   <tr key={step}>
                     <td>
-                      {step} ({state.steps[Number(step) - 1]!.uo})
+                      {step} (<Label kind="unit_operation" code={state.steps[Number(step) - 1]!.uo} inText />)
                     </td>
                     <td className="num">{formatDuration(w)}</td>
                   </tr>
@@ -254,8 +255,15 @@ export function SimulationPanel({
           </div>
           <p data-value="bottleneck">
             {BOTTLENECK_TEXT}{" "}
-            {current.bottleneck &&
-              `Step ${current.bottleneck.step} (${state.steps[current.bottleneck.step - 1]!.uo}) on module ${current.bottleneck.module} (${state.modules[current.bottleneck.module - 1]!.type}), ${pct(current.bottleneck.utilization)}.`}
+            {current.bottleneck && (
+              <>
+                Step {current.bottleneck.step} (
+                <Label kind="unit_operation" code={state.steps[current.bottleneck.step - 1]!.uo} inText />) on module{" "}
+                {current.bottleneck.module} (
+                <Label kind="module_type" code={state.modules[current.bottleneck.module - 1]!.type} inText />),{" "}
+                {pct(current.bottleneck.utilization)}.
+              </>
+            )}
           </p>
           <h3>Timeline of run 1</h3>
           <p className="table-note">{GANTT_TEXT}</p>
@@ -293,7 +301,7 @@ function EventTable({ state, summary }: { state: WorkflowState; summary: SimSumm
                   <tr key={k}>
                     <td className="num">{e.batch}</td>
                     <td>{e.kind === "step" ? `step ${e.step}` : `transfer after step ${e.step}`}</td>
-                    <td>{rowName(state, e) ?? "none"}</td>
+                    <td title={rowName(state, e) ?? undefined}>{rowLabel(state, e) ?? "none"}</td>
                     <td className="num">{formatNumber(e.start)}</td>
                     <td className="num">{formatNumber(e.end)}</td>
                     <td className="num">{formatNumber(e.waited)}</td>

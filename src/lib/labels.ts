@@ -49,6 +49,10 @@ const OVERRIDES: Record<string, Record<string, string>> = {
     robot_arm_gantry: "Robot arm / gantry",
     unmapped: "Other transfer (unmapped)",
   },
+  // Unit-operation families (taxonomy.json `family`).
+  family: {
+    unmapped: "Other family (unmapped)",
+  },
 };
 
 /** Readable name of `code` in the vocabulary `kind` (field_tag, module_type, unit_operation, transfer_mode, …). */

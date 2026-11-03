@@ -12,6 +12,12 @@ function trackErrors(page: Page): string[] {
 
 const MT = "chrono2023-module_type";
 const TM = "chrono2023-transfer_mode";
+// Readable task names, from each task's target; the id shows beside or under them (SPEC-UI-001 phase 6).
+const MT_NAME = "Primary module type of a step";
+const TM_NAME = "Transfer mode of a material connection";
+// A task cell holds the readable name and the id under it, so its text is the two joined.
+const MT_CELL = `${MT_NAME}${MT}`;
+const TM_CELL = `${TM_NAME}${TM}`;
 const REFERENCE_TEXT = readFileSync(
   join(PINNED_RELEASE_DIR, "modes", "benchmark", "reference_results.json"),
   "utf8",
@@ -57,8 +63,8 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
     "h1:Benchmark chrono2023",
     `p:${CAPTION}`,
     "table:Split",
-    `h2:${MT}`,
-    `h2:${TM}`,
+    `h2:${MT_NAME}`,
+    `h2:${TM_NAME}`,
     "h2:Reference results",
     "h2:Run the evaluation yourself",
     "h2:Items by platform",
@@ -74,13 +80,13 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
   await expect(page.getByText(`Excluded: 4 papers, ${pinnedExclusionReason()}.`, { exact: true })).toBeVisible();
 
   for (const [task, title, unit, rule, inputs, labels, sentence] of [
-    [MT, "Primary module type of a step", "step", MT_RULE, MT_INPUTS, 22,
+    [MT, MT_NAME, "step", MT_RULE, MT_INPUTS, 22,
       "22 labels occur among the items of this task. Items marked uncertain in the release: 171 train, 163 test, 6 excluded."],
-    [TM, "Transfer mode of a material connection", "material connection", TM_RULE, TM_INPUTS, 5,
+    [TM, TM_NAME, "material connection", TM_RULE, TM_INPUTS, 5,
       "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 1 excluded."],
   ] as const) {
-    const section = region(page, task);
-    await expect(section.locator("p.caption")).toHaveText(title);
+    const section = region(page, title);
+    await expect(section.locator(".bench-task-id code")).toHaveText(task);
     await expect(section.locator("dt")).toHaveText(["Unit of an item", "Which items", "Inputs"]);
     await expect(section.locator("dd")).toHaveText([unit, rule, inputs]);
     await expect(section.locator("tbody tr")).toHaveCount(labels);
@@ -89,8 +95,8 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
 
   const reference = region(page, "Reference results");
   expect(await cellTexts(page, 'section[aria-labelledby="bench-reference-results"] table:first-of-type tbody tr')).toEqual([
-    [MT, "1189 (98)", "0.6669", "0.6863", "+0.0193", "[-0.0111, +0.0530]", "2000"],
-    [TM, "424 (92)", "0.4410", "0.5118", "+0.0708", "[+0.0163, +0.1253]", "2000"],
+    [MT_CELL, "1189 (98)", "0.6669", "0.6863", "+0.0193", "[-0.0111, +0.0530]", "2000"],
+    [TM_CELL, "424 (92)", "0.4410", "0.5118", "+0.0708", "[+0.0163, +0.1253]", "2000"],
   ]);
   await expect(
     reference.getByText(
@@ -126,7 +132,7 @@ test("AC-11: label, platform and count links", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/benchmark");
   await expect(h1(page, "Benchmark chrono2023")).toBeVisible();
-  await region(page, TM).getByRole("link", { name: "Mobile robot (mobile_robot)", exact: true }).click();
+  await region(page, TM_NAME).getByRole("link", { name: "Mobile robot (mobile_robot)", exact: true }).click();
   expect(await hash(page)).toBe("#/taxonomy/transfer_mode/mobile_robot");
   await expect(h1(page, "Mobile robot")).toBeVisible();
   await page.goBack();
@@ -135,17 +141,17 @@ test("AC-11: label, platform and count links", async ({ page }) => {
   expect(await hash(page)).toBe("#/platform/Aand2024/P1");
   await page.goBack();
 
-  await labelRow(page, TM, "mobile_robot").locator('td[data-label="Test"] a').click();
+  await labelRow(page, TM_NAME, "mobile_robot").locator('td[data-label="Test"] a').click();
   await expect(page.locator(".benchmark h1")).toHaveText("Benchmark items");
   await expect(countLine(page)).toHaveText("29 of 981 items");
   await page.goBack();
 
-  await platformRow(page, "Aand2024/P1").locator(`td[data-label="${MT} items"] a`).click();
+  await platformRow(page, "Aand2024/P1").locator('td[data-label="Module type items"] a').click();
   await expect(countLine(page)).toHaveText("6 of 2610 items");
   await page.goBack();
 
   await page.locator('table[aria-label="Split"] tbody tr', { has: page.locator("td", { hasText: /^excluded$/ }) })
-    .locator(`td[data-label="${MT} items"] a`)
+    .locator('td[data-label="Module type items"] a')
     .click();
   await expect(countLine(page)).toHaveText("38 of 2610 items");
   expect(errors).toEqual([]);
@@ -395,8 +401,8 @@ test("AC-10 (0.4.0): reference results show one metric line and a Task | Baselin
   await expect(models.locator("thead th")).toHaveText(["Task", "Baseline", "Reference model"]);
   await expect(models.locator("tbody tr")).toHaveCount(2);
   const cells = async (i: number) => models.locator("tbody tr").nth(i).locator("td").allTextContents();
-  expect(await cells(0)).toEqual([MT, mt.baseline_rule, mt.reference_model.replace(" (sdl-db-02 H1)", "")]);
-  expect(await cells(1)).toEqual([TM, tm.baseline_rule, tm.reference_model.replace(" (sdl-db-02 H1)", "")]);
+  expect(await cells(0)).toEqual([MT_CELL, mt.baseline_rule, mt.reference_model.replace(" (sdl-db-02 H1)", "")]);
+  expect(await cells(1)).toEqual([TM_CELL, tm.baseline_rule, tm.reference_model.replace(" (sdl-db-02 H1)", "")]);
   expect(await page.locator("main").textContent()).not.toContain("sdl-db-");
   expect(errors).toEqual([]);
 });

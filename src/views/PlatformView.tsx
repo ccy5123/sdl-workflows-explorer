@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type Key
 import { EvidencePanel } from "../components/EvidencePanel";
 import { Graph } from "../components/Graph";
 import { Header } from "../components/Header";
+import { Label } from "../components/Label";
 import { StepList } from "../components/StepList";
 import type { IndexJson, PlatformFile, PlatformGraph } from "../data/types";
 import { formatEvidence } from "../lib/evidence";
@@ -154,7 +155,9 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
                   <td>
                     <code>{m.module_id}</code>
                   </td>
-                  <td>{m.module_type}</td>
+                  <td>
+                    <Label kind="module_type" code={m.module_type} />
+                  </td>
                   <td>{m.name_in_paper ?? "—"}</td>
                   <td>{yesNo(m.on_platform)}</td>
                 </tr>
@@ -195,7 +198,9 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
                   <td>
                     <code>{c.to_module}</code>
                   </td>
-                  <td>{c.transfer_mode}</td>
+                  <td>
+                    <Label kind="transfer_mode" code={c.transfer_mode} />
+                  </td>
                   <td>{yesNo(c.stated)}</td>
                   <td>{c.uncertain ? "yes ?" : "no"}</td>
                 </tr>

@@ -23,8 +23,8 @@ export const rowName = (s: WorkflowState, e: SimEvent): string | null => {
   return null;
 };
 
-/** Row label drawn in the chart: the device's module type by its readable name (SPEC-UI-001 phase 5). */
-const rowLabel = (s: WorkflowState, e: SimEvent): string | null => {
+/** Row label drawn in the chart and the event table: the device's module type by its readable name (SPEC-UI-001 phase 5). */
+export const rowLabel = (s: WorkflowState, e: SimEvent): string | null => {
   if (e.module !== null) return `Module ${e.module} (${displayLabel("module_type", s.modules[e.module - 1]!.type)}), device ${e.device}`;
   return rowName(s, e);
 };

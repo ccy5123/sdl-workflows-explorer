@@ -121,10 +121,13 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   await expect(region(page, "Field tags").locator("tbody tr", { has: link(page, "Catalysis") })).toContainText("23 papers");
   const families = region(page, "Unit operations").getByRole("heading", { level: 3 });
   await expect(families).toHaveText([
-    "Family: analyze", "Family: form", "Family: handle", "Family: measure", "Family: mix",
-    "Family: plan", "Family: prepare", "Family: react", "Family: separate", "Family: unmapped",
+    "Family: Analyze (analyze)", "Family: Form (form)", "Family: Handle (handle)", "Family: Measure (measure)",
+    "Family: Mix (mix)", "Family: Plan (plan)", "Family: Prepare (prepare)", "Family: React (react)",
+    "Family: Separate (separate)", "Family: Other family (unmapped) (unmapped)",
   ]);
-  await expect(region(page, "Family: mix").locator("tbody tr td:first-child .taxo-code")).toHaveText(["mix", "sonicate"]);
+  // Family names read as words; the code stays in the label's title (SPEC-UI-001 phase 6).
+  await expect(families.first().locator(".label")).toHaveAttribute("title", "analyze");
+  await expect(region(page, "Family: Mix (mix)").locator("tbody tr td:first-child .taxo-code")).toHaveText(["mix", "sonicate"]);
   expect(errors).toEqual([]);
 });
 

@@ -1691,6 +1691,8 @@ table.data td > code {
 /* Tables */
 .table-scroll {
   overflow-x: auto;
+  /* Holds the visually hidden codes of <Label> inside the scroll box (they are absolutely placed). */
+  position: relative;
 }
 
 table.data {
@@ -2905,6 +2907,24 @@ table.count-table a {
   font-weight: var(--th-weight);
 }
 
+/* A benchmark task by its readable name, the task id under it as secondary text (SPEC-UI-001 phase 6). */
+.bench-task-name {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bench-task-code {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.bench-task-id {
+  margin: -0.25rem 0 0.75rem;
+}
+
 .taxo-table td.num,
 .bench-table td.num {
   white-space: nowrap;
@@ -3052,6 +3072,8 @@ table.count-table a {
 
 .bench-control {
   margin: 0;
+  /* The task select reads "Name (id)" and is wider than a phone; the label caps it at the row. */
+  max-width: 100%;
 }
 
 .bench-control select {

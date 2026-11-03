@@ -40,6 +40,7 @@ import {
   platformsCountLine,
   referenceRow,
   splitTable,
+  taskItemsHead,
   taskTitle,
   uncertainSentence,
   type CountCell,
@@ -67,13 +68,43 @@ const loadItems = () => (itemsRequest ??= getJson<BenchmarkItemsJson>("data/benc
 const DASH = "—";
 const headingId = (text: string) => `bench-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
-function Section({ title, card = true, children }: { title: string; card?: boolean; children: ReactNode }) {
+/** A card section; `code` (a task id) shows beside the heading as secondary text, outside the heading's name. */
+function Section({ title, code, card = true, children }: { title: string; code?: string; card?: boolean; children: ReactNode }) {
   const id = headingId(title);
   return (
     <section aria-labelledby={id} className={card ? "card panel" : undefined}>
       <h2 id={id}>{title}</h2>
+      {code && (
+        <p className="bench-task-id">
+          <code className="chip mono">{code}</code>
+        </p>
+      )}
       {children}
     </section>
+  );
+}
+
+/** A task by its readable name, the task id under it (SPEC-UI-001 phase 6). */
+function TaskName({ task }: { task: BenchmarkJson["tasks"][number] }) {
+  return (
+    <span className="bench-task-name" title={task.task_id}>
+      {taskTitle(task.target)}
+      <code className="bench-task-code">
+        <Breakable text={task.task_id} />
+      </code>
+    </span>
+  );
+}
+
+/** Head of a task's item-count column: "Module type items", the task id in `title` and as secondary text. */
+function ItemsHead({ task }: { task: BenchmarkJson["tasks"][number] }) {
+  return (
+    <span className="bench-task-name" title={task.task_id}>
+      {taskItemsHead(task.target)}
+      <code className="bench-task-code">
+        <Breakable text={task.task_id} />
+      </code>
+    </span>
   );
 }
 
@@ -109,15 +140,16 @@ function Count({ cell, label }: { cell: CountCell; label: string }) {
 function SplitTable({ data }: { data: BenchmarkJson }) {
   const table = splitTable(data);
   const taskIds = data.tasks.map((t) => t.task_id);
+  const heads = data.tasks.map((t) => taskItemsHead(t.target));
   return (
     <table className="bench-table" aria-label="Split">
       <thead>
         <tr>
           <th scope="col">Split</th>
           <th scope="col">Papers</th>
-          {taskIds.map((id) => (
-            <th scope="col" key={id}>
-              <Breakable text={`${id} items`} />
+          {data.tasks.map((t) => (
+            <th scope="col" key={t.task_id}>
+              <ItemsHead task={t} />
             </th>
           ))}
         </tr>
@@ -130,7 +162,7 @@ function SplitTable({ data }: { data: BenchmarkJson }) {
               {r.papers}
             </td>
             {r.cells.map((c, i) => (
-              <Count key={taskIds[i]} cell={c} label={`${taskIds[i]} items`} />
+              <Count key={taskIds[i]} cell={c} label={heads[i]!} />
             ))}
           </tr>
         ))}
@@ -140,7 +172,7 @@ function SplitTable({ data }: { data: BenchmarkJson }) {
             {table.total.papers}
           </td>
           {table.total.cells.map((c, i) => (
-            <Count key={taskIds[i]} cell={c} label={`${taskIds[i]} items`} />
+            <Count key={taskIds[i]} cell={c} label={heads[i]!} />
           ))}
         </tr>
       </tbody>
@@ -152,8 +184,7 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
   const task = data.tasks[index]!;
   const summary = data.summaries[index]!;
   return (
-    <Section title={task.task_id}>
-      <p className="caption">{taskTitle(task.target)}</p>
+    <Section title={taskTitle(task.target)} code={task.task_id}>
       <dl className="taxo-facts card">
         <dt>Unit of an item</dt>
         <dd>{itemUnit(task.target)}</dd>
@@ -209,6 +240,8 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
         </thead>
         <tbody>
           {Object.values(data.reference_results).map((r) => {
+            const known = data.tasks.find((t) => t.task_id === r.task_id);
+            const taskCell = (text: string) => (known ? <TaskName task={known} /> : <Breakable text={text} />);
             const row = referenceRow(r);
             const cells = [row.task, row.testItems, row.baseline, row.reference, row.difference, row.interval, row.replicates];
             return (
@@ -216,7 +249,7 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
                 {cells.map((text, i) => (
                   <td key={REFERENCE_HEADS[i]} data-label={REFERENCE_HEADS[i]} className={i > 0 ? "num" : undefined}>
                     {/* Statistics and their counts in Latin Modern, numbers upright (SPEC-UI-001 REQ-003). */}
-                    {i === 0 ? <Breakable text={text} /> : <span className="math">{text}</span>}
+                    {i === 0 ? taskCell(text) : <span className="math">{text}</span>}
                   </td>
                 ))}
               </tr>
@@ -240,7 +273,7 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
           {modelRows(data.tasks).map((m) => (
             <tr key={m.task}>
               <td data-label={MODEL_HEADS[0]}>
-                <Breakable text={m.task} />
+                <TaskName task={data.tasks.find((t) => t.task_id === m.task)!} />
               </td>
               <td data-label={MODEL_HEADS[1]}>{m.baseline}</td>
               <td data-label={MODEL_HEADS[2]}>{m.referenceModel}</td>
@@ -308,9 +341,9 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
             <th scope="col">Platform</th>
             <th scope="col">Name</th>
             <th scope="col">Split</th>
-            {taskIds.map((id) => (
-              <th scope="col" key={id}>
-                <Breakable text={`${id} items`} />
+            {data.tasks.map((t) => (
+              <th scope="col" key={t.task_id}>
+                <ItemsHead task={t} />
               </th>
             ))}
           </tr>
@@ -326,7 +359,7 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
               <td data-label="Name">{names.get(r.platform_id) ?? DASH}</td>
               <td data-label="Split">{r.split}</td>
               {r.cells.map((c, i) => (
-                <Count key={taskIds[i]} cell={c} label={`${taskIds[i]} items`} />
+                <Count key={taskIds[i]} cell={c} label={taskItemsHead(data.tasks[i]!.target)} />
               ))}
             </tr>
           ))}
@@ -408,8 +441,8 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
           Task{" "}
           <select value={state.task} onChange={(e) => apply({ ...state, task: e.target.value, label: null })}>
             {data.tasks.map((t) => (
-              <option key={t.task_id} value={t.task_id}>
-                {t.task_id}
+              <option key={t.task_id} value={t.task_id} title={t.task_id}>
+                {taskTitle(t.target)} ({t.task_id})
               </option>
             ))}
           </select>
@@ -469,6 +502,8 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
                     <td key={columns[i]!.head} data-label={columns[i]!.head}>
                       {cell.href ? (
                         <a href={cell.href}>{linkedLabel(cell.href, cell.text)}</a>
+                      ) : columns[i]!.source.endsWith("_family") && cell.text !== "" ? (
+                        <Label kind="family" code={cell.text} />
                       ) : (
                         <Breakable text={cell.text} />
                       )}
