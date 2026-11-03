@@ -88,6 +88,21 @@
   Browser check: `Aand2024/P1` 1440 px light with the sheet open (whole chain in view), dark after closing (refit).
   Final: `npm test` 682 passed; `npm run typecheck` exit 0; `npm run e2e` 224 passed (2.3 min).
 
+- Phase 4, Browse and Trends filters (REQ-025 to REQ-027). RED: `tests/filterLabels.test.ts` — "Failed to load url
+  ../src/lib/filterLabels"; `npx playwright test e2e/filters.spec.ts` — 8 failed. GREEN after `lib/filterLabels.ts`
+  (groups, option labels, pills), `FilterPanel.tsx` rewritten as the bar (own popover on the site menu's pattern; Radix
+  not added), `Browse.tsx` and `Trends.tsx` (bar above the results, no sidebar or toggle, "Show codes"), `DataTable.tsx`
+  (toolbar slot, `Truncated`, sticky-header box) and the filter, segmented and table styles. Found on the way: at
+  375 px Browse scrolled sideways (964 px) because the visually hidden codes of `<Label>` in table cells are absolutely
+  placed and escaped the table box's clipping; the box is now `position: relative`. The segmented radios first had
+  `pointer-events: none`, which Playwright's `check()` could not reach; they now cover their segment, transparent.
+  Ten existing Browse and Trends tests changed (listed in acceptance.md AC-25 to AC-27).
+  Browser check: Browse at 1440 px light (Module types popover open) and dark (pills, segments, sticky table), Trends
+  at 1440 px light (Split by segments) and 375 px dark (bar wraps), Browse at 375 px light (Unit operations popover
+  8–367 px); no sideways scroll. After the check, codes in popovers were kept on one line (max width 440 px).
+  Final: `npm test` 689 passed; `npm run typecheck` exit 0; `npm run e2e` 232 passed (3.1 min); after the last CSS
+  change, filters, browse, trends and a11y specs 115 passed and the table and token unit tests 12 passed.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

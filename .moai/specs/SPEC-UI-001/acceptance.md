@@ -126,6 +126,28 @@ progress.md.
 - Test change: graph elements are now selected by a real mouse click where they are drawn (`tapElement`) instead of
   a scripted `emit("tap")`, which crashed renderers when several tests ran at once (viewer UI AC-16, AC-19, AC-20).
 
+### AC-25 to AC-27 Browse and Trends filters (REQ-025 to REQ-027), `e2e/filters.spec.ts`, `tests/filterLabels.test.ts`
+- AC-25 (unit): `FILTER_GROUPS` lists the seven groups in bar order; `optionLabel` gives readable names with codes
+  ("Chemistry synthesis", `chemistry_synthesis`) and the autonomy texts without a code; `filterPills` lists the year
+  range, the values in group order and the search, and each pill's `remove` clears only its own filter.
+- AC-25 (e2e): at 1440 px Browse shows the seven popover buttons closed, no visible checkbox, the search and year
+  fields, no "Clear all", a bar under 140 px high and no sideways scroll. Checking "Catalysis (catalysis)" in the Field
+  tag popover (inside the window) makes the button "Field tag · 1" and the hash `#/browse?field=catalysis`; Escape
+  closes it with focus on the button; the pill's "Remove Field tag: Catalysis" removes the filter. With four filters
+  in the URL there are four pills; opening a second popover closes the first; a click outside closes it; "Clear all"
+  returns `#/browse?view=platforms` with empty fields. At 375 px no sideways scroll, and the Field tag, Unit operations
+  and Transfer modes popovers stay inside the window. Trends writes `#/trends?field=catalysis` the same way.
+- AC-26: "Split by" has six radios on one row in a flex box; clicking a segment checks its radio and marks the segment;
+  ArrowRight moves the choice and focus.
+- AC-27: scrolling the papers table box by 600 px keeps the header row at its top; the row under the pointer changes
+  colour; every cut title has its full text in `title`; on `Aand2024/P1`'s row the field tag reads "Chemistry
+  synthesis" (code in `title`) and "chemistry_synthesis" after "Show codes".
+- Changed existing tests (filters now sit in popovers; "Clear filters" is "Clear all"; the toggle is gone):
+  `e2e/browse.spec.ts` AC-9, AC-10 (Clear all), AC-11, the two layout follow-ups (now: bar above results at 1280 px,
+  bar wraps at 375 px) and SPEC-TAXO-001 AC-14 (button order and popover contents instead of legend order);
+  `e2e/trends.spec.ts` AC-10 (bar above the chart, pills, no toggle) and SPEC-TAXO-001 AC-8/AC-14. They open a
+  popover before reading or checking an option, and press Escape before clicking outside it.
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

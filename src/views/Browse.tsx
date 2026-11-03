@@ -1,13 +1,15 @@
 // Browser: filtered paper and platform tables with a shareable URL, and the comparison selection (REQ-003 to REQ-013).
-import { useEffect, useMemo, useState } from "react";
+// The filter bar sits above the results (SPEC-UI-001 REQ-025); coded columns show readable names unless "Show codes"
+// is pressed, and long titles and names are cut to one line with the full text in a tooltip (REQ-027).
+import { Fragment, useEffect, useMemo, useState } from "react";
 import type { IndexJson, PaperRow, PlatformRow } from "../data/types";
-import { DataTable, type Col } from "../components/DataTable";
+import { DataTable, Truncated, type Col } from "../components/DataTable";
 import { FilterPanel } from "../components/FilterPanel";
+import { Label } from "../components/Label";
 import { show } from "../lib/evidence";
 import { matchingPapers, matchingPlatforms } from "../lib/filterApply";
 import {
   PAPER_TABLE_NOTE,
-  activeFilterCount,
   clearFilters,
   offeredValues,
   yearsFromInputs,
@@ -22,11 +24,19 @@ import { trendsHash } from "../lib/trends";
 const paperId = (p: PaperRow) => p.paper_id;
 const platformId = (l: PlatformRow) => l.platform_id;
 const joined = (xs: readonly string[]) => xs.join(", ");
-const listCell = (xs: readonly string[]) => (xs.length ? joined(xs) : show(null));
+/** Vocabulary codes of a cell: readable names (code in each title), or the codes themselves when asked for. */
+function codeCell(kind: string, xs: readonly string[], codes: boolean) {
+  if (!xs.length) return show(null);
+  if (codes) return joined(xs);
+  return xs.map((x, i) => (
+    <Fragment key={x}>
+      {i > 0 && ", "}
+      <Label kind={kind} code={x} />
+    </Fragment>
+  ));
+}
 const yearText = (years: YearRange) => ({ from: years.from?.toString() ?? "", to: years.to?.toString() ?? "" });
 const suffixNumber = (platformId: string) => Number(platformId.slice(platformId.lastIndexOf("/") + 1).replace(/^\D+/, ""));
-/** Width from which the filters sit in a sidebar beside the results (matches styles.css). */
-const SIDEBAR_QUERY = "(min-width: 1000px)";
 
 /** Filter state of the current hash; replaces the hash with its canonical form so URL and controls agree. */
 function stateFromLocation(offered: Offered): FilterState | null {
@@ -38,14 +48,29 @@ function stateFromLocation(offered: Offered): FilterState | null {
   return state;
 }
 
-function paperColumns(links: Map<string, PlatformRow[]>): Col<PaperRow>[] {
+function paperColumns(links: Map<string, PlatformRow[]>, codes: boolean): Col<PaperRow>[] {
   return [
     { id: "paper", header: "Paper", fixed: true, sort: { kind: "text", value: (p) => p.paper_id }, cell: (p) => p.paper_id },
     { id: "year", header: "Year", num: true, sort: { kind: "number", value: (p) => p.first_public_year }, cell: (p) => p.first_public_year },
-    { id: "title", header: "Title", sort: { kind: "text", value: (p) => p.title }, cell: (p) => p.title },
-    { id: "venue", header: "Venue", sort: { kind: "text", value: (p) => p.venue }, cell: (p) => show(p.venue) },
-    { id: "field", header: "Field tags", sort: { kind: "text", value: (p) => joined(p.field_tags) }, cell: (p) => listCell(p.field_tags) },
-    { id: "im", header: "Integration mode", sort: { kind: "text", value: (p) => p.integration_mode }, cell: (p) => p.integration_mode },
+    { id: "title", header: "Title", sort: { kind: "text", value: (p) => p.title }, cell: (p) => <Truncated text={p.title} /> },
+    {
+      id: "venue",
+      header: "Venue",
+      sort: { kind: "text", value: (p) => p.venue },
+      cell: (p) => (p.venue ? <Truncated text={p.venue} /> : show(null)),
+    },
+    {
+      id: "field",
+      header: "Field tags",
+      sort: { kind: "text", value: (p) => joined(p.field_tags) },
+      cell: (p) => codeCell("field_tag", p.field_tags, codes),
+    },
+    {
+      id: "im",
+      header: "Integration mode",
+      sort: { kind: "text", value: (p) => p.integration_mode },
+      cell: (p) => codeCell("transfer_mode", [p.integration_mode], codes),
+    },
     { id: "sw", header: "Software autonomy", num: true, sort: { kind: "number", value: (p) => p.sw_autonomy }, cell: (p) => p.sw_autonomy },
     { id: "hw", header: "Hardware autonomy", num: true, sort: { kind: "number", value: (p) => p.hw_autonomy }, cell: (p) => p.hw_autonomy },
     {
@@ -66,7 +91,7 @@ function paperColumns(links: Map<string, PlatformRow[]>): Col<PaperRow>[] {
   ];
 }
 
-function platformColumns(selected: string[], toggle: (id: string) => void): Col<PlatformRow>[] {
+function platformColumns(selected: string[], toggle: (id: string) => void, codes: boolean): Col<PlatformRow>[] {
   return [
     {
       id: "select",
@@ -92,18 +117,33 @@ function platformColumns(selected: string[], toggle: (id: string) => void): Col<
       sort: { kind: "text", value: (l) => l.platform_id },
       cell: (l) => <a href={platformHash(l.platform_id)}>{l.platform_id}</a>,
     },
-    { id: "name", header: "Name", sort: { kind: "text", value: (l) => l.platform_name ?? undefined }, cell: (l) => show(l.platform_name) },
+    {
+      id: "name",
+      header: "Name",
+      sort: { kind: "text", value: (l) => l.platform_name ?? undefined },
+      cell: (l) => (l.platform_name ? <Truncated text={l.platform_name} /> : show(null)),
+    },
     { id: "paper", header: "Paper", sort: { kind: "text", value: (l) => l.paper_id }, cell: (l) => l.paper_id },
     { id: "year", header: "Year", num: true, sort: { kind: "number", value: (l) => l.first_public_year }, cell: (l) => l.first_public_year },
-    { id: "field", header: "Field tags", sort: { kind: "text", value: (l) => joined(l.field_tags) }, cell: (l) => listCell(l.field_tags) },
+    {
+      id: "field",
+      header: "Field tags",
+      sort: { kind: "text", value: (l) => joined(l.field_tags) },
+      cell: (l) => codeCell("field_tag", l.field_tags, codes),
+    },
     { id: "modules", header: "Modules", num: true, sort: { kind: "number", value: (l) => l.n_modules }, cell: (l) => l.n_modules },
     { id: "steps", header: "Steps", num: true, sort: { kind: "number", value: (l) => l.n_steps }, cell: (l) => l.n_steps },
-    { id: "mt", header: "Module types", sort: { kind: "text", value: (l) => joined(l.module_types) }, cell: (l) => listCell(l.module_types) },
+    {
+      id: "mt",
+      header: "Module types",
+      sort: { kind: "text", value: (l) => joined(l.module_types) },
+      cell: (l) => codeCell("module_type", l.module_types, codes),
+    },
     {
       id: "tm",
       header: "Transfer modes",
       sort: { kind: "text", value: (l) => joined(l.material_transfer_modes) },
-      cell: (l) => listCell(l.material_transfer_modes),
+      cell: (l) => codeCell("transfer_mode", l.material_transfer_modes, codes),
     },
   ];
 }
@@ -113,8 +153,7 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
   const [state, setState] = useState<FilterState>(() => stateFromLocation(offered) ?? decodeFilters("", offered));
   const [years, setYears] = useState(() => yearText(state.years));
   const [selected, setSelected] = useState<string[]>([]);
-  // Open beside the results at wide widths; collapsed on narrow screens so the results come first.
-  const [filtersOpen, setFiltersOpen] = useState(() => window.matchMedia(SIDEBAR_QUERY).matches);
+  const [codes, setCodes] = useState(false);
 
   // replaceState fires no hashchange, so the router's hash can lag; read the real hash on every navigation (REQ-003).
   useEffect(() => {
@@ -149,41 +188,32 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
   }, [index]);
   const papers = useMemo(() => matchingPapers(state, index.papers, index.platforms), [state, index]);
   const platforms = useMemo(() => matchingPlatforms(state, index.papers, index.platforms), [state, index]);
-  const paperCols = useMemo(() => paperColumns(links), [links]);
+  const paperCols = useMemo(() => paperColumns(links, codes), [links, codes]);
   const platformCols = useMemo(
-    () => platformColumns(selected, (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))),
-    [selected],
+    () => platformColumns(selected, (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])), codes),
+    [selected, codes],
   );
   const canCompare = selected.length === 2 || selected.length === 3;
-
-  const active = activeFilterCount(state);
+  const codesToggle = (
+    <button type="button" className="btn btn-secondary btn-sm codes-toggle" aria-pressed={codes} onClick={() => setCodes((c) => !c)}>
+      Show codes
+    </button>
+  );
 
   return (
     <div className="browse">
       <h1>Browse</h1>
+      <FilterPanel
+        idPrefix="browse-filter"
+        state={state}
+        offered={offered}
+        yearText={years}
+        inverted={yearsFromInputs(years.from, years.to).inverted}
+        onState={apply}
+        onYearText={onYearText}
+        onClear={onClear}
+      />
       <div className="browse-layout">
-        <aside className="browse-filters">
-          <button
-            type="button"
-            className="filter-toggle"
-            aria-expanded={filtersOpen}
-            aria-controls="browse-filter-panel"
-            onClick={() => setFiltersOpen((open) => !open)}
-          >
-            Filters ({active} active)
-          </button>
-          <div id="browse-filter-panel" hidden={!filtersOpen}>
-            <FilterPanel
-              state={state}
-              offered={offered}
-              yearText={years}
-              inverted={yearsFromInputs(years.from, years.to).inverted}
-              onState={apply}
-              onYearText={onYearText}
-              onClear={onClear}
-            />
-          </div>
-        </aside>
         <div className="browse-results">
           <div className="table-switch" role="group" aria-label="Table shown">
             {(["papers", "platforms"] as const).map((view) => (
@@ -200,7 +230,14 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
               <p className="result-count" aria-live="polite">
                 {papers.length} of {index.papers.length} papers
               </p>
-              <DataTable name="papers" chooserLabel="Paper table columns" columns={paperCols} rows={papers} rowId={paperId} />
+              <DataTable
+                name="papers"
+                chooserLabel="Paper table columns"
+                columns={paperCols}
+                rows={papers}
+                rowId={paperId}
+                toolbar={codesToggle}
+              />
               <p className="table-note">{PAPER_TABLE_NOTE}</p>
             </section>
           ) : (
@@ -222,6 +259,7 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
                 columns={platformCols}
                 rows={platforms}
                 rowId={platformId}
+                toolbar={codesToggle}
               />
             </section>
           )}

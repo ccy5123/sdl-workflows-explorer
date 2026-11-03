@@ -20,6 +20,16 @@ const chartLink = (page: Page, name: string) => chart(page).getByRole("link", { 
 const xTicks = (page: Page) => chart(page).locator('g[aria-label="x-axis tick label"] text').allTextContents();
 const legend = (page: Page) => page.locator(".trends-legend li");
 const style = (el: Locator, prop: string) => el.evaluate((e, p) => getComputedStyle(e).getPropertyValue(p), prop);
+/** Popover button of a filter group in the filter bar ("Field tag" or "Field tag · 2"; SPEC-UI-001 REQ-025). */
+const filterButton = (page: Page, legend: string) =>
+  page.locator(".filter-panel").getByRole("button", { name: new RegExp(`^${legend}( · \\d+)?$`) });
+
+/** Checkbox of a filter option by its code (the name ends "(code)"), with the group's popover open. */
+async function filterBox(page: Page, legend: string, code: string) {
+  const b = filterButton(page, legend);
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+  return group(page, legend).getByRole("checkbox", { name: new RegExp(`\\(${code}\\)$`) });
+}
 const BINS = ["before 2015", ...Array.from({ length: 11 }, (_, i) => String(2015 + i)), "2026*"];
 const N_PAPERS = ["27", "4", "5", "3", "12", "7", "16", "17", "18", "26", "27", "39", "36"];
 
@@ -67,7 +77,7 @@ test("AC-9: route, navigation and split control", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("AC-10: unit switch, filters and the filter toggle", async ({ page }) => {
+test("AC-10: unit switch, filters and the filter bar", async ({ page }) => {
   await page.goto("/#/trends");
   await unitButton(page, "Platforms").click();
   await expect(countLine(page)).toHaveText("279 of 279 platforms");
@@ -80,35 +90,33 @@ test("AC-10: unit switch, filters and the filter toggle", async ({ page }) => {
   await page.goto("/#/trends?view=platforms&years=2018-2024&field=catalysis&split=mt");
   await expect(page.getByLabel("From", { exact: true })).toHaveValue("2018");
   await expect(page.getByLabel("To", { exact: true })).toHaveValue("2024");
-  await expect(group(page, "Field tag").getByRole("checkbox", { name: "catalysis", exact: true })).toBeChecked();
+  await expect(await filterBox(page, "Field tag", "catalysis")).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(splitRadio(page, "Module types")).toBeChecked();
   await expect(countLine(page)).toHaveText("11 of 279 platforms");
-  await page.getByRole("button", { name: "Clear filters", exact: true }).click();
+  await page.getByRole("button", { name: "Clear all", exact: true }).click();
   await expect(countLine(page)).toHaveText("279 of 279 platforms");
   expect(await hash(page)).toBe("#/trends?view=platforms&split=mt");
   await expect(splitRadio(page, "Module types")).toBeChecked();
   await expect(unitButton(page, "Papers")).toBeVisible();
   await expect(unitButton(page, "Platforms")).toBeVisible();
 
+  // The filter bar stands above the chart, with a pill per active filter (SPEC-UI-001 REQ-025).
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/#/trends?years=2018-2024&field=catalysis");
-  const toggle = page.locator(".filter-toggle");
-  await expect(toggle).toHaveText("Filters (2 active)");
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(filterButton(page, "Field tag")).toHaveText("Field tag · 1");
+  await expect(page.locator(".filter-pills .pill")).toHaveText(["2018–2024", "Catalysis"]);
   await expect(chart(page)).toBeVisible();
   const panel = (await page.locator(".filter-panel").boundingBox())!;
   const plot = (await page.locator(".trends-chart").boundingBox())!;
-  expect(panel.x + panel.width).toBeLessThan(plot.x);
+  expect(panel.y + panel.height).toBeLessThan(plot.y);
 
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto("/#/trends");
   await page.reload();
-  await expect(toggle).toHaveText("Filters (0 active)");
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(page.locator(".filter-panel")).toBeHidden();
-  await toggle.click();
   await expect(page.locator(".filter-panel")).toBeVisible();
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".filter-pills")).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
 test("AC-3: inverted year inputs apply no range", async ({ page }) => {
@@ -350,7 +358,8 @@ test("AC-16: narrow screen, keyboard and empty result", async ({ page }) => {
 test("SPEC-TAXO-001 AC-8, AC-14: the unit-operation filter on the dashboard", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/trends?uo=sonicate");
-  await expect(group(page, "Unit operations").getByRole("checkbox", { name: "sonicate", exact: true })).toBeChecked();
+  await expect(await filterBox(page, "Unit operations", "sonicate")).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(countLine(page)).toHaveText("5 of 237 papers");
   await expect(link(page, "Show these in Browse")).toHaveAttribute("href", "#/browse?uo=sonicate");
   await expect(group(page, "Split by").getByRole("radio")).toHaveCount(6);

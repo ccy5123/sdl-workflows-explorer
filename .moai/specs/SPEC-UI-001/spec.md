@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.4.1"
+version: "0.5.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -33,6 +33,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   route. REQ-019's bottom sheet now applies below 1024 px instead of 800 px.
 - 2026-11-03 0.4.1 REQ-024: with the sheet docked, the rightmost module of `Aand2024/P1` was cut off at 1440 px until
   "Fit to view" was pressed; the researcher approved the refit fix.
+- 2026-11-03 0.5.0 REQ-025 to REQ-027: phase 4 of the plan (Browse and Trends filters), approved by the researcher.
+  This supersedes the checkbox column and the "Filters (N active)" toggle of SPEC-BROWSE-001 and SPEC-TRENDS-001.
 
 ## 1. Why
 
@@ -157,3 +159,21 @@ taken from the built release data.
   of REQ-018 (a graph too long for zoom 1, such as `Kim2026/P1`, keeps zoom 1 and is panned), without animation. The
   open sheet shall take the page's side margin first (the page widens by the sheet's 320 px column, up to the
   window), so at 1440 px the whole graph of `Aand2024/P1` stays in view with the sheet open and after it closes.
+
+### Phase 4: Browse and Trends filters
+
+- **REQ-025** (ubiquitous, event-driven) Browse and Trends shall show one filter bar above the results: the search
+  field, the year range ("From", "To"), and a popover button per checkbox group (field tag, integration mode,
+  software and hardware autonomy, module types, transfer modes, unit operations) labelled with the group and, when
+  values are chosen, their number ("Field tag · 2"). A popover lists the options by readable name with the code beside
+  it (autonomy levels by their texts) and, for module types, transfer modes and unit operations, the all/any control.
+  One popover is open at a time; it closes on Escape (focus back on its button), on a click outside and when focus
+  leaves it, and stays inside the window. Below the bar, each active filter shows as a pill with a remove button, then
+  "Clear all". The bar wraps on narrow screens without sideways scroll. The filter state, its URL format and the
+  `.filter-panel` class stay as they were.
+- **REQ-026** (ubiquitous) Trends "Split by" shall be a segmented control over the same radio buttons (group "Split
+  by", arrow keys move the choice); the table and unit switches take the same segmented look.
+- **REQ-027** (ubiquitous, event-driven) The browser tables shall scroll inside their box with the header row kept in
+  view, highlight the row under the pointer, and cut titles, venues and platform names to one line with the full text
+  in `title`. Coded columns (field tags, integration mode, module types, transfer modes) show readable names (code in
+  `title`); a "Show codes" button (`aria-pressed`) beside the column chooser switches them to the codes.

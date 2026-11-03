@@ -2167,16 +2167,313 @@ button {
   }
 }
 
-/* Browser */
+/* Browser and Trends: filter bar of popover buttons, active-filter pills (SPEC-UI-001 REQ-025), segmented switches
+   (REQ-026) and the browser tables' tools (REQ-027). */
 .filter-panel {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.filter-group,
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter.search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.filter.search .search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.filter.search input,
+.filter-group.years input {
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.filter.search input {
+  width: 100%;
+  padding: 0 10px 0 32px;
+}
+
+.filter-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.filter-group label {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: baseline;
+}
+
+.filter-group.years {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A floated legend is laid out as an ordinary item, so it sits in the row with the inputs. */
+.filter-group.years legend,
+.segmented legend {
+  float: left;
+  padding: 0 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.filter-group.years input {
+  width: 76px;
+  padding: 0 8px;
+}
+
+.filter-popover {
+  position: relative;
+}
+
+.filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  white-space: nowrap;
+  transition: background-color var(--dur) ease, border-color var(--dur) ease;
+}
+
+.filter-button:hover {
+  background: var(--panel);
+}
+
+.filter-button svg {
+  transition: transform var(--dur) ease;
+}
+
+.filter-button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.filter-button.active {
+  border-color: var(--accent);
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.filter-popover-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 240px;
+  max-width: min(440px, calc(100vw - 16px));
+  max-height: min(60vh, 440px);
+  overflow-y: auto;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  animation: menu-in var(--dur) ease-out;
+}
+
+.filter-popover-panel .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.filter-popover-panel .filter-group legend {
+  padding: 0 6px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.filter-popover-panel .filter-group.match {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 8px 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.filter-popover-panel .filter-group.match legend {
+  float: left;
+  padding: 0;
+}
+
+.filter-option {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filter-option:hover {
+  background: var(--panel);
+}
+
+.filter-option > span:not(.visually-hidden) {
+  flex: 1 1 auto;
+}
+
+.filter-option code {
+  padding-left: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.year-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13.5px;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 4px 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-size: 13px;
+}
+
+.pill-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+
+.pill-remove:hover {
+  background: var(--card);
+}
+
+/* Segmented switches: Trends "Split by" over radio buttons, the table and unit switches over pressed buttons. */
+.segmented,
+.table-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 12px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+
+.segmented legend {
+  padding: 0 6px 0 8px;
+}
+
+.segmented label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--dur) ease, color var(--dur) ease;
+}
+
+/* The radio covers its segment, transparent: it takes the click and stays focusable; the label is what shows. */
+.segmented input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.segmented label.checked,
+.table-switch button[aria-pressed="true"] {
+  background: var(--card);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+.table-switch button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.table-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+
 .column-chooser {
   min-width: 0;
   margin: 0;
@@ -2189,12 +2486,10 @@ button {
   font-size: 0.9rem;
 }
 
-.filter-group legend,
 .column-chooser legend {
   font-weight: 600;
 }
 
-.filter-group label,
 .column-chooser label {
   display: inline-flex;
   gap: 0.3rem;
@@ -2202,33 +2497,35 @@ button {
   overflow-wrap: anywhere;
 }
 
-.filter-group.years input {
-  width: 6rem;
-  font: inherit;
+/* The browser tables scroll inside their box, so the header row can stay in view; the row under the pointer is
+   highlighted. */
+/* position: relative keeps absolutely placed descendants (the visually hidden codes of <Label>) inside the clipped box. */
+.table-scroll-sticky {
+  position: relative;
+  max-height: min(70vh, 720px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
 }
 
-.year-error {
-  flex-basis: 100%;
-  margin: 0;
-  color: var(--danger);
+.table-scroll-sticky thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--card);
+  box-shadow: inset 0 -1px 0 var(--line);
 }
 
-.filter.search {
-  min-width: 0;
-  flex: 1 1 14rem;
+.table-scroll-sticky tbody tr:hover {
+  background: var(--panel);
 }
 
-.table-switch {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.table-switch button[aria-pressed="true"] {
-  font-weight: 700;
-}
-
-.column-chooser {
-  margin: 0.5rem 0;
+.truncate {
+  display: block;
+  max-width: 32ch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .sort-button {
@@ -2245,46 +2542,19 @@ button {
   gap: 0 0.4rem;
 }
 
-.filter-toggle {
-  margin-bottom: 0.5rem;
-  padding: 0.3rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
-}
-
 .browse-results {
   min-width: 0;
 }
 
-/* From 1000px the filters stand in a sidebar beside the results (SIDEBAR_QUERY in Browse.tsx). */
-@media (min-width: 1000px) {
-  .browse-layout {
-    display: grid;
-    grid-template-columns: 17rem minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: start;
+@media (prefers-reduced-motion: reduce) {
+  .filter-popover-panel {
+    animation: none;
   }
 
-  .browse-filters {
-    position: sticky;
-    top: 0.5rem;
-    max-height: calc(100vh - 1rem);
-    overflow-y: auto;
-  }
-
-  .browse-filters .filter-panel {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
-  }
-
-  .browse-filters .filter-group:not(.years):not(.match) {
-    flex-direction: column;
-  }
-
-  .browse-filters .filter.search {
-    flex: none;
+  .filter-button,
+  .filter-button svg,
+  .segmented label {
+    transition: none;
   }
 }
 
@@ -2369,13 +2639,6 @@ button {
   --chart-axis: #383835;
 }
 
-.split-control {
-  margin-bottom: 0.5rem;
-}
-
-.unit-switch {
-  margin-bottom: 0.5rem;
-}
 
 .platforms-line,
 .trends-caption,
