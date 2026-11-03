@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.6.0"
+version: "0.7.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -39,6 +39,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   options that were clipped and named with the code twice). Supersedes SPEC-TRENDS-001's "value as stored" labels.
 - 2026-11-03 0.6.0 REQ-029 to REQ-034: phase 5 of the plan (Taxonomy, Benchmark, Workflow builder, About) with the
   Workflow chart restyle, approved by the researcher. Presentation only.
+- 2026-11-03 0.7.0 REQ-035 to REQ-038: platform viewer graph improvements approved by the researcher (labels and
+  captions, top-to-bottom layout on phones, minimap, step preview).
 
 ## 1. Why
 
@@ -207,3 +209,20 @@ taken from the built release data.
 - **REQ-034** (ubiquitous) The Workflow charts (simulation timeline, cycle-time and throughput strips) shall draw axis
   text, ticks and gridlines in the chart tokens of the current theme, name rows and strips by readable names with the
   code in `title`, and keep their data colours, limits and computed values.
+
+### Platform viewer graph improvements
+
+- **REQ-035** (ubiquitous) A module node shall show its readable type on one bold line and, below it (beside it in the
+  phone layout), the equipment name on at most two lighter, smaller lines ending in an ellipsis when longer; the name
+  layer is decorative (`aria-hidden`) and the full name shows as "Name in paper" in the evidence sheet of a selected
+  module. Labels and captions do not overlap, and dagre spaces the room each caption needs.
+- **REQ-036** (state, event-driven) While the viewport is narrower than 800 px the graph shall be laid out top to
+  bottom (labels beside the dots) so `Aand2024/P1` fits the graph's width at zoom 1; from 800 px left to right. On
+  crossing the breakpoint the graph lays out again and fits.
+- **REQ-037** (state, event-driven) While the whole graph does not fit the view, a minimap (`aria-hidden`; the toolbar
+  and tables stay the accessible path) shall show the modules and the viewport rectangle; clicking or dragging on it
+  centres the view there. It is hidden while everything fits.
+- **REQ-038** (event-driven) Hovering or focusing a cycle step shall preview its highlight (its modules and the
+  connections between them; the rest dimmed) without opening the evidence sheet; leaving removes the preview;
+  clicking keeps the highlight until it is cleared or something else is selected. Fades are off under
+  `prefers-reduced-motion: reduce`.

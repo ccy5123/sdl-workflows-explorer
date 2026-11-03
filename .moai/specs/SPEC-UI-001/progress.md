@@ -127,6 +127,21 @@
   Still codes: the builder's utilization and waiting tables, cycle-time step table, events table and bottleneck
   sentence; taxonomy family names; benchmark task ids and unit-operation families.
 
+- Viewer graph improvements (REQ-035 to REQ-038). Implemented by a delegated general-purpose agent on a written brief.
+  Agent's RED: `npx playwright test e2e/viewer-graph.spec.ts` — 7 failed, 2 passed (the left-to-right check at 1440 px
+  and "no minimap when it fits" held before any change); the new `tests/graphOverlay.test.ts` failed to load. Design:
+  the canvas label is the bold type plus two reserved lines (so dagre spaces for the caption); an `aria-hidden` HTML
+  caption layer draws the equipment names; below 800 px dagre runs top to bottom (nodeSep 24, rankSep 36) with labels
+  beside the dots; each label box is centred on dagre's position; an own SVG minimap (no new dependency) shows while
+  the graph's box at the current zoom exceeds the view. Orchestrator review on screen: on a phone the 420 px box was
+  shorter than `Aand2024/P1`'s top-to-bottom layout, so the minimap appeared over a module, and the toolbar covered the
+  platform title; the phone graph box is now `min(70vh, 600px)` tall (the graph fits, no minimap) and the toolbar sits
+  at the bottom corner below 800 px.
+  Verified independently: `npm test` 700 passed; `npm run typecheck` exit 0; `npm run e2e` 251 passed (3.3 min); after
+  the two CSS changes, viewer, viewer-graph, contribute and shell specs 57 passed and the style unit tests 12 passed.
+  Screens: `Aand2024/P1` 1440 px light (bold types, two-line captions), 375 px dark (top to bottom, whole graph in
+  view), `Kim2026/P1` 1440 px dark (minimap with the viewport rectangle).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

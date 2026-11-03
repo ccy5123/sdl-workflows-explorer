@@ -175,6 +175,19 @@ progress.md.
   split, readable link and h1 names, the one allowed disclosure); `e2e/benchmark.spec.ts` (label rows by `data-code`,
   readable names, How this works opened first); `e2e/workflow.spec.ts` (step cards); `e2e/contribute.spec.ts` (h1).
 
+### AC-35 to AC-38 Viewer graph (REQ-035 to REQ-038), `e2e/viewer-graph.spec.ts`, `tests/graphOverlay.test.ts`
+- AC-35: on `Aand2024/P1` and `Kim2026/P1` canvas labels hold only the bold readable type; each named module has one
+  caption of at most two lines with ellipsis styling; captions overlap neither each other nor any node label box;
+  a selected module's sheet shows "Name in paper" with the full name.
+- AC-36: at 375 px `Aand2024/P1` is ranked top to bottom and fits the graph width at zoom ≥ 1; at 1440 px left to right;
+  resizing from 1440 to 375 px fits again.
+- AC-37: on `Kim2026/P1` at 1440 px the minimap is visible, `aria-hidden`, with a viewport rectangle, and a click on its
+  right half moves the view right; on `Aand2024/P1` there is none.
+- AC-38: hovering step 3 highlights its modules and dims others with no sheet; leaving removes it; keyboard focus
+  previews; a click keeps it after the pointer leaves; Escape clears it.
+- Changed existing tests: `tests/graphElements.test.ts` (the canvas label no longer carries the name);
+  `tests/evidence.test.ts` (views gain `name`).
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

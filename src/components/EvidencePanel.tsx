@@ -64,6 +64,12 @@ export function EvidencePanel({ view, release, onClose }: Props) {
               </dd>
             </>
           )}
+          {view.name && (
+            <>
+              <dt>Name in paper</dt>
+              <dd data-field="name">{view.name}</dd>
+            </>
+          )}
           <dt>Document</dt>
           <dd data-field="doc">{view.doc}</dd>
           <dt>Page</dt>

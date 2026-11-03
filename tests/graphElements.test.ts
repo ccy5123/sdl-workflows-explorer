@@ -1,6 +1,6 @@
 // AC-3: Cytoscape elements and stylesheet (REQ-006, REQ-008, REQ-009, REQ-010).
 import { describe, expect, it } from "vitest";
-import { boundaryId, buildElements, buildStylesheet } from "../src/lib/graphElements";
+import { boundaryId, buildElements, buildStylesheet, captionReserve, LABEL_END } from "../src/lib/graphElements";
 import { fixturePlatform } from "./fixtures/platform";
 
 const platform = fixturePlatform();
@@ -28,9 +28,11 @@ describe("buildElements", () => {
     }
   });
 
-  it("labels nodes with the readable module type and name, keeps the code, and colours them by display group", () => {
+  it("labels nodes with the readable module type and room for the name below it, keeps the code, and colours them by display group", () => {
     const m1 = nodes.find((n) => n.data.id === "Test2020/P1/M1")!;
-    expect(m1.data.label).toBe("Software\nplanner");
+    // SPEC-UI-001 UI AC-35: the name in the paper is drawn as an HTML caption in two reserved lines below the type.
+    expect(m1.data.label).toBe(`Software\n${captionReserve("planner")}\n${captionReserve("planner")}${LABEL_END}`);
+    expect(m1.data.label).not.toContain("planner");
     expect(m1.data.code).toBe("software");
     expect(m1.data.colour).toBe("#CC79A7");
     const m2 = nodes.find((n) => n.data.id === "Test2020/P1/M2")!;
@@ -103,6 +105,41 @@ describe("buildStylesheet", () => {
   it("has highlight and dim styles", () => {
     expect(block("node.dimmed")).toBeDefined();
     expect(block("node.highlighted")).toBeDefined();
+  });
+
+  // SPEC-UI-001 UI AC-35, UI AC-38: bold type labels; dimming fades over 150 ms unless the reader asks for less motion.
+  it("draws node labels in bold and fades opacity, without the fade under reduced motion", () => {
+    expect(block("node")?.style["font-weight"]).toBe("bold");
+    for (const s of ["node", "edge"]) {
+      expect(block(s)?.style["transition-property"]).toBe("opacity");
+      expect(block(s)?.style["transition-duration"]).toBe(150);
+    }
+    const still = buildStylesheet("light", { reducedMotion: true });
+    const stillBlock = (selector: string) =>
+      (still.find((b) => "selector" in b && b.selector === selector) as unknown as { style: Record<string, unknown> }).style;
+    for (const s of ["node", "edge"]) expect(stillBlock(s)["transition-property"]).toBeUndefined();
+  });
+});
+
+describe("buildStylesheet labels beside the dot (SPEC-UI-001 UI AC-36)", () => {
+  it("puts module labels to the right of the dot only when asked", () => {
+    const moduleBlock = (sheet: ReturnType<typeof buildStylesheet>) =>
+      sheet.find((b) => "selector" in b && b.selector === "node.module") as unknown as { style: Record<string, unknown> } | undefined;
+    expect(moduleBlock(buildStylesheet("light"))).toBeUndefined();
+    expect(moduleBlock(buildStylesheet("light", { labelsBeside: true }))?.style).toMatchObject({ "text-valign": "center", "text-halign": "right" });
+  });
+});
+
+describe("captionReserve", () => {
+  it("is blank, at least one em wide, wider for longer names and never wider than the 150 px label width", () => {
+    const short = captionReserve("pump");
+    const long = captionReserve("x".repeat(200));
+    expect(short.trim()).toBe("");
+    expect(short.length).toBeGreaterThanOrEqual(1);
+    expect(captionReserve("a much longer equipment name").length).toBeGreaterThan(short.length);
+    // Em spaces at the 13 px label size: 11 of them are 143 px, inside the wrap width.
+    expect(long.length * 13).toBeLessThanOrEqual(150);
+    expect(long).toMatch(/^\u2003+$/);
   });
 });
 

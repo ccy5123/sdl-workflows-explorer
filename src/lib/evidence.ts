@@ -20,6 +20,8 @@ export interface EvidenceView {
   doiUrl: string;
   /** The item's vocabulary code (module type, transfer mode or unit operation); null for the platform. */
   type: { kind: "module_type" | "transfer_mode" | "unit_operation"; code: string } | null;
+  /** A module's name in the paper, in full (the graph clamps it to two lines; SPEC-UI-001 UI AC-35); else null. */
+  name: string | null;
 }
 
 function view(
@@ -29,6 +31,7 @@ function view(
   note: string | null,
   doi: string,
   type: EvidenceView["type"],
+  name: string | null = null,
 ): EvidenceView {
   return {
     kind,
@@ -39,6 +42,7 @@ function view(
     note: note || null,
     doiUrl: `https://doi.org/${doi}`,
     type,
+    name: name || null,
   };
 }
 
@@ -47,7 +51,7 @@ export function formatEvidence(platform: PlatformGraph, selection: Selection): E
   const doi = platform.doi;
   if (selection?.kind === "module") {
     const m = platform.modules.find((x) => x.module_id === selection.id);
-    if (m) return view("Module", m.module_id, m.evidence, m.unmapped_note, doi, { kind: "module_type", code: m.module_type });
+    if (m) return view("Module", m.module_id, m.evidence, m.unmapped_note, doi, { kind: "module_type", code: m.module_type }, m.name_in_paper);
   } else if (selection?.kind === "connection") {
     const c = platform.connections.find((x) => x.edge_id === selection.id);
     if (c) return view("Connection", c.edge_id, c.evidence, c.unmapped_note, doi, { kind: "transfer_mode", code: c.transfer_mode });

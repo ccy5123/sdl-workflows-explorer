@@ -1728,6 +1728,21 @@ table.data tbody tr[aria-selected="true"] {
   background: var(--highlight);
 }
 
+/* Graph minimap tokens (SPEC-UI-001 UI AC-37), drawn from the site tokens of each theme. */
+:root {
+  --minimap-surface: color-mix(in srgb, var(--card) 92%, transparent);
+  --minimap-stroke: var(--line-strong);
+  --minimap-view-fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  --minimap-view-stroke: var(--accent);
+}
+
+:root[data-theme="dark"] {
+  --minimap-surface: color-mix(in srgb, var(--panel) 92%, transparent);
+  --minimap-stroke: var(--line-strong);
+  --minimap-view-fill: color-mix(in srgb, var(--accent) 18%, transparent);
+  --minimap-view-stroke: var(--accent);
+}
+
 /* Platform viewer (SPEC-VIEW-001; laid out by SPEC-UI-001 REQ-017 to REQ-020): header card, full-width graph with a
    floating toolbar and legend, the step timeline beside the tables, and an evidence sheet. */
 .platform {
@@ -1822,6 +1837,62 @@ button {
 .graph {
   height: 560px;
   background: var(--card);
+}
+
+/* Equipment-name captions under the bold type labels (SPEC-UI-001 UI AC-35): an HTML layer over the canvas, placed
+   and scaled by the Graph from Cytoscape's label boxes; clipped to the graph's box and never in the way of a click. */
+.graph-captions {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.graph-caption {
+  position: absolute;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-family: var(--font-ui);
+  color: var(--muted);
+  transition: opacity var(--dur) ease;
+}
+
+.graph-captions.is-beside .graph-caption {
+  text-align: left;
+}
+
+.graph-caption.is-dimmed {
+  opacity: 0.25;
+}
+
+/* Minimap of a graph that does not fit its box (UI AC-37), in the bottom-left corner. */
+.graph-minimap {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  border: 1px solid var(--minimap-stroke);
+  border-radius: var(--radius-sm);
+  background: var(--minimap-surface);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.graph-minimap-edge {
+  stroke: var(--minimap-stroke);
+  stroke-width: 1;
+}
+
+.graph-minimap-view {
+  fill: var(--minimap-view-fill);
+  stroke: var(--minimap-view-stroke);
+  stroke-width: 1.5;
 }
 
 .graph-toolbar {
@@ -2204,8 +2275,27 @@ button {
     padding: 16px;
   }
 
+  /* Taller on phones: the top-to-bottom layout grows downwards (REQ-036). The toolbar moves to the bottom corner
+     so it does not cover the platform's title at the top; the legend then opens from the top. */
   .graph {
-    height: 420px;
+    height: min(70vh, 600px);
+  }
+
+  .graph-toolbar {
+    top: auto;
+    bottom: 12px;
+  }
+
+  .legend {
+    top: 12px;
+  }
+
+  /* A smaller minimap covers less of a phone-width graph; its view box scales with it. */
+  .graph-minimap {
+    width: 112px;
+    height: 70px;
+    left: 8px;
+    bottom: 8px;
   }
 
   .facts {
@@ -2223,7 +2313,8 @@ button {
     animation: none;
   }
 
-  .step {
+  .step,
+  .graph-caption {
     transition: none;
   }
 }

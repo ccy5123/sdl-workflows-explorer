@@ -2,7 +2,7 @@
 // as a header card, a full-width graph, the step timeline beside the tables, and an evidence sheet that opens on a
 // selection with an empty state before it (SPEC-UI-001 REQ-017 to REQ-020).
 import { MousePointerClick } from "lucide-react";
-import { useEffect, useMemo, useReducer, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
 import { EvidencePanel } from "../components/EvidencePanel";
 import { Graph } from "../components/Graph";
 import { Header } from "../components/Header";
@@ -24,6 +24,9 @@ interface Props {
 }
 
 const yesNo = (v: boolean) => (v ? "yes" : "no");
+
+/** How long after the selection is cleared a focus event is not taken as a preview (the sheet hands focus back). */
+const QUIET_FOCUS_MS = 100;
 
 function activate(e: KeyboardEvent, action: () => void) {
   if (e.key === "Enter" || e.key === " ") {
@@ -64,14 +67,30 @@ export function PlatformView({ index, paperId, platformId, hash }: Props) {
 function Platform({ index, platform }: { index: IndexJson; platform: PlatformGraph }) {
   const [selection, dispatch] = useReducer(selectionReducer, null as Selection);
   const select = (s: NonNullable<Selection>) => dispatch({ type: "select", selection: s });
+  // A step under the pointer or keyboard focus, previewed in the graph without selecting it (SPEC-UI-001 UI AC-38).
+  const [preview, setPreview] = useState<string | null>(null);
+  // Set while the sheet returns focus to the step that opened it, so that focus does not bring the highlight back.
+  const quietFocus = useRef(false);
+  const clear = useCallback(() => {
+    quietFocus.current = true;
+    setPreview(null);
+    dispatch({ type: "clear" });
+    setTimeout(() => {
+      quietFocus.current = false;
+    }, QUIET_FOCUS_MS);
+  }, []);
+  const onPreview = (stepId: string | null, by: "pointer" | "focus") => {
+    if (stepId && by === "focus" && quietFocus.current) return;
+    setPreview(stepId);
+  };
 
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") dispatch({ type: "clear" });
+      if (e.key === "Escape") clear();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [clear]);
 
   const steps = useMemo(() => sortSteps(platform.steps), [platform]);
   const paper = index.papers.find((p) => p.paper_id === platform.paper_id);
@@ -87,7 +106,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
         release={index.release.version}
         onSelectPlatform={() => select({ kind: "platform", id: platform.platform_id })}
       />
-      <Graph platform={platform} selection={selection} onSelect={select} />
+      <Graph platform={platform} selection={selection} preview={preview} onSelect={select} />
       {!selection && (
         <p className="evidence-empty">
           <MousePointerClick size={16} aria-hidden="true" />
@@ -99,7 +118,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
         <EvidencePanel
           view={formatEvidence(platform, selection)}
           release={index.release.version}
-          onClose={() => dispatch({ type: "clear" })}
+          onClose={clear}
         />
       )}
       <div className="viewer">
@@ -108,6 +127,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
           modules={platform.modules}
           selectedStepId={selection?.kind === "step" ? selection.id : null}
           onSelect={(id) => select({ kind: "step", id })}
+          onPreview={onPreview}
         />
         <div className="viewer-tables">
       <section className="card panel" aria-labelledby="modules-heading">

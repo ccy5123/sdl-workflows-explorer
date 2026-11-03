@@ -11,6 +11,31 @@ export function boundaryId(platform: Pick<PlatformGraph, "platform_id">): string
   return `boundary:${platform.platform_id}`;
 }
 
+/** Node label size and wrap width (SPEC-UI-001 REQ-018); the caption layer of the Graph reads the same values. */
+export const LABEL_FONT_SIZE = 13;
+export const LABEL_MAX_WIDTH = 150;
+/** Lines kept blank under the type for the equipment-name caption (SPEC-UI-001 UI AC-35). */
+export const CAPTION_LINES = 2;
+/** Rough width of one caption character (11 px Arial), used to size the reserved room. */
+const CAPTION_CHAR_WIDTH = 5.6;
+const EM_SPACE = String.fromCharCode(0x2003);
+/**
+ * Zero-width space closing a label that ends in reserved lines: Cytoscape trims the white space around a label, which
+ * would drop the blank lines; this character is not white space to it and draws nothing.
+ */
+export const LABEL_END = String.fromCharCode(0x200b);
+
+/**
+ * One blank line of the room kept for a caption: em spaces about as wide as the caption, at most the label wrap
+ * width. Cytoscape measures the blank lines, so dagre spaces the modules for a caption it cannot draw itself (a canvas
+ * label has one font weight and colour; the caption is an HTML layer over the graph).
+ */
+export function captionReserve(name: string): string {
+  const width = Math.min(LABEL_MAX_WIDTH, name.length * CAPTION_CHAR_WIDTH);
+  const most = Math.floor(LABEL_MAX_WIDTH / LABEL_FONT_SIZE);
+  return EM_SPACE.repeat(Math.max(1, Math.min(most, Math.ceil(width / LABEL_FONT_SIZE))));
+}
+
 // @MX:ANCHOR: [AUTO] element contract read by the Graph component, the unit tests and the e2e tests via window.__cy
 // @MX:REASON: class names (boundary, inferred, uncertain, mode-*) and data fields are matched by selectors elsewhere
 export function buildElements(platform: PlatformGraph): ElementDefinition[] {
@@ -23,14 +48,16 @@ export function buildElements(platform: PlatformGraph): ElementDefinition[] {
       classes: "boundary",
     });
   }
-  // Labels show readable names (SPEC-UI-001 REQ-021); `code` keeps the vocabulary code for the legend and the sheet.
+  // Labels show the readable type (SPEC-UI-001 REQ-021) and keep blank lines for the name in the paper, which the
+  // Graph draws as a lighter caption (UI AC-35); `code` keeps the vocabulary code for the legend and the sheet.
   for (const m of platform.modules) {
     const type = displayLabel("module_type", m.module_type);
+    const room = m.name_in_paper ? Array<string>(CAPTION_LINES).fill(captionReserve(m.name_in_paper)) : [];
     elements.push({
       group: "nodes",
       data: {
         id: m.module_id,
-        label: m.name_in_paper ? `${type}\n${m.name_in_paper}` : type,
+        label: room.length ? [type, ...room].join("\n") + LABEL_END : type,
         code: m.module_type,
         colour: groupOf(m.module_type).colour,
         parent: m.on_platform ? parent : undefined,
@@ -63,9 +90,19 @@ export function buildElements(platform: PlatformGraph): ElementDefinition[] {
 /** The site's UI font (styles.css --font-ui); Cytoscape draws on a canvas and does not inherit CSS fonts. */
 const GRAPH_FONT = 'Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif';
 
-/** Cytoscape stylesheet; colours come from the site tokens of the theme (SPEC-SITE-001 REQ-008, REQ-009). */
-export function buildStylesheet(theme: Theme = "light"): StylesheetJson {
+/**
+ * Cytoscape stylesheet; colours come from the site tokens of the theme (SPEC-SITE-001 REQ-008, REQ-009). Dimming
+ * fades over 150 ms unless the reader prefers reduced motion (SPEC-UI-001 UI AC-38). With `labelsBeside` (the
+ * top-to-bottom phone layout, UI AC-36) module labels sit to the right of their dot, out of the way of the edges that
+ * leave it downwards.
+ */
+export function buildStylesheet(
+  theme: Theme = "light",
+  options: { reducedMotion?: boolean; labelsBeside?: boolean } = {},
+): StylesheetJson {
   const t = SITE_TOKENS[theme];
+  // Cytoscape reads a bare transition-duration number as milliseconds.
+  const fade = options.reducedMotion ? {} : { "transition-property": "opacity", "transition-duration": 150 };
   const sheet: StylesheetJson = [
     {
       selector: "node",
@@ -73,17 +110,20 @@ export function buildStylesheet(theme: Theme = "light"): StylesheetJson {
         "background-color": "data(colour)",
         label: "data(label)",
         "text-wrap": "wrap",
-        "text-max-width": "150px",
+        "text-max-width": `${LABEL_MAX_WIDTH}px`,
         "text-valign": "bottom",
         "text-margin-y": 4,
         // Larger and wider than before SPEC-UI-001 REQ-018; the Graph layout spaces nodes with their labels included.
-        "font-size": 13,
+        // Bold: the type line is the label's heading, the caption below it is lighter (UI AC-35).
+        "font-size": LABEL_FONT_SIZE,
         "font-family": GRAPH_FONT,
+        "font-weight": "bold",
         color: t["--text"],
         width: 26,
         height: 26,
         "border-width": 1,
         "border-color": t["--muted"],
+        ...fade,
       },
     },
     {
@@ -117,8 +157,17 @@ export function buildStylesheet(theme: Theme = "light"): StylesheetJson {
         "text-background-opacity": 0.85,
         "text-background-padding": "1px",
         "text-rotation": "autorotate",
+        ...fade,
       },
     },
+    ...(options.labelsBeside
+      ? [
+          {
+            selector: "node.module",
+            style: { "text-valign": "center", "text-halign": "right", "text-justification": "left", "text-margin-x": 6, "text-margin-y": 0 },
+          } as const,
+        ]
+      : []),
     { selector: "edge.mode-data_transfer", style: { width: 1 } },
     { selector: "edge.inferred", style: { "line-style": "dashed" } },
     { selector: "edge.uncertain", style: { "font-weight": "bold" } },
