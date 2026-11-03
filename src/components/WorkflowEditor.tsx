@@ -23,6 +23,7 @@ import {
   type EditResult,
   type WorkflowState,
 } from "../lib/workflowState";
+import { MessageSlot } from "./WorkflowMessages";
 
 /** A text input that applies its value on Enter or when it loses focus; a refused value snaps back. */
 export function CommitField({
@@ -164,6 +165,7 @@ export function WorkflowEditor({
           Fill the builder from this platform
         </button>
       </div>
+      <MessageSlot at="start" />
 
       <h3>Modules</h3>
       <p className="table-note">
@@ -183,16 +185,16 @@ export function WorkflowEditor({
             <tbody>
               {state.modules.map((m, k) => (
                 <tr key={k}>
-                  <td className="num">{k + 1}</td>
-                  <td>
+                  <td className="num" data-label="Module">{k + 1}</td>
+                  <td data-label="Module type">
                     <Select label={`Module ${k + 1} type`} value={m.type} options={typeOptions}
                       onChange={(type) => apply(setModule(state, catalog, k + 1, { type }))} />
                   </td>
-                  <td>
+                  <td data-label="Devices">
                     <CommitField label={`Module ${k + 1} devices`} hideLabel value={String(m.devices)}
                       onCommit={(devices) => apply(setModule(state, catalog, k + 1, { devices }))} />
                   </td>
-                  <td>
+                  <td className="wf-remove">
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => apply(removeModule(state, catalog, k + 1))}>
                       Remove module {k + 1}
                     </button>
@@ -209,6 +211,7 @@ export function WorkflowEditor({
           Add module
         </button>
       </div>
+      <MessageSlot at="modules" />
 
       <h3>Steps</h3>
       <p className="table-note">
@@ -272,6 +275,7 @@ export function WorkflowEditor({
           Add step
         </button>
       </div>
+      <MessageSlot at="steps" />
 
       <h3>Transfers</h3>
       <p className="table-note">
@@ -294,7 +298,7 @@ export function WorkflowEditor({
                 if (!isTransferBoundary(state, i)) {
                   return (
                     <tr key={i}>
-                      <td>Steps {i} and {i + 1}</td>
+                      <td className="wf-between">Steps {i} and {i + 1}</td>
                       <td colSpan={2}>same module, no transfer</td>
                     </tr>
                   );
@@ -302,12 +306,12 @@ export function WorkflowEditor({
                 const t = transferAt(state, i);
                 return (
                   <tr key={i}>
-                    <td>Steps {i} and {i + 1}</td>
-                    <td>
+                    <td className="wf-between">Steps {i} and {i + 1}</td>
+                    <td data-label="Transfer mode">
                       <Select label={`Transfer mode between steps ${i} and ${i + 1}`} value={t.mode} options={modeOptions}
                         onChange={(mode) => apply(setTransfer(state, catalog, i, { mode }))} />
                     </td>
-                    <td>
+                    <td data-label="Transfer time (s)">
                       <CommitField label={`Transfer time between steps ${i} and ${i + 1}, seconds`} hideLabel inputMode="decimal"
                         value={String(t.seconds)} onCommit={(seconds) => apply(setTransfer(state, catalog, i, { seconds }))} />
                     </td>
@@ -318,6 +322,8 @@ export function WorkflowEditor({
           </table>
         </div>
       )}
+
+      <MessageSlot at="transfers" />
 
       <h3>Batches</h3>
       <div className="wf-inputs">

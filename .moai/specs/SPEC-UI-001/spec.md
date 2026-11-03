@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.9.0"
+version: "0.10.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -45,6 +45,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   modules, ordered steps and per-boundary transfers, which is enough for a graph without a model change.
 - 2026-11-03 0.9.0 REQ-040 to REQ-044: phase 6 of the plan (the final pass: axe, keyboard, screenshots, Lighthouse,
   bundle comparison) and the known leftovers, requested by the researcher. Presentation only.
+- 2026-11-03 0.10.0 REQ-045 to REQ-047: the three older layout issues the phase 6 report left alone, approved by the
+  researcher before any merge. Presentation only.
 
 ## 1. Why
 
@@ -259,3 +261,10 @@ taken from the built release data.
 - **REQ-044** (ubiquitous) Every route and the interactive states of the redesign shall have no serious or critical
   axe-core violation (WCAG 2.2 AA and best practice) in light and dark; overlays close on Escape and hand focus back;
   popovers move focus to their first enabled field.
+- **REQ-045** (state) The Browse papers and platforms tables shall fit their box at 1440 px; while a column is out of
+  the box's view (narrower windows, more columns), a fade at that edge and the note "Scroll sideways for more columns"
+  shall show, and the table scrolls inside its box, never the page.
+- **REQ-046** (state) While the viewport is narrower than 800 px, the builder's module and transfer tables shall show
+  one block per row with each field under its column name, so no field runs past the box at 375 px.
+- **REQ-047** (event-driven) A builder message (a note or refusal of an edit) shall show in the flow right after the
+  part of the builder the edit came from, covering no content; a visually hidden live region announces it once.

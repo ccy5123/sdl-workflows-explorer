@@ -210,6 +210,26 @@
     and 22 KB). The shared Observable Plot chunk is unchanged (+205); rollup now names it after `plotMarks.ts`.
   - Final: `npm test` 46 files / 708 passed; `npm run typecheck` exit 0; `npm run e2e` 306 passed (4.0 min).
 
+- Phase 6 follow-up: the three older layout issues (REQ-045 to REQ-047), approved by the researcher before any merge.
+  - Browse: measured box 1150 px against tables of 1206 px (papers) and 1158 px (platforms) at 1440 px. Cut text
+    (`.truncate`) is now 26ch instead of 32ch, so both tables are exactly 1150 px wide there. While columns are out of
+    view the box shows a fade at that edge and the toolbar the note "Scroll sideways for more columns" (DataTable
+    watches the box's scroll position and size).
+  - Builder at 375 px: the module table was 750 px and the transfer table 488 px in a 305 px box. Below 800 px both
+    tables now show one block per row, the column names above the fields (the stacked-table pattern of the taxonomy
+    and benchmark tables). The result tables (cycle time, simulation) still scroll inside their boxes.
+  - Builder messages: no longer sticky. A message shows in the first slot after the control that made the edit (the
+    fill controls, modules, steps, transfers, the end of the builder, the cycle-time bounds and each cycle-time step,
+    the simulation inputs); a visually hidden live region announces it once. Making it plain static after the builder
+    was not enough: the fill button is at the top and the message would show a screen or more below it.
+  - RED: the three new tests (AC-52 to AC-54) first ran against the previous e2e build (the build step had been
+    skipped by a type error in the test file) and failed: last column at 1351 px against a box edge of 1296 px;
+    builder tables scrolling 445 and 183 px with 45 and 46 fields outside; no message in the fill slot. After the
+    rebuild they passed.
+  - Final: `npm test` 46 files / 708 passed; `npm run typecheck` exit 0; `npm run e2e` 309 passed (3.6 min).
+  - Screenshots (git-ignored): `screenshots/followup/` (Browse 1440 and 375 px, builder modules 375 and 1440 px,
+    builder message 375 and 1440 px, light and dark).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

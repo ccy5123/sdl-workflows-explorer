@@ -2,7 +2,8 @@
 // All @tanstack/react-table use stays in this file, so an API change of the library touches one place.
 // The header stays in view while the rows scroll inside the table box, the row under the pointer is highlighted, and
 // long text can be cut to one line with the full text in `title` (SPEC-UI-001 REQ-027).
-import { useMemo, type ReactNode } from "react";
+import { ArrowRight } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   columnVisibilityFeature,
   createSortedRowModel,
@@ -90,6 +91,29 @@ export function DataTable<T extends RowData>({
     enableMultiSort: false,
   });
 
+  // Columns out of view to either side of the box: shown by a fade at that edge and, while any column is hidden, a
+  // note in the toolbar (SPEC-UI-001 UI AC-52). The page itself never scrolls sideways.
+  const box = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const update = () => {
+      const left = el.scrollLeft > 1;
+      const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setMore((m) => (m.left === left && m.right === right ? m : { left, right }));
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <>
       <div className="table-tools">
@@ -105,8 +129,15 @@ export function DataTable<T extends RowData>({
           }))}
         />
         {toolbar}
+        {(more.left || more.right) && (
+          <p className="table-more">
+            Scroll sideways for more columns
+            <ArrowRight size={14} aria-hidden="true" />
+          </p>
+        )}
       </div>
-      <div className="table-scroll table-scroll-sticky">
+      <div className={`table-frame${more.left ? " more-left" : ""}${more.right ? " more-right" : ""}`}>
+      <div className="table-scroll table-scroll-sticky" ref={box}>
         <table className="data" data-table={name}>
           <thead>
             {table.getHeaderGroups().map((group) => (
@@ -150,6 +181,7 @@ export function DataTable<T extends RowData>({
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );

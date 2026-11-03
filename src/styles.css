@@ -2663,6 +2663,52 @@ button {
   margin: 8px 0;
 }
 
+/* "Scroll sideways for more columns", while a column is out of the box's view. */
+.table-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 0 auto;
+  align-self: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* A fade at the edge of the box where columns are out of view. */
+.table-frame {
+  position: relative;
+}
+
+.table-frame::before,
+.table-frame::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  z-index: 2;
+  width: 32px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur) ease;
+}
+
+.table-frame::before {
+  left: 1px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: linear-gradient(to right, var(--card), transparent);
+}
+
+.table-frame::after {
+  right: 1px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: linear-gradient(to left, var(--card), transparent);
+}
+
+.table-frame.more-left::before,
+.table-frame.more-right::after {
+  opacity: 1;
+}
+
 /* The browser tables scroll inside their box, so the header row can stay in view; the row under the pointer is
    highlighted. */
 /* position: relative keeps absolutely placed descendants (the visually hidden codes of <Label>) inside the clipped box. */
@@ -2688,7 +2734,8 @@ button {
 
 .truncate {
   display: block;
-  max-width: 32ch;
+  /* 26ch: with Title and Venue cut at this width the papers and platforms tables fit their box at 1440 px. */
+  max-width: 26ch;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -3243,10 +3290,9 @@ table.count-table a {
   color: var(--muted);
 }
 
-.wf-messages {
-  position: sticky;
-  bottom: 0;
-  background: var(--bg);
+/* In the flow after the part of the builder an edit came from; nothing sits under it (UI AC-54). */
+.wf-messages:empty {
+  display: none;
 }
 
 .wf-message {
@@ -3268,6 +3314,65 @@ table.count-table a {
 /* Absolutely placed hidden labels inside a scrolling table stay inside it instead of widening the page. */
 .workflow .table-scroll {
   position: relative;
+}
+
+/* Below 800 px the builder's module and transfer tables become one block per row: the module or step pair on top,
+   then each field under its column name, so a select never runs past the box (SPEC-UI-001 UI AC-53). */
+@media (max-width: 799.98px) {
+  .wf-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .wf-table,
+  .wf-table tbody,
+  .wf-table tr,
+  .wf-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .wf-table tr {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--table-border);
+  }
+
+  .wf-table td,
+  .wf-table td.num {
+    padding: 0.15rem 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .wf-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+  }
+
+  .wf-table td[data-label="Module"],
+  .wf-table td.wf-between {
+    font-weight: 600;
+  }
+
+  .wf-table td[data-label="Module type"]::before,
+  .wf-table td[data-label="Devices"]::before,
+  .wf-table td[data-label="Transfer mode"]::before,
+  .wf-table td[data-label="Transfer time (s)"]::before {
+    display: block;
+    content: attr(data-label);
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .wf-table .wf-field,
+  .wf-table select {
+    width: 100%;
+  }
 }
 
 .wf-measures {

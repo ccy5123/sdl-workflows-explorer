@@ -226,6 +226,17 @@ progress.md.
   (family headings), `e2e/browse.spec.ts` (Compare rows found by `data-code`), `e2e/site.spec.ts` (view card link
   inside the card), `e2e/trends.spec.ts` and `e2e/phase5.spec.ts` (Plot mark groups by `data-mark`).
 
+### AC-52 to AC-54 Older layout issues (REQ-045 to REQ-047), `e2e/phase6.spec.ts`
+- AC-52: at 1440 px the last header cell of the papers and of the platforms table ends inside its box, the box does
+  not scroll sideways and no "Scroll sideways" note shows; at 375 px the papers box scrolls sideways, carries the
+  right fade and the note, the page does not scroll sideways, and scrolled to its end it carries the left fade only.
+- AC-53: at 375 px, filled from `Kim2026/P1`, the module and transfer tables do not scroll sideways, no select, input
+  or button ends past their box, the page does not scroll sideways, and a module-type cell shows "Module type" above
+  its select.
+- AC-54: at 1440 x 900 and 375 x 812, after filling from `Aand2024/P1` the note shows in the slot after the fill
+  controls with `position: static`, and it leaves the view when the steps are scrolled to the middle; a refused
+  "Module 1 devices" value shows its error in the slot after the modules and the earlier note is gone.
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

@@ -11,6 +11,7 @@ import { DURATION_TICKS, StripPlot, type StripPoint } from "./DurationStrip";
 import { Label } from "./Label";
 import { CommitField } from "./WorkflowEditor";
 import { ThroughputPanel } from "./ThroughputPanel";
+import { MessageSlot } from "./WorkflowMessages";
 
 const markers = (d: DurationRow) =>
   [d.bound === "upper" ? "≤" : d.bound === "lower" ? "≥" : "", d.approximate ? "≈" : ""].join("");
@@ -189,6 +190,7 @@ function StepDetail({
           </ul>
         </details>
       )}
+      <MessageSlot at={`range-step-${i}`} />
     </section>
   );
 }
@@ -226,6 +228,7 @@ export function CycleRange({
         <input id={boundsId} type="checkbox" checked={state.bounds} onChange={(e) => apply(setOption(state, catalog, { bounds: e.target.checked }))} />
         <label htmlFor={boundsId}>{BOUNDS_LABEL}</label>
       </p>
+      <MessageSlot at="range-bounds" />
       <div className="table-scroll">
         <table className="data" data-table="wf-range">
           <thead>

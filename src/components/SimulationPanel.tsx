@@ -33,6 +33,7 @@ import {
 import { Label } from "./Label";
 import { rowLabel, rowName, Timeline, TIMELINE_LIMIT } from "./Timeline";
 import { CommitField } from "./WorkflowEditor";
+import { MessageSlot } from "./WorkflowMessages";
 
 function Choice({
   label,
@@ -171,6 +172,7 @@ export function SimulationPanel({
         ))}
       </ul>
 
+      <MessageSlot at="sim" />
       {blocked && <p className="wf-missing">{blocked}</p>}
       <p>
         <button type="button" className="btn btn-primary" disabled={blocked !== null || running} onClick={run}>

@@ -195,3 +195,86 @@ test("UI AC-50: keyboard — the legend closes on Escape; the Columns popover ta
   await expect(columns).toBeFocused();
   await expect(columns).toHaveAttribute("aria-expanded", "false");
 });
+
+/** Right edge of the last header cell against the right edge of its scroll box, and the box's scroll widths. */
+const lastColumn = (page: Page, table: string) =>
+  page.locator(`[data-table="${table}"]`).evaluate((t) => {
+    const box = t.closest(".table-scroll")!;
+    const last = [...t.querySelectorAll("thead th")].at(-1)!;
+    return {
+      lastRight: last.getBoundingClientRect().right,
+      boxRight: box.getBoundingClientRect().right,
+      scroll: box.scrollWidth,
+      client: box.clientWidth,
+      frame: box.parentElement!.className,
+    };
+  });
+const pageOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+test("UI AC-52: Browse tables fit their box at 1440 px; narrower, they scroll inside it with a cue", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const [hash, table] of [["#/browse", "papers"], ["#/browse?view=platforms", "platforms"]] as const) {
+    await page.goto(`/${hash}`);
+    const m = await lastColumn(page, table);
+    expect(m.lastRight, `${table}: last column inside the box`).toBeLessThanOrEqual(m.boxRight + 0.5);
+    expect(m.scroll, table).toBeLessThanOrEqual(m.client);
+    await expect(main(page).locator(".table-more")).toHaveCount(0);
+  }
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#/browse");
+  const narrow = await lastColumn(page, "papers");
+  expect(narrow.scroll).toBeGreaterThan(narrow.client);
+  expect(narrow.frame).toContain("more-right");
+  await expect(main(page).locator(".table-more")).toHaveText("Scroll sideways for more columns");
+  expect(await pageOverflow(page)).toBeLessThanOrEqual(0);
+  // Scrolled to the end, the right fade goes and the left one comes.
+  await main(page).locator(".table-scroll-sticky").evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+  await expect.poll(async () => (await lastColumn(page, "papers")).frame).toContain("more-left");
+  expect((await lastColumn(page, "papers")).frame).not.toContain("more-right");
+});
+
+test("UI AC-53: at 375 px the builder's module and transfer fields stay inside their box", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#/workflow");
+  await fillFrom(page, "Kim2026/P1");
+  const inside = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('[data-table="wf-modules"], [data-table="wf-transfers"]')].map((t) => {
+      const box = t.closest(".table-scroll")!.getBoundingClientRect();
+      const out = [...t.querySelectorAll<HTMLElement>("select, input, button")].filter((f) => f.getBoundingClientRect().right > box.right + 0.5);
+      return { table: t.dataset.table, scroll: t.closest(".table-scroll")!.scrollWidth - t.closest(".table-scroll")!.clientWidth, out: out.length };
+    }),
+  );
+  expect(inside).toEqual([
+    { table: "wf-modules", scroll: 0, out: 0 },
+    { table: "wf-transfers", scroll: 0, out: 0 },
+  ]);
+  expect(await pageOverflow(page)).toBeLessThanOrEqual(0);
+  // Each field keeps a visible name above it.
+  const typeCell = main(page).locator('[data-table="wf-modules"] td[data-label="Module type"]').first();
+  expect(await typeCell.evaluate((el) => getComputedStyle(el, "::before").content)).toBe('"Module type"');
+});
+
+test("UI AC-54: builder messages sit in the flow after the part they come from and cover nothing", async ({ page }) => {
+  for (const [width, height] of [[1440, 900], [375, 812]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/#/workflow");
+    await fillFrom(page, "Aand2024/P1");
+    const note = main(page).locator(".wf-message", { hasText: "Filled from Aand2024/P1" });
+    await expect(note).toBeVisible();
+    // Shown right after the "Fill the builder" controls, not stuck to the window.
+    await expect(main(page).locator('[data-msg-slot="start"] .wf-message')).toHaveCount(1);
+    expect(await note.evaluate((el) => getComputedStyle(el.parentElement!).position)).toBe("static");
+    // Scrolled down, nothing of the builder is under it.
+    await main(page).locator(".wf-steps").evaluate((el) => el.scrollIntoView({ block: "center" }));
+    const below = await note.boundingBox();
+    expect(below === null || below.y + below.height <= 0, `${width} px: message still in view after scrolling`).toBe(true);
+
+    // A refusal shows after the part of the field that caused it.
+    const devices = main(page).getByLabel("Module 1 devices");
+    await devices.fill("51");
+    await devices.press("Enter");
+    await expect(main(page).locator('[data-msg-slot="modules"] .wf-error')).toContainText("Devices must be a whole number from 1 to 50.");
+    await expect(main(page).locator('[data-msg-slot="start"] .wf-message')).toHaveCount(0);
+  }
+});
