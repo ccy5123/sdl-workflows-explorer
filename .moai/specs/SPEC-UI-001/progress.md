@@ -155,6 +155,61 @@
   specified; none between the two Software steps, as the state holds); 375 px dark (top to bottom, no sideways scroll;
   the toolbar covers the last caption's end).
 
+- Phase 6, final pass and leftovers (REQ-040 to REQ-044). Commits: f9ca65b (readable names: platform tables, builder
+  results and bottleneck sentence, taxonomy families, benchmark tasks), fd3261f (a selected step brings the graph into
+  view), e19fd29 (phone toolbar inset in the fit; wider rank gaps for parallel edges), 6acdb74 (axe pass), 47bbf4b
+  (keyboard: legend Escape, Columns focus), 38ed324 (Compare names, found in the screenshot review), and the commit
+  that adds this record (favicon, two layout-shift fixes, SPEC files).
+  - Leftovers. Benchmark tasks are named from `target` through the page's existing task titles ("Primary module type
+    of a step"; count columns "Module type items"); the id stays beside or under the name. In running text the code of
+    a name inside brackets sits in `title` only (`Label inText`), so a sentence does not read "(name (code))". The step
+    list's "family" and the Compare tables were also still codes and now read as names. Still codes on purpose: URLs,
+    select values, downloads, the builder's workflow-inputs list (`steps 1 and 2: robot_arm_gantry, 30 s`, pinned by
+    SPEC-SIM-001 AC-15) and the "Name (code)" select options.
+  - Step highlight: chosen fix is to scroll the graph into view on selection (click, Enter, Space) when less than
+    half of it shows; hover and focus never move the page; reduced motion jumps. A sticky graph was rejected: at 900 px
+    tall a 560 px sticky graph would leave about 280 px for the steps and tables.
+  - Phone preview: the readable fit keeps the bottom-corner toolbar clear (`readableViewport` bottom inset, measured
+    from the toolbar), and the phone preview box is `min(70vh, 600px)` like the viewer graph. Kim2026/P1: graphs with
+    parallel edges (72 of 279 platforms, Kim2026/P1 among them, Aand2024/P1 not) get rankSep 150 / nodeSep 56 left to
+    right and rankSep 120 top to bottom; in the top-to-bottom preview those labels follow their edge. The readable
+    zoom (1) is unchanged; Kim2026/P1 still pans with the minimap.
+  - RED evidence: `tests/viewport.test.ts` inset case failed before the change; with the layout and inset reverted in
+    the source, `e2e/phase6.spec.ts` AC-47 and AC-48 failed (AC-48: "Robot arm / gantry" labels over Liquid handler,
+    Batch reactor and Sample handling station). Gap: AC-42 to AC-46 and AC-50 were written with their fixes; no
+    separate RED run was captured.
+  - axe (`e2e/axe.spec.ts`, @axe-core/playwright 4.14.0, tags wcag2a/aa, wcag21a/aa, wcag22aa, best-practice; 21
+    states x 2 themes). First run: 18 of 42 failed on serious findings: aria-prohibited-attr (Observable Plot puts
+    aria-label on role-less mark groups; moved to `data-mark`), label-content-name-mismatch (Home view cards; the
+    link is now the view name, stretched over the card), scrollable-region-focusable (graph legend, featured chain;
+    now focusable) and target-size (Browse platform numbers, throughput summaries; now 24 px). After: 42 passed, no
+    serious or critical. Remaining: moderate `region` on every page (the skip link sits outside the landmarks).
+  - Keyboard: a tab walk over 15 routes at 1440 and 375 px reached the footer everywhere with no invisible stop
+    (Trends' segmented radios are transparent; the focus ring shows on the segment); the reported upward jumps were
+    Browse's inner scroll box and the two-column layouts. Escape: site menu, filter and Columns popovers and the
+    evidence sheet closed and handed focus back; the legend did not close (fixed); the Columns popover left focus on
+    its button because its first boxes are disabled (fixed).
+  - Screenshots: 15 routes (every route of `e2e/routes.ts`, Kim2026/P1, a filled workflow) x 375 and 1440 px x light
+    and dark = 60 full-page PNGs of the production build in `screenshots/phase6/` (git-ignored), contact sheets in
+    `screenshots/phase6/sheets/`. scrollWidth equalled clientWidth on all 60. Seen and left as they were (earlier
+    phases, not regressions): the Browse papers table's last column is cut at the box edge until scrolled; on a phone
+    the builder's module-type selects run past their table box (it scrolls); the builder's sticky "Filled from …"
+    message covers the content under it while it shows.
+  - Lighthouse 13.5.0 (Playwright Chromium 1248, headless, `vite preview` of each production build; mobile is the
+    default throttled run, median of 3; desktop preset, 1 run). Performance / accessibility / best practices, main ->
+    this branch: Home mobile 95/100/96 -> 93/100/100, desktop 100/100/96 -> 100/100/100; Browse mobile
+    95/96/96 -> 94/100/100, desktop 100/96/96 -> 100/100/100; Aand2024/P1 mobile 91/100/96 -> 91/100/100, desktop
+    76/100/96 -> 100/100/100 (main's CLS there was 0.912). LCP mobile 2.41-2.56 s -> 2.56-2.87 s; transfer 269-275 KiB
+    -> 290-432 KiB (fonts). The first branch run showed CLS 0.140 on the platform page (footer moved while the view
+    loaded), 0.129 on Home desktop (featured card's loading state shorter than the card) and a console 404 for
+    favicon.ico on both builds; fixed with `.page-main` min-height, a 540 px loading state and `public/favicon.svg`,
+    then re-run (the numbers above).
+  - Bundle (production builds, gzip level 9 by Python): JS 1,085,654 -> 1,150,026 bytes raw (+64,372; gzip 355,441
+    -> 374,333, +18,892), of which the entry +56,903 raw (lucide icons, Home, labels, popovers); CSS 14,853 -> 42,505
+    (+27,652; gzip 3,754 -> 8,873); fonts 0 -> 141,616 (four woff2: Latin Modern 48 KB and 51 KB, JetBrains Mono 21 KB
+    and 22 KB). The shared Observable Plot chunk is unchanged (+205); rollup now names it after `plotMarks.ts`.
+  - Final: `npm test` 46 files / 708 passed; `npm run typecheck` exit 0; `npm run e2e` 306 passed (4.0 min).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

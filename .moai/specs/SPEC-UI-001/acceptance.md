@@ -198,6 +198,34 @@ progress.md.
 - AC-41: at 375 and 1440 px the graph stays inside the main column without sideways scroll; top to bottom at 375 px,
   left to right at 1440 px.
 
+### AC-42 to AC-51 Phase 6 (REQ-040 to REQ-044), `e2e/phase6.spec.ts`, `e2e/axe.spec.ts`, `tests/viewport.test.ts`
+- AC-42: on `Aand2024/P1` the Modules "Type" cell shows a name without "_" and the code in `title`; the Connections
+  "Transfer mode" cell reads "Fixed tubing" with `title` `fixed_tubing`.
+- AC-43: after a simulation the bottleneck sentence reads "Step k (operation name) on module m (type name), p%." with
+  no "_"; the utilization and waiting tables have no "_"; the event table's device cell reads "Module 1 (Flow
+  reactor), device 1" with the coded name in `title`; the cycle-time table names its unit operation.
+- AC-44: the benchmark task sections are headed "Primary module type of a step" and "Transfer mode of a material
+  connection" with the task id beside; the split table heads read "Module type items" with the id under; the items
+  explorer's task option reads "Name (id)"; family cells are names with the code in `title`.
+- AC-45: the class page of a unit operation names its family ("Mix", `title` `mix`); AC-51: the Compare tables name
+  module types, transfer modes and unit operations with the code in `title`.
+- AC-46: at 1440 × 900 on `Kim2026/P1`, with the last step in view and less than half the graph shown, hovering the
+  step leaves the scroll position unchanged; clicking it, or Enter on it, brings more than 95% of the graph into view.
+- AC-47: at 375 px, the workflow graph filled from `Aand2024/P1` has no caption under the toolbar and no minimap;
+  `readableViewport` with a bottom inset fits and centres above it.
+- AC-48: on `Kim2026/P1` at 1440 and 375 px, in the viewer and in the workflow preview, no label of a parallel edge
+  meets a module's label box; `Aand2024/P1` has no parallel edge (default spacing).
+- AC-49: axe-core (WCAG 2.2 AA and best practice) finds no serious or critical violation on every route of
+  `e2e/routes.ts` and on `Kim2026/P1`, a filled workflow after a simulation, the Field tag and Columns popovers, the
+  open site menu, the open evidence sheet and legend, and Taxonomy's open How this works, in light and dark.
+- AC-50: the legend opened by keyboard closes on Escape with focus back on its button; the evidence sheet opened
+  from a row closes on Escape with focus back on the row; the Columns popover moves focus to an enabled checkbox and
+  Escape returns it to the button.
+- Changed existing tests: `e2e/workflow.spec.ts` (missing-duration sentence names the operation),
+  `e2e/benchmark.spec.ts` (task headings, task cells and count columns by readable name), `e2e/taxonomy.spec.ts`
+  (family headings), `e2e/browse.spec.ts` (Compare rows found by `data-code`), `e2e/site.spec.ts` (view card link
+  inside the card), `e2e/trends.spec.ts` and `e2e/phase5.spec.ts` (Plot mark groups by `data-mark`).
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

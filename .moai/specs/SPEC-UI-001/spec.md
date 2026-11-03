@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.8.0"
+version: "0.9.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -43,6 +43,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   captions, top-to-bottom layout on phones, minimap, step preview).
 - 2026-11-03 0.8.0 REQ-039: workflow graph preview approved by the researcher. Design check: `WorkflowState` holds
   modules, ordered steps and per-boundary transfers, which is enough for a graph without a model change.
+- 2026-11-03 0.9.0 REQ-040 to REQ-044: phase 6 of the plan (the final pass: axe, keyboard, screenshots, Lighthouse,
+  bundle comparison) and the known leftovers, requested by the researcher. Presentation only.
 
 ## 1. Why
 
@@ -238,3 +240,22 @@ taken from the built release data.
   other link and no dashed (inferred) line. It updates on every edit, fits its column at 375 and 1440 px (top to
   bottom below 800 px), has an empty state when there are no steps, and an image label "N modules, M transfers"
   (the builder's fields stay the text alternative).
+
+### Phase 6: final pass and leftovers
+
+- **REQ-040** (ubiquitous) Vocabulary codes still printed as codes shall read as readable names with the code in
+  `title` (and as hidden secondary text in tables): the platform Modules "Type" and Connections "Transfer mode"
+  columns, the builder's result tables, event table and bottleneck sentence (wording otherwise unchanged), taxonomy
+  and step family names, the Compare tables, and benchmark tasks, named from the task's target with the task id
+  beside or under the name. URLs, select values and downloads keep the codes.
+- **REQ-041** (event-driven) Selecting a cycle step (click, Enter or Space) while less than half of the graph is in
+  view shall scroll the graph into view; hovering or focusing a step shall not move the page; under
+  `prefers-reduced-motion: reduce` the scroll jumps.
+- **REQ-042** (ubiquitous) The readable fit shall keep the graph toolbar clear when it sits in the bottom corner (below
+  800 px), so a fitted graph's last caption is not covered; the phone workflow preview is as tall as the viewer graph.
+- **REQ-043** (state) While a graph has parallel edges (two or more connections between the same two modules), dagre
+  shall use wider rank gaps so the edge labels stay off the module labels, and in the top-to-bottom workflow preview
+  those labels shall follow their edge; graphs without parallel edges keep their layout and fit.
+- **REQ-044** (ubiquitous) Every route and the interactive states of the redesign shall have no serious or critical
+  axe-core violation (WCAG 2.2 AA and best practice) in light and dark; overlays close on Escape and hand focus back;
+  popovers move focus to their first enabled field.

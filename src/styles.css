@@ -156,6 +156,9 @@ code {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 28px var(--gutter) 56px;
+  /* At least the window below the top bar, so the footer starts out of view and does not jump while a view loads
+     (Lighthouse layout shift, SPEC-UI-001 phase 6). */
+  min-height: calc(100vh - 64px);
 }
 
 /* Skip link: off screen until it receives focus (SPEC-SITE-001 REQ-010). */
@@ -731,6 +734,12 @@ h3 {
 /* Home (SPEC-UI-001 REQ-010) */
 .page-main:has(> .home) {
   padding-top: 0;
+}
+
+/* The featured card's loading state about as tall as the card, so the Home sections below do not jump when it fills
+   (Lighthouse layout shift, SPEC-UI-001 phase 6). */
+.featured[aria-busy="true"] {
+  min-height: 540px;
 }
 
 .home {

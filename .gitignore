@@ -251,3 +251,5 @@ dist-e2e/
 dist-pages/
 test-results/
 playwright-report/
+# SPEC-UI-001 phase 6: screenshots, axe and Lighthouse reports and the helper scripts that made them (local only)
+/screenshots/
