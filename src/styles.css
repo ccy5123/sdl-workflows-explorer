@@ -3192,9 +3192,11 @@ table.count-table a {
   height: 440px;
 }
 
+/* On phones as tall as the viewer's graph, so a fitted top-to-bottom workflow keeps its last caption clear of the
+   toolbar in the bottom corner (UI AC-47). */
 @media (max-width: 799.98px) {
   .wf-graph-box .graph {
-    height: min(60vh, 480px);
+    height: min(70vh, 600px);
   }
 }
 

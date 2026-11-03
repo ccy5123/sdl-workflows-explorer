@@ -1,5 +1,8 @@
 // UI AC-42 to AC-46: the phase 6 leftovers of SPEC-UI-001, in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
+import type { Core } from "cytoscape";
+
+type Win = Window & { __cy?: Core; __wfCy?: Core };
 
 const main = (page: Page) => page.locator("main");
 
@@ -84,4 +87,69 @@ test("UI AC-46: selecting a step scrolls the graph into view; hovering does not 
   expect(await graphShown()).toBeLessThan(0.5);
   await page.keyboard.press("Enter");
   await expect.poll(graphShown).toBeGreaterThan(0.95);
+});
+
+async function fillFrom(page: Page, platformId: string) {
+  const m = main(page);
+  await m.getByLabel("Start from a coded platform").selectOption(platformId);
+  await m.getByRole("button", { name: "Fill the builder from this platform" }).click();
+  await page.waitForFunction(() => (window as Win).__wfCy !== undefined);
+}
+
+test("UI AC-47: at 375 px the fitted workflow graph keeps every caption clear of the toolbar", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#/workflow");
+  await fillFrom(page, "Aand2024/P1");
+  const m = main(page);
+  await m.locator(".wf-graph-box").scrollIntoViewIfNeeded();
+  const clash = () =>
+    page.evaluate(() => {
+      const bar = document.querySelector(".wf-graph-box .graph-toolbar")!.getBoundingClientRect();
+      const hit = (r: DOMRect) => r.width > 0 && r.left < bar.right && r.right > bar.left && r.top < bar.bottom && r.bottom > bar.top;
+      return [...document.querySelectorAll<HTMLElement>(".wf-graph-box .graph-caption")]
+        .filter((c) => hit(c.getBoundingClientRect()))
+        .map((c) => c.textContent);
+    });
+  await expect.poll(clash).toEqual([]);
+  // The whole graph is in view: no minimap.
+  await expect(m.locator(".wf-graph-box .graph-minimap")).toHaveCount(0);
+});
+
+/** Labels of parallel edges whose box meets a module's label box, as "edge label / module label". */
+const bundleClashes = (page: Page, key: "__cy" | "__wfCy") =>
+  page.evaluate((k) => {
+    const cy = (window as Win)[k]!;
+    const labelBox = { includeNodes: false, includeEdges: false, includeLabels: true, includeOverlays: false } as const;
+    type Box = { x1: number; x2: number; y1: number; y2: number };
+    const meet = (a: Box, b: Box) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+    const out: string[] = [];
+    cy.edges(".bundled").forEach((e) => {
+      const eb = e.boundingBox(labelBox);
+      cy.nodes(".module").forEach((n) => {
+        if (meet(eb, n.boundingBox(labelBox))) out.push(`${e.data("label")} / ${n.data("label")}`);
+      });
+    });
+    return { bundled: cy.edges(".bundled").length, out };
+  }, key);
+
+test("UI AC-48: on Kim2026/P1 the labels of parallel edges stay off the module labels", async ({ page }) => {
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/#/platform/Kim2026/P1");
+    await page.waitForFunction(() => (window as Win).__cy !== undefined);
+    const viewer = await bundleClashes(page, "__cy");
+    expect(viewer.bundled, `${width} px`).toBeGreaterThan(0);
+    expect(viewer.out, `viewer at ${width} px`).toEqual([]);
+
+    await page.goto("/#/workflow");
+    await fillFrom(page, "Kim2026/P1");
+    const preview = await bundleClashes(page, "__wfCy");
+    expect(preview.bundled, `${width} px`).toBeGreaterThan(0);
+    expect(preview.out, `workflow preview at ${width} px`).toEqual([]);
+  }
+  // A graph without parallel edges keeps the default spacing.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/#/platform/Aand2024/P1");
+  await page.waitForFunction(() => (window as Win).__cy !== undefined);
+  expect((await bundleClashes(page, "__cy")).bundled).toBe(0);
 });

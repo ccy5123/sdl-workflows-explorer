@@ -170,7 +170,11 @@ export function buildStylesheet(
         ]
       : []),
     { selector: "edge.mode-data_transfer", style: { width: 1 } },
-    ...(options.levelEdgeLabels ? [{ selector: "edge", style: { "text-rotation": "none" } } as const] : []),
+    // Level labels, except on a bundle of parallel edges (marked by the graph), whose side-by-side level labels would
+    // run into each other; those follow their edge (SPEC-UI-001 UI AC-48).
+    ...(options.levelEdgeLabels
+      ? [{ selector: "edge", style: { "text-rotation": "none" } } as const, { selector: "edge.bundled", style: { "text-rotation": "autorotate" } } as const]
+      : []),
     // A workflow transfer whose mode the visitor has not specified (SPEC-UI-001 UI AC-39): a neutral line.
     { selector: "edge.mode-na", style: { "line-color": t["--muted"], "target-arrow-color": t["--muted"] } },
     { selector: "edge.inferred", style: { "line-style": "dashed" } },

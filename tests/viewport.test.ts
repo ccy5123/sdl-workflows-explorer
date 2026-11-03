@@ -37,6 +37,15 @@ describe("readableViewport", () => {
     expect(v.pan.x).toBeCloseTo((800 - 300 * v.zoom) / 2);
   });
 
+  it("keeps a bottom inset clear (the phone toolbar) when it fits and centres above it", () => {
+    // 300x400 graph in a 375x568 box, padding 24, inset 56: fit zoom = min(327/300, 464/400) = 1.09.
+    const v = readableViewport(box(0, 0, 300, 400), 375, 568, 24, 56);
+    expect(v.zoom).toBeCloseTo(327 / 300);
+    const bottom = v.pan.y + 400 * v.zoom;
+    expect(bottom).toBeLessThanOrEqual(568 - 56 - 24 + 1e-9);
+    expect(v.pan.y).toBeCloseTo((568 - 56 - 400 * v.zoom) / 2);
+  });
+
   it("returns a finite viewport for an empty bounding box", () => {
     const v = readableViewport(box(0, 0, 0, 0), 800, 600, 20);
     expect(v.zoom).toBe(MAX_FIT_ZOOM);

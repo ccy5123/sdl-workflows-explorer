@@ -47,6 +47,36 @@ export const LAYOUTS: Record<RankDir, cytoscape.LayoutOptions> = {
   TB: { name: "dagre", rankDir: "TB", fit: false, nodeSep: 24, rankSep: 36, edgeSep: 12, nodeDimensionsIncludeLabels: true, transform: centreLabelBox } as cytoscape.LayoutOptions,
 };
 
+/**
+ * Wider spacing for a graph with parallel edges (two or more connections between the same two modules, as on
+ * `Kim2026/P1` and in workflows that return to a module): dagre does not reserve room for edge labels, and the stacked
+ * labels of a bundle ran over the module labels at the default rank gap (SPEC-UI-001 UI AC-48). Graphs without
+ * parallel edges keep the default spacing, so their fit is unchanged.
+ */
+const ROOMY: Record<RankDir, { rankSep: number; nodeSep: number }> = {
+  LR: { rankSep: 150, nodeSep: 56 },
+  TB: { rankSep: 120, nodeSep: 32 },
+};
+
+/**
+ * The layout of `cy` in `rankDir`: the roomy spacing when two edges join the same two nodes (either direction). Marks
+ * those edges `bundled` on the way, for the stylesheet.
+ */
+export function layoutOf(cy: Core, rankDir: RankDir): cytoscape.LayoutOptions {
+  const pairOf = (e: cytoscape.EdgeSingular) => [e.source().id(), e.target().id()].sort().join(" ");
+  const count = new Map<string, number>();
+  cy.edges().forEach((e) => {
+    count.set(pairOf(e), (count.get(pairOf(e)) ?? 0) + 1);
+  });
+  let parallel = false;
+  cy.edges().forEach((e) => {
+    const bundled = count.get(pairOf(e))! > 1;
+    e.toggleClass("bundled", bundled);
+    parallel ||= bundled;
+  });
+  return parallel ? ({ ...LAYOUTS[rankDir], ...ROOMY[rankDir] } as cytoscape.LayoutOptions) : LAYOUTS[rankDir];
+}
+
 /** Options of a graph's look: `levelEdgeLabels` keeps edge labels horizontal in the top-to-bottom layout. */
 export interface LookOptions {
   levelEdgeLabels?: boolean;
@@ -57,16 +87,18 @@ export const stylesheet = (theme: Theme, reducedMotion: boolean, rankDir: RankDi
 
 /** A Cytoscape instance in `container`, laid out in `rankDir`, read-only to drags. */
 export function createGraph(container: HTMLElement, elements: ElementDefinition[], style: StylesheetJson, rankDir: RankDir): Core {
-  return cytoscape({
+  const cy = cytoscape({
     container,
     elements,
     style,
-    layout: LAYOUTS[rankDir],
+    layout: { name: "preset" },
     minZoom: 0.2,
     maxZoom: 3,
     boxSelectionEnabled: false,
     autoungrabify: true,
   });
+  cy.layout(layoutOf(cy, rankDir)).run();
+  return cy;
 }
 
 /**
@@ -95,7 +127,7 @@ export function useGraphLook(cyRef: MutableRefObject<Core | null>, movedRef: Mut
     laidOut.current = rankDir;
     cy.style(stylesheet(now.current.theme, now.current.reducedMotion, rankDir, { levelEdgeLabels: now.current.level }));
     cy.resize();
-    cy.layout(LAYOUTS[rankDir]).run();
+    cy.layout(layoutOf(cy, rankDir)).run();
     readableFit(cy);
     movedRef.current = false;
   }, [cyRef, movedRef, rankDir]);
@@ -106,7 +138,7 @@ export function useGraphLook(cyRef: MutableRefObject<Core | null>, movedRef: Mut
     return { style: stylesheet(t, still, laidOut.current, { levelEdgeLabels: flat }), rankDir: laidOut.current };
   }, []);
   const relayout = useCallback((cy: Core) => {
-    cy.layout(LAYOUTS[laidOut.current]).run();
+    cy.layout(layoutOf(cy, laidOut.current)).run();
   }, []);
   return { rankDir, start, relayout };
 }
@@ -114,9 +146,22 @@ export function useGraphLook(cyRef: MutableRefObject<Core | null>, movedRef: Mut
 /** Delay before a container resize is acted on, so a run of resize notifications refits once. */
 const RESIZE_DEBOUNCE_MS = 60;
 
+/**
+ * Height the graph toolbar covers at the bottom of the box: below 800 px it sits in the bottom corner, where it hid
+ * the end of the last caption (SPEC-UI-001 UI AC-47). 0 when the toolbar is at the top.
+ */
+function toolbarInset(cy: Core): number {
+  const box = cy.container();
+  const bar = box?.parentElement?.querySelector<HTMLElement>(".graph-toolbar");
+  if (!box || !bar) return 0;
+  const b = box.getBoundingClientRect();
+  const t = bar.getBoundingClientRect();
+  return t.top > b.top + b.height / 2 ? Math.max(0, b.bottom - t.top) : 0;
+}
+
 export function readableFit(cy: Core) {
   const bb = cy.elements().boundingBox();
-  cy.viewport(readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, cy.width(), cy.height(), PADDING));
+  cy.viewport(readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, cy.width(), cy.height(), PADDING, toolbarInset(cy)));
 }
 
 function zoomBy(cy: Core, factor: number) {
