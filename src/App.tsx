@@ -11,7 +11,7 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import type { IndexJson } from "./data/types";
 import { PAPER_LINK_TEXT, paperUrl } from "./lib/contribute";
 import { navCurrent, parseRoute, routeTitle } from "./lib/route";
-import { AUTHOR } from "./lib/siteText";
+import { AUTHOR, PREPRINT } from "./lib/siteText";
 import { About } from "./views/About";
 import { Browse } from "./views/Browse";
 import { Compare } from "./views/Compare";
@@ -179,6 +179,7 @@ export function App() {
             </span>
             <span className="footer-links">
               <a href={AUTHOR.url}>{AUTHOR.name}</a>
+              <a href={`https://doi.org/${PREPRINT.doi}`}>{PREPRINT.linkText}</a>
               <IssueLink href={paperUrl()}>{PAPER_LINK_TEXT}</IssueLink>
             </span>
           </div>

@@ -83,6 +83,16 @@ export const VIEWS: readonly ViewEntry[] = [
 export const AUTHOR = { name: "Chan Young Joe", url: "https://ccy5123.github.io/" } as const;
 export const ABOUT_AUTHOR_LEAD = "The dataset and this site are by";
 
+/** The paper that describes the database, cited on the home page and linked from the footer and the about page. */
+export const PREPRINT = {
+  doi: "10.26434/chemrxiv.15011572/v1",
+  citation:
+    "Joe, C. Y. (2026). What Can the Records of Published Self-Driving Laboratories Predict About a New Platform? " +
+    "A Step-Level Database and Explorer [Preprint]. ChemRxiv. https://doi.org/10.26434/chemrxiv.15011572/v1",
+  linkText: "Preprint (ChemRxiv)",
+  aboutLead: "The database and this site are described in",
+} as const;
+
 export const aboutIntro = (version: string): string =>
   `This page summarises the data card (DATA_CARD.md) of release ${version}. Its full text is at the end of the page ` +
   "and in the release files on Zenodo.";

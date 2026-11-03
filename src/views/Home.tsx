@@ -18,7 +18,7 @@ import { show } from "../lib/evidence";
 import { FEATURED_PLATFORM, SEARCH_EXAMPLES, latestYear, licenceChips, newestFirst, statTiles } from "../lib/home";
 import { filterPlatforms } from "../lib/platformFilter";
 import { platformHash } from "../lib/route";
-import { STATS_CAPTION, heroLead, heroTitle, sampleText, searchPlaceholder } from "../lib/siteText";
+import { PREPRINT, STATS_CAPTION, heroLead, heroTitle, sampleText, searchPlaceholder } from "../lib/siteText";
 
 /** Rows of the platform list before "Show all". */
 const LIST_SIZE = 20;
@@ -286,6 +286,11 @@ export function Home({ index }: { index: IndexJson }) {
                 <summary>CITATION.cff as released</summary>
                 <pre>{docs.citation_cff}</pre>
               </details>
+              <div className="home-card-head">
+                <h3 id="cite-paper-title">The paper</h3>
+                <CopyButton text={PREPRINT.citation} label="Copy paper citation" />
+              </div>
+              <p className="citation">{PREPRINT.citation}</p>
             </>
           ) : (
             !docsError && <Skeleton height={72} />

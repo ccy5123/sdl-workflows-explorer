@@ -3,7 +3,7 @@
 import { HowItWorks } from "../components/HowItWorks";
 import { useReleaseDocs } from "../components/useReleaseDocs";
 import type { IndexJson } from "../data/types";
-import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
+import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, PREPRINT, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
 
 export function About({ index }: { index: IndexJson }) {
   const { docs, error } = useReleaseDocs();
@@ -14,6 +14,9 @@ export function About({ index }: { index: IndexJson }) {
       <p>{aboutIntro(index.release.version)}</p>
       <p>
         {ABOUT_AUTHOR_LEAD} <a href={AUTHOR.url}>{AUTHOR.name}</a>.
+      </p>
+      <p>
+        {PREPRINT.aboutLead} <a href={`https://doi.org/${PREPRINT.doi}`}>the preprint on ChemRxiv</a>.
       </p>
       {ABOUT_SECTIONS.map((s) => (
         <section key={s.heading} aria-labelledby={`about-${s.heading}`} className="card panel">

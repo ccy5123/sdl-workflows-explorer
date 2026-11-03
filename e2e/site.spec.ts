@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { IndexJson, ReleaseDocs, TaxonomyJson } from "../src/data/types";
 import { formatCitation } from "../src/lib/citation";
 import { FEATURED_PLATFORM, SEARCH_EXAMPLES } from "../src/lib/home";
-import { ABOUT_AUTHOR_LEAD, AUTHOR, VIEWS, heroLead, heroTitle, searchPlaceholder } from "../src/lib/siteText";
+import { ABOUT_AUTHOR_LEAD, AUTHOR, PREPRINT, VIEWS, heroLead, heroTitle, searchPlaceholder } from "../src/lib/siteText";
 
 const fetchJson = <T>(page: Page, path: string) =>
   page.evaluate((p) => fetch(p).then((r) => r.json()), path) as Promise<T>;
@@ -69,7 +69,7 @@ test("AC-8: home order, links, citation and featured platform", async ({ page })
   await expect(main.getByRole("link", { name: "Trends", exact: true })).toHaveAccessibleDescription(VIEWS[2]!.description);
 
   await expect(main.locator('[data-list="platforms"] > li')).toHaveCount(20);
-  await expect(main.locator(".citation")).toHaveText(formatCitation(docs.citation));
+  await expect(main.locator(".citation")).toHaveText([formatCitation(docs.citation), PREPRINT.citation]);
   await expect(main.locator(".home-card-chips")).toHaveText(/Data CC BY 4\.0\s*Code MIT/);
   const cff = main.locator("details.citation-cff");
   await expect(cff).not.toHaveAttribute("open", "");
@@ -139,11 +139,16 @@ test("AC-10: the citation copy button writes the citation to the clipboard", asy
   await page.goto("/#/");
   const docs = await fetchJson<ReleaseDocs>(page, "data/release-docs.json");
   // Located by class: the button's name changes to "Copied" and back after two seconds.
-  const button = page.locator(".copy-button");
+  const button = page.locator(".copy-button").first();
   await expect(button).toHaveText("Copy citation");
   await button.click();
   await expect(button).toHaveText("Copied");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(formatCitation(docs.citation));
+  const paper = page.locator(".copy-button").nth(1);
+  await expect(paper).toHaveText("Copy paper citation");
+  await paper.click();
+  await expect(paper).toHaveText("Copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(PREPRINT.citation);
 });
 
 test("screen check: at 375 px the hero stacks above the featured card and the cards fit the screen", async ({ page }) => {
@@ -249,4 +254,19 @@ test("author link: footer after the DOI on every view, and one line on the about
   const line = page.locator("main p", { hasText: ABOUT_AUTHOR_LEAD });
   await expect(line).toHaveText(`${ABOUT_AUTHOR_LEAD} ${AUTHOR.name}.`);
   await expect(line.getByRole("link", { name: AUTHOR.name, exact: true })).toHaveAttribute("href", AUTHOR.url);
+});
+
+// The ChemRxiv preprint: a footer link after the author, a line on the about page, and its citation on the home page.
+test("preprint: footer link, about line and home citation", async ({ page }) => {
+  const url = `https://doi.org/${PREPRINT.doi}`;
+  await page.goto("/#/about");
+  const footer = page.locator("footer.site-footer");
+  await expect(footer.getByRole("link", { name: PREPRINT.linkText, exact: true })).toHaveAttribute("href", url);
+  const hrefs = await footer.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
+  expect(hrefs.indexOf(url)).toBe(hrefs.indexOf(AUTHOR.url) + 1);
+  const line = page.locator("main p", { hasText: PREPRINT.aboutLead });
+  await expect(line.getByRole("link", { name: "the preprint on ChemRxiv" })).toHaveAttribute("href", url);
+  await page.goto("/#/");
+  await expect(page.locator(".citation", { hasText: PREPRINT.citation })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy paper citation" })).toBeVisible();
 });

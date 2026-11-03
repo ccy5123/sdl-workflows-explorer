@@ -10,6 +10,7 @@ import {
   ABOUT_AUTHOR_LEAD,
   ABOUT_SECTIONS,
   AUTHOR,
+  PREPRINT,
   STATS_CAPTION,
   VIEWS,
   WORKFLOW_ABOUT,
@@ -28,6 +29,14 @@ describe("author link (footer and about page)", () => {
   it("names the author and links the personal site", () => {
     expect(AUTHOR).toEqual({ name: "Chan Young Joe", url: "https://ccy5123.github.io/" });
     expect(`${ABOUT_AUTHOR_LEAD} ${AUTHOR.name}.`).toBe("The dataset and this site are by Chan Young Joe.");
+  });
+});
+
+describe("preprint citation (home, footer and about page)", () => {
+  it("cites the ChemRxiv preprint by its DOI", () => {
+    expect(PREPRINT.doi).toBe("10.26434/chemrxiv.15011572/v1");
+    expect(PREPRINT.citation.startsWith("Joe, C. Y. (2026). ")).toBe(true);
+    expect(PREPRINT.citation.endsWith(`ChemRxiv. https://doi.org/${PREPRINT.doi}`)).toBe(true);
   });
 });
 
