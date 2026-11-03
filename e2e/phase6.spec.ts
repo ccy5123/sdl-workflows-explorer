@@ -153,3 +153,36 @@ test("UI AC-48: on Kim2026/P1 the labels of parallel edges stay off the module l
   await page.waitForFunction(() => (window as Win).__cy !== undefined);
   expect((await bundleClashes(page, "__cy")).bundled).toBe(0);
 });
+
+test("UI AC-50: keyboard — the legend closes on Escape; the Columns popover takes focus; overlays hand focus back", async ({ page }) => {
+  await page.goto("/#/platform/Aand2024/P1");
+  const legendButton = page.getByRole("button", { name: "Legend" });
+  await legendButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".legend")).toBeVisible();
+  // The legend scrolls inside itself, so it is reachable by Tab.
+  await page.locator(".legend").focus();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".legend")).toBeHidden();
+  await expect(legendButton).toBeFocused();
+
+  // The evidence sheet opened from a table row closes on Escape and gives focus back to the row.
+  const row = main(page).locator('[data-table="modules"] tbody tr').first();
+  await row.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".evidence-sheet")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".evidence-sheet")).toHaveCount(0);
+  await expect(row).toBeFocused();
+
+  await page.goto("/#/browse");
+  const columns = main(page).getByRole("button", { name: /^Columns · \d+$/ });
+  await columns.focus();
+  await page.keyboard.press("Enter");
+  const focused = page.locator(":focus");
+  await expect(focused).toHaveAttribute("type", "checkbox");
+  await expect(focused).toBeEnabled();
+  await page.keyboard.press("Escape");
+  await expect(columns).toBeFocused();
+  await expect(columns).toHaveAttribute("aria-expanded", "false");
+});

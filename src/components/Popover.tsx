@@ -42,7 +42,8 @@ export function Popover({
 
   useEffect(() => {
     if (!open) return;
-    panelRef.current?.querySelector<HTMLElement>("input")?.focus();
+    // The first field that can take focus (the column chooser's first boxes are disabled).
+    panelRef.current?.querySelector<HTMLElement>("input:not(:disabled)")?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();

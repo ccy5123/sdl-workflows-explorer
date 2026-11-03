@@ -57,6 +57,19 @@ export function Graph({ platform, selection, preview = null, onSelect }: Props) 
   const movedRef = useRef(false);
   const { rankDir, start } = useGraphLook(cyRef, movedRef);
 
+  // Escape closes the open legend; focus inside it goes back to its toolbar button (SPEC-UI-001 UI AC-50).
+  useEffect(() => {
+    if (!legendOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const inside = document.getElementById("graph-legend")?.contains(document.activeElement);
+      setLegendOpen(false);
+      if (inside) document.querySelector<HTMLElement>('[aria-controls="graph-legend"]')?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [legendOpen]);
+
   useEffect(() => {
     if (!container.current) return;
     const look = start();
