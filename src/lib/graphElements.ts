@@ -94,11 +94,12 @@ const GRAPH_FONT = 'Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-
  * Cytoscape stylesheet; colours come from the site tokens of the theme (SPEC-SITE-001 REQ-008, REQ-009). Dimming
  * fades over 150 ms unless the reader prefers reduced motion (SPEC-UI-001 UI AC-38). With `labelsBeside` (the
  * top-to-bottom phone layout, UI AC-36) module labels sit to the right of their dot, out of the way of the edges that
- * leave it downwards.
+ * leave it downwards. With `levelEdgeLabels` edge labels stay horizontal: on the short edges between stacked
+ * modules a label turned along the edge would not fit (the workflow graph, UI AC-41).
  */
 export function buildStylesheet(
   theme: Theme = "light",
-  options: { reducedMotion?: boolean; labelsBeside?: boolean } = {},
+  options: { reducedMotion?: boolean; labelsBeside?: boolean; levelEdgeLabels?: boolean } = {},
 ): StylesheetJson {
   const t = SITE_TOKENS[theme];
   // Cytoscape reads a bare transition-duration number as milliseconds.
@@ -169,6 +170,9 @@ export function buildStylesheet(
         ]
       : []),
     { selector: "edge.mode-data_transfer", style: { width: 1 } },
+    ...(options.levelEdgeLabels ? [{ selector: "edge", style: { "text-rotation": "none" } } as const] : []),
+    // A workflow transfer whose mode the visitor has not specified (SPEC-UI-001 UI AC-39): a neutral line.
+    { selector: "edge.mode-na", style: { "line-color": t["--muted"], "target-arrow-color": t["--muted"] } },
     { selector: "edge.inferred", style: { "line-style": "dashed" } },
     { selector: "edge.uncertain", style: { "font-weight": "bold" } },
     { selector: "node.highlighted", style: { "border-width": 4, "border-color": t["--text"] } },

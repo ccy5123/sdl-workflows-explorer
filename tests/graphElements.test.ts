@@ -128,6 +128,13 @@ describe("buildStylesheet labels beside the dot (SPEC-UI-001 UI AC-36)", () => {
     expect(moduleBlock(buildStylesheet("light"))).toBeUndefined();
     expect(moduleBlock(buildStylesheet("light", { labelsBeside: true }))?.style).toMatchObject({ "text-valign": "center", "text-halign": "right" });
   });
+
+  it("keeps edge labels horizontal only when asked (the workflow graph, UI AC-41)", () => {
+    const rotations = (sheet: ReturnType<typeof buildStylesheet>) =>
+      sheet.filter((b) => "selector" in b && b.selector === "edge").map((b) => (b as unknown as { style: Record<string, unknown> }).style["text-rotation"]);
+    expect(rotations(buildStylesheet("light", { labelsBeside: true }))).toEqual(["autorotate"]);
+    expect(rotations(buildStylesheet("light", { labelsBeside: true, levelEdgeLabels: true }))).toEqual(["autorotate", "none"]);
+  });
 });
 
 describe("captionReserve", () => {
@@ -166,6 +173,12 @@ describe("buildStylesheet by theme (SPEC-SITE-001)", () => {
     expect(blockOf(dark, "edge")).toMatchObject({ color: "#eceef2", "text-background-color": "#0b0d12" });
     expect(blockOf(dark, "node.boundary")?.["background-color"]).not.toBe("#f6f7f9");
     expect(blockOf(dark, "node.highlighted")).toMatchObject({ "border-color": "#eceef2" });
+  });
+
+  // SPEC-UI-001 UI AC-39: a workflow transfer whose mode is not specified is a neutral grey line in each theme.
+  it("draws not-specified transfers in the muted colour of the theme", () => {
+    expect(blockOf(buildStylesheet("light"), "edge.mode-na")).toMatchObject({ "line-color": "#586170", "target-arrow-color": "#586170" });
+    expect(blockOf(buildStylesheet("dark"), "edge.mode-na")).toMatchObject({ "line-color": "#a0a8b6", "target-arrow-color": "#a0a8b6" });
   });
 
   it("draws unmapped connections in the dark text colour in dark", () => {

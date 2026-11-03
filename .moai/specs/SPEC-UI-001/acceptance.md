@@ -188,6 +188,16 @@ progress.md.
 - Changed existing tests: `tests/graphElements.test.ts` (the canvas label no longer carries the name);
   `tests/evidence.test.ts` (views gain `name`).
 
+### AC-39 to AC-41 Workflow graph preview (REQ-039), `e2e/workflow-graph.spec.ts`, `tests/workflowGraph.test.ts`
+- AC-39: no steps → the empty sentence, no graph; a step on a new module → one node "Module 1 · 1 device"; a second
+  step on a new module → two nodes and one solid edge "not specified"; robot_arm_gantry on that boundary → "Robot arm
+  / gantry" in its colour; removing step 2 → no edge, two nodes; removing step 1 → the empty state; the image label
+  reads "N modules, M transfers".
+- AC-40: filled from `Aand2024/P1`, one node per module and edges equal to the transfer boundaries decoded from the
+  URL; all solid.
+- AC-41: at 375 and 1440 px the graph stays inside the main column without sideways scroll; top to bottom at 375 px,
+  left to right at 1440 px.
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

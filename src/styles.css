@@ -3160,6 +3160,26 @@ table.count-table a {
   white-space: nowrap;
 }
 
+/* Read-only workflow graph (SPEC-UI-001 UI AC-39 to UI AC-41): the viewer's graph inside the section's card. */
+.wf-graph-box {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.wf-graph-box .graph {
+  height: 440px;
+}
+
+@media (max-width: 799.98px) {
+  .wf-graph-box .graph {
+    height: min(60vh, 480px);
+  }
+}
+
+.wf-graph-empty {
+  color: var(--muted);
+}
+
 .wf-messages {
   position: sticky;
   bottom: 0;

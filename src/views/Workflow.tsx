@@ -7,6 +7,7 @@ import { Loading } from "../components/Loading";
 import { SimilarPlatforms } from "../components/SimilarPlatforms";
 import { SimulationPanel } from "../components/SimulationPanel";
 import { WorkflowEditor } from "../components/WorkflowEditor";
+import { WorkflowGraph } from "../components/WorkflowGraph";
 import type { SimulationJson } from "../data/types";
 import { cycleRange, jointOffers, singleStepGroups, stepSources } from "../lib/cycleRange";
 import { parseRoute, workflowHash } from "../lib/route";
@@ -161,6 +162,7 @@ function Builder({ sim }: { sim: SimulationJson }) {
           </p>
         ))}
       </div>
+      <WorkflowGraph state={state} />
       {state.steps.length === 0 ? <p className="wf-empty">{NEED_A_STEP}</p> : <Outputs state={state} catalog={catalog} sim={sim} platforms={platforms} apply={apply} />}
     </>
   );

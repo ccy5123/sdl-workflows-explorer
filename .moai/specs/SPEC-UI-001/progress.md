@@ -142,6 +142,19 @@
   Screens: `Aand2024/P1` 1440 px light (bold types, two-line captions), 375 px dark (top to bottom, whole graph in
   view), `Kim2026/P1` 1440 px dark (minimap with the viewport rectangle).
 
+- Workflow graph preview (REQ-039). Design check first: `WorkflowState` records modules (type, devices), ordered steps
+  (unit operation, module index) and transfers per boundary between consecutive steps on different modules (mode and
+  seconds; absent = not specified), so the graph needs no model change and draws only those links. Implemented by the
+  same delegated agent: `lib/workflowGraph.ts` (pure builder), `components/WorkflowGraph.tsx`, and
+  `components/graphCanvas.tsx` holding the parts shared with the viewer graph (moved out of `Graph.tsx`, behaviour
+  unchanged; the viewer e2e suite passes). Agent's RED: `npx playwright test e2e/workflow-graph.spec.ts` — 4 failed;
+  `tests/workflowGraph.test.ts` failed to load. Unused modules are drawn unconnected; edge labels name the mode only
+  (step pairs ran into each other on `Kim2026/P1`), and in this graph they stay horizontal in the phone layout.
+  Verified independently: `npm test` 707 passed; `npm run typecheck` exit 0; `npm run e2e` 255 passed (3.4 min).
+  Screens: empty state; filled from `Aand2024/P1` at 1440 px light (four transfers: three fixed tubing, one not
+  specified; none between the two Software steps, as the state holds); 375 px dark (top to bottom, no sideways scroll;
+  the toolbar covers the last caption's end).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

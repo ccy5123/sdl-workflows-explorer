@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.7.0"
+version: "0.8.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -41,6 +41,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   Workflow chart restyle, approved by the researcher. Presentation only.
 - 2026-11-03 0.7.0 REQ-035 to REQ-038: platform viewer graph improvements approved by the researcher (labels and
   captions, top-to-bottom layout on phones, minimap, step preview).
+- 2026-11-03 0.8.0 REQ-039: workflow graph preview approved by the researcher. Design check: `WorkflowState` holds
+  modules, ordered steps and per-boundary transfers, which is enough for a graph without a model change.
 
 ## 1. Why
 
@@ -226,3 +228,13 @@ taken from the built release data.
   connections between them; the rest dimmed) without opening the evidence sheet; leaving removes the preview;
   clicking keeps the highlight until it is cleared or something else is selected. Fades are off under
   `prefers-reduced-motion: reduce`.
+
+### Workflow graph preview
+
+- **REQ-039** (ubiquitous, event-driven) The Workflow builder page shall show, after the builder, a read-only
+  "Workflow graph" card drawn from the builder state only: one node per module (readable type, caption "Module k ·
+  n devices"; modules no step uses stay as unconnected nodes) and one solid edge per transfer boundary (consecutive
+  steps on different modules), coloured and named by its transfer mode, or grey "not specified" when none is set; no
+  other link and no dashed (inferred) line. It updates on every edit, fits its column at 375 and 1440 px (top to
+  bottom below 800 px), has an empty state when there are no steps, and an image label "N modules, M transfers"
+  (the builder's fields stay the text alternative).
