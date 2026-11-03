@@ -171,9 +171,9 @@ test("UI AC-34: workflow charts take the chart tokens in both themes, readable n
         const css = (sel: string, prop: "fill" | "stroke") =>
           [...svg.querySelectorAll(sel)].map((el) => getComputedStyle(el)[prop]);
         return {
-          text: [...css('g[aria-label="x-axis tick label"] text', "fill"), ...css('g[aria-label="x-axis label"] text', "fill")],
-          ticks: css('g[aria-label="x-axis tick"] path', "stroke"),
-          grid: css('g[aria-label="x-grid"] line', "stroke"),
+          text: [...css('g[data-mark="x-axis tick label"] text', "fill"), ...css('g[data-mark="x-axis label"] text', "fill")],
+          ticks: css('g[data-mark="x-axis tick"] path', "stroke"),
+          grid: css('g[data-mark="x-grid"] line', "stroke"),
         };
       }),
     );

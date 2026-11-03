@@ -17,6 +17,7 @@ import {
 } from "../lib/trends";
 import type { FilterState } from "../lib/filterState";
 import { ValueName } from "./CountTable";
+import { unnameMarks } from "./plotMarks";
 
 const HEIGHT = 320;
 /** Below this width the x tick labels are rotated so the 13 bin labels fit. */
@@ -153,6 +154,7 @@ export function TrendsChart({
       ],
     });
     nameLinks(svg);
+    unnameMarks(svg);
     el.replaceChildren(svg);
     return () => svg.remove();
   }, [width, state, split, table, unit, offeredIm]);

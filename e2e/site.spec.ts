@@ -64,7 +64,7 @@ test("AC-8: home order, links, citation and featured platform", async ({ page })
   await expect(cards).toHaveCount(6);
   await expect(cards.locator(".view-card-name")).toHaveText(VIEWS.map((v) => v.name));
   for (const [i, href] of [`#/platform/${FEATURED_PLATFORM}`, "#/browse", "#/trends", "#/taxonomy", "#/benchmark", "#/workflow"].entries()) {
-    await expect(cards.nth(i)).toHaveAttribute("href", href);
+    await expect(cards.nth(i).locator("a.view-card-link")).toHaveAttribute("href", href);
   }
   await expect(main.getByRole("link", { name: "Trends", exact: true })).toHaveAccessibleDescription(VIEWS[2]!.description);
 

@@ -88,7 +88,8 @@ export function FeaturedPlatform({ platform, paper, error }: Props) {
             <span>data</span>
           </div>
         )}
-        <div className="fp-chain-scroll">
+        {/* Focusable: on a phone the chain scrolls sideways (axe scrollable-region-focusable). */}
+        <div className="fp-chain-scroll" tabIndex={0} role="region" aria-label="Material chain">
           <div className="fp-chain">
             {layout.chain.map((m, i) => (
               <div key={m.module_id} className="fp-chain-item">

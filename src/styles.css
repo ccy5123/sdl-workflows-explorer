@@ -1221,6 +1221,7 @@ h3 {
 }
 
 .view-card {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1250,6 +1251,24 @@ h3 {
 .view-card-name {
   font-size: 16.5px;
   font-weight: 700;
+}
+
+.view-card-link {
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* The name's link covers the whole card. */
+.view-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+}
+
+.view-card:has(.view-card-link:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .view-card-text {
@@ -2680,6 +2699,15 @@ button {
   gap: 0 0.4rem;
 }
 
+/* Each platform number is a 24 px target (WCAG 2.5.8; axe target-size, SPEC-UI-001 UI AC-49). */
+.platform-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
 .browse-results {
   min-width: 0;
 }
@@ -2915,6 +2943,8 @@ table.count-table a {
 }
 
 .bench-task-code {
+  /* Breaks only at the <wbr> after "_" (and after the hyphen), like the other ids in benchmark tables. */
+  overflow-wrap: normal;
   font-family: var(--font-mono);
   font-size: 0.8em;
   font-weight: 400;
@@ -3295,6 +3325,8 @@ section.wf-step {
 .wf-offers summary,
 .wf-throughput summary {
   cursor: pointer;
+  /* A 24 px target (WCAG 2.5.8). */
+  min-height: 24px;
 }
 
 .wf-offers li {

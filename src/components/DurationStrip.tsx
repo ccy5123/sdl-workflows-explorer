@@ -4,6 +4,7 @@
 // Plot's log scale hides tick labels that are not powers of ten.
 import * as Plot from "@observablehq/plot";
 import { useEffect, useRef, useState } from "react";
+import { unnameMarks } from "./plotMarks";
 
 export interface StripPoint {
   x: number;
@@ -99,6 +100,7 @@ export function StripPlot({
     });
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", ariaLabel);
+    unnameMarks(svg);
     el.replaceChildren(svg);
     return () => svg.remove();
   }, [width, points, domain, label, ariaLabel, format, band, ticks]);

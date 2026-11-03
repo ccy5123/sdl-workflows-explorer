@@ -6,6 +6,7 @@ import type { SimEvent } from "../lib/des";
 import { displayLabel } from "../lib/labels";
 import type { WorkflowState } from "../lib/workflowState";
 import { AGENT_LABELS } from "../lib/workflowText";
+import { unnameMarks } from "./plotMarks";
 
 /** Bars drawn at most; a larger run 1 shows its first bars in time and says so. */
 export const TIMELINE_LIMIT = 3000;
@@ -101,6 +102,7 @@ export function Timeline({ state, events, makespan }: { state: WorkflowState; ev
     });
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", `Timeline of run 1: ${drawn.length} bars on ${rows.length} rows of devices and transfer agents`);
+    unnameMarks(svg);
     el.replaceChildren(svg);
     return () => svg.remove();
   }, [width, drawn, rows, labels, state, makespan]);

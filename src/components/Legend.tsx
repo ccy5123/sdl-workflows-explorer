@@ -7,7 +7,8 @@ import { DISPLAY_GROUPS, TRANSFER_MODES } from "../lib/moduleGroups";
 
 export function Legend({ id, hidden }: { id: string; hidden: boolean }) {
   return (
-    <section id={id} className="legend" aria-labelledby="legend-heading" hidden={hidden}>
+    // tabIndex 0: the legend scrolls inside itself, so a keyboard must be able to reach it (axe scrollable-region-focusable).
+    <section id={id} className="legend" aria-labelledby="legend-heading" hidden={hidden} tabIndex={0}>
       <h2 id="legend-heading">Legend</h2>
       <h3>Module groups</h3>
       <p className="note" data-legend="note">

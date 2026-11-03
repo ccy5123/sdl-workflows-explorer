@@ -185,26 +185,27 @@ export function ViewCards({ index, platform, taxonomy, benchmark }: Props) {
         const Icon = ICONS[v.key];
         return (
           <li key={v.key}>
-            <a
-              className="card card-link view-card"
-              href={HREFS[v.key]}
-              data-view={v.key}
-              aria-labelledby={`view-${v.key}`}
-              aria-describedby={`view-${v.key}-text`}
-            >
+            {/* The link is the view's name; its ::after covers the card, so the whole card stays one click target
+                while the link's name is the text it shows (SPEC-UI-001 UI AC-49, axe label-content-name-mismatch). */}
+            <div className="card card-link view-card">
               <div className="view-card-head">
                 <span className="view-card-icon" aria-hidden="true">
                   <Icon size={20} />
                 </span>
-                <span className="view-card-name" id={`view-${v.key}`}>
+                <a
+                  className="view-card-name view-card-link"
+                  href={HREFS[v.key]}
+                  data-view={v.key}
+                  aria-describedby={`view-${v.key}-text`}
+                >
                   {v.name}
-                </span>
+                </a>
               </div>
               <p className="view-card-text" id={`view-${v.key}-text`}>
                 {v.description}
               </p>
               <div className="view-card-preview">{previews[v.key]}</div>
-            </a>
+            </div>
           </li>
         );
       })}

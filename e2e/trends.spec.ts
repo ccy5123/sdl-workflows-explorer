@@ -17,7 +17,7 @@ const unitButton = (page: Page, name: string) => group(page, "Unit counted").get
 const chart = (page: Page) => page.locator(".trends-chart svg");
 /** A link inside the chart (the table under the chart repeats the same names). */
 const chartLink = (page: Page, name: string) => chart(page).getByRole("link", { name, exact: true });
-const xTicks = (page: Page) => chart(page).locator('g[aria-label="x-axis tick label"] text').allTextContents();
+const xTicks = (page: Page) => chart(page).locator('g[data-mark="x-axis tick label"] text').allTextContents();
 const legend = (page: Page) => page.locator(".trends-legend li");
 const style = (el: Locator, prop: string) => el.evaluate((e, p) => getComputedStyle(e).getPropertyValue(p), prop);
 /** Popover button of a filter group in the filter bar ("Field tag" or "Field tag · 2"; SPEC-UI-001 REQ-025). */
@@ -171,12 +171,12 @@ test("AC-12: bar chart, segment and bin-total links, legend", async ({ page }) =
   const human = (await chartLink(page, "2021, Human transfer: 1 of 17 papers").locator("rect").boundingBox())!;
   expect(fixed.y).toBeGreaterThan(human.y);
 
-  expect(await chart(page).locator('g[aria-label="text"] text').allTextContents()).toEqual(N_PAPERS);
-  expect(await chart(page).locator('g[aria-label="text"] a').count()).toBe(13);
+  expect(await chart(page).locator('g[data-mark="text"] text').allTextContents()).toEqual(N_PAPERS);
+  expect(await chart(page).locator('g[data-mark="text"] a').count()).toBe(13);
   await expect(chartLink(page, "2021: 17 papers")).toHaveAttribute("href", "#/browse?years=2021-2021");
-  await expect(chart(page).locator('g[aria-label="y-axis label"] text')).toHaveText("Papers");
-  await expect(chart(page).locator('g[aria-label="x-axis label"] text')).toHaveText("First public year");
-  const yTicks = await chart(page).locator('g[aria-label="y-axis tick label"] text').allTextContents();
+  await expect(chart(page).locator('g[data-mark="y-axis label"] text')).toHaveText("Papers");
+  await expect(chart(page).locator('g[data-mark="x-axis label"] text')).toHaveText("First public year");
+  const yTicks = await chart(page).locator('g[data-mark="y-axis tick label"] text').allTextContents();
   expect(yTicks.length).toBeGreaterThan(1);
   for (const t of yTicks) expect(t).toMatch(/^\d+$/);
   expect(await xTicks(page)).toEqual(BINS);
