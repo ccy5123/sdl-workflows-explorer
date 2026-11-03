@@ -1,7 +1,9 @@
 // "Your workflow": steps, modules, transfers and batch inputs of the workflow builder, and the fill from a coded platform
 // (SPEC-SIM-001 REQ-006, REQ-008). Every edit goes through the pure functions of workflowState.ts.
-import { useEffect, useId, useState } from "react";
+import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { SimulationJson } from "../data/types";
+import { displayLabel } from "../lib/labels";
 import {
   addModule,
   addStep,
@@ -113,23 +115,41 @@ export function WorkflowEditor({
   apply: (result: EditResult) => boolean;
   onStart: (platformId: string) => void;
 }) {
-  const uoOptions = sim.unit_operations.map((u) => ({ value: u.id, text: u.id, title: u.definition }));
-  const typeOptions = sim.module_types.map((m) => ({ value: m.id, text: m.id, title: m.definition }));
+  // Options read readable names (SPEC-UI-001 REQ-030); values stay codes, the definition is the tooltip.
+  const named = (kind: string, id: string) => `${displayLabel(kind, id)} (${id})`;
+  const uoOptions = sim.unit_operations.map((u) => ({ value: u.id, text: named("unit_operation", u.id), title: u.definition }));
+  const typeOptions = sim.module_types.map((m) => ({ value: m.id, text: named("module_type", m.id), title: m.definition }));
   const modeOptions = [
     { value: NOT_SPECIFIED, text: "not specified" },
-    ...sim.transfer_modes.map((t) => ({ value: t.id, text: t.id, title: t.definition })),
+    ...sim.transfer_modes.map((t) => ({ value: t.id, text: named("transfer_mode", t.id), title: t.definition })),
   ];
-  const moduleOptions = state.modules.map((m, k) => ({ value: String(k + 1), text: `${k + 1}: ${m.type}` }));
+  const moduleOptions = state.modules.map((m, k) => ({ value: String(k + 1), text: `${k + 1}: ${displayLabel("module_type", m.type)}` }));
   const [platform, setPlatform] = useState(sim.platforms[0]?.platform_id ?? "");
   const [newUo, setNewUo] = useState(sim.unit_operations[0]?.id ?? "");
   const [newStepModule, setNewStepModule] = useState("new");
   const [newStepType, setNewStepType] = useState(sim.module_types[0]?.id ?? "");
   const [newModuleType, setNewModuleType] = useState(sim.module_types[0]?.id ?? "");
   const all = state.batch * state.samples;
+  // After a move, focus follows the moved step to its new place: the same move button, or the other one when that is
+  // now disabled at the top or bottom of the list (SPEC-UI-001 phase 5). The cards are keyed by position, so without
+  // this the focus would stay on the position the step left.
+  const stepList = useRef<HTMLOListElement>(null);
+  const moveFocus = useRef<{ step: number; dir: "up" | "down" } | null>(null);
+  useEffect(() => {
+    const target = moveFocus.current;
+    if (!target) return;
+    moveFocus.current = null;
+    const button = (dir: "up" | "down") => stepList.current?.querySelector<HTMLButtonElement>(`[data-move="${target.step}-${dir}"]`);
+    const same = button(target.dir);
+    (same && !same.disabled ? same : button(target.dir === "up" ? "down" : "up"))?.focus();
+  }, [state]);
+  const move = (i: number, delta: -1 | 1) => {
+    if (apply(moveStep(state, catalog, i, delta))) moveFocus.current = { step: i + delta, dir: delta < 0 ? "up" : "down" };
+  };
   const stepModule = newStepModule !== "new" && Number(newStepModule) <= state.modules.length ? newStepModule : "new";
 
   return (
-    <section aria-labelledby="wf-input" className="wf-input">
+    <section aria-labelledby="wf-input" className="card panel wf-input">
       <h2 id="wf-input">Your workflow</h2>
 
       <div className="wf-start">
@@ -140,7 +160,7 @@ export function WorkflowEditor({
           options={sim.platforms.map((p) => ({ value: p.platform_id, text: p.name ? `${p.platform_id} · ${p.name}` : p.platform_id }))}
           onChange={setPlatform}
         />
-        <button type="button" onClick={() => onStart(platform)}>
+        <button type="button" className="btn btn-secondary" onClick={() => onStart(platform)}>
           Fill the builder from this platform
         </button>
       </div>
@@ -173,7 +193,7 @@ export function WorkflowEditor({
                       onCommit={(devices) => apply(setModule(state, catalog, k + 1, { devices }))} />
                   </td>
                   <td>
-                    <button type="button" onClick={() => apply(removeModule(state, catalog, k + 1))}>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => apply(removeModule(state, catalog, k + 1))}>
                       Remove module {k + 1}
                     </button>
                   </td>
@@ -185,7 +205,7 @@ export function WorkflowEditor({
       )}
       <div className="wf-add">
         <Select label="Type of the new module" hideLabel={false} value={newModuleType} options={typeOptions} onChange={setNewModuleType} />
-        <button type="button" onClick={() => apply(addModule(state, catalog, newModuleType))}>
+        <button type="button" className="btn btn-secondary" onClick={() => apply(addModule(state, catalog, newModuleType))}>
           Add module
         </button>
       </div>
@@ -196,54 +216,41 @@ export function WorkflowEditor({
         all {all} samples of the batch in one run.
       </p>
       {state.steps.length > 0 && (
-        <div className="table-scroll">
-          <table className="data wf-table" data-table="wf-steps">
-            <thead>
-              <tr>
-                <th scope="col" className="num">Step</th>
-                <th scope="col">Unit operation</th>
-                <th scope="col">Module</th>
-                <th scope="col">Samples per run</th>
-                <th scope="col">Order</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.steps.map((st, k) => {
-                const i = k + 1;
-                return (
-                  <tr key={k}>
-                    <td className="num">{i}</td>
-                    <td>
-                      <Select label={`Step ${i} unit operation`} value={st.uo} options={uoOptions}
-                        onChange={(uo) => apply(setStep(state, catalog, i, { uo }))} />
-                    </td>
-                    <td>
-                      <Select label={`Step ${i} module`} value={String(st.module)} options={moduleOptions}
-                        onChange={(m) => apply(setStep(state, catalog, i, { module: Number(m) }))} />
-                    </td>
-                    <td>
-                      <CommitField label={`Step ${i} samples per run`} hideLabel value={state.perRun[i] === undefined ? "" : String(state.perRun[i])}
-                        placeholder={`all (${all})`} onCommit={(text) => apply(setPerRun(state, catalog, i, text))} />
-                    </td>
-                    <td className="wf-order">
-                      <button type="button" disabled={i === 1} onClick={() => apply(moveStep(state, catalog, i, -1))}>
-                        <span aria-hidden="true">↑</span>
-                        <span className="visually-hidden">Move step {i} up</span>
-                      </button>
-                      <button type="button" disabled={i === state.steps.length} onClick={() => apply(moveStep(state, catalog, i, 1))}>
-                        <span aria-hidden="true">↓</span>
-                        <span className="visually-hidden">Move step {i} down</span>
-                      </button>
-                      <button type="button" onClick={() => apply(removeStep(state, catalog, i))}>
-                        Remove<span className="visually-hidden"> step {i}</span>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ol className="wf-steps" data-list="wf-steps" ref={stepList}>
+          {state.steps.map((st, k) => {
+            const i = k + 1;
+            const names = { up: `Move step ${i} up`, down: `Move step ${i} down`, remove: `Remove step ${i}` };
+            return (
+              <li key={k} className="card wf-step">
+                <div className="wf-step-head">
+                  <h4>Step {i}</h4>
+                  <span className="wf-order">
+                    <button type="button" className="btn btn-icon" aria-label={names.up} title={names.up} data-move={`${i}-up`}
+                      disabled={i === 1} onClick={() => move(i, -1)}>
+                      <ArrowUp size={16} aria-hidden="true" />
+                    </button>
+                    <button type="button" className="btn btn-icon" aria-label={names.down} title={names.down} data-move={`${i}-down`}
+                      disabled={i === state.steps.length} onClick={() => move(i, 1)}>
+                      <ArrowDown size={16} aria-hidden="true" />
+                    </button>
+                    <button type="button" className="btn btn-icon" aria-label={names.remove} title={names.remove}
+                      onClick={() => apply(removeStep(state, catalog, i))}>
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  </span>
+                </div>
+                <div className="wf-step-fields">
+                  <Select label={`Step ${i} unit operation`} hideLabel={false} value={st.uo} options={uoOptions}
+                    onChange={(uo) => apply(setStep(state, catalog, i, { uo }))} />
+                  <Select label={`Step ${i} module`} hideLabel={false} value={String(st.module)} options={moduleOptions}
+                    onChange={(m) => apply(setStep(state, catalog, i, { module: Number(m) }))} />
+                  <CommitField label={`Step ${i} samples per run`} value={state.perRun[i] === undefined ? "" : String(state.perRun[i])}
+                    placeholder={`all (${all})`} onCommit={(text) => apply(setPerRun(state, catalog, i, text))} />
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       )}
       <div className="wf-add">
         <Select label="Unit operation of the new step" hideLabel={false} value={newUo} options={uoOptions} onChange={setNewUo} />
@@ -259,6 +266,7 @@ export function WorkflowEditor({
         )}
         <button
           type="button"
+          className="btn btn-secondary"
           onClick={() => apply(addStep(state, catalog, newUo, stepModule === "new" ? { type: newStepType } : Number(stepModule)))}
         >
           Add step

@@ -467,6 +467,15 @@ h3 {
   transform: translateY(1px);
 }
 
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn:disabled:active {
+  transform: none;
+}
+
 .btn-sm {
   height: 34px;
   padding: 0 12px;
@@ -641,6 +650,58 @@ h3 {
   to {
     background-position: -100% 0;
   }
+}
+
+/* How this works: a closed card holding a page's method notes (SPEC-UI-001 phase 5). No animation, so nothing to switch
+   off under reduced motion. */
+.how-it-works {
+  margin-bottom: 12px;
+  padding: 0 18px;
+  background: var(--panel);
+}
+
+.how-it-works > summary {
+  padding: 12px 0;
+  color: var(--accent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.how-it-works[open] {
+  padding-bottom: 6px;
+}
+
+.how-it-works[open] > summary {
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.how-it-works p {
+  max-width: 60rem;
+}
+
+.how-it-works section {
+  margin-top: var(--section-gap);
+}
+
+.how-it-works h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+/* Cards of the taxonomy, benchmark, workflow and about pages stack with the section gap (SPEC-UI-001 phase 5). */
+.taxonomy > .card,
+.benchmark > .card,
+.workflow > .card,
+.about > .card {
+  margin-top: var(--section-gap);
+}
+
+.taxonomy .panel > :last-child,
+.benchmark .panel > :last-child,
+.workflow .panel > :last-child,
+.about .panel > :last-child {
+  margin-bottom: 0;
 }
 
 /* CopyButton: a secondary button whose label turns to "Copied" for a moment. */
@@ -2765,6 +2826,16 @@ table.count-table a {
   margin: 0 0 0.75rem;
 }
 
+/* A facts list as a card; inside a card panel it takes the panel colour to stand apart. */
+.taxo-facts.card {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+}
+
+.card .taxo-facts.card {
+  background: var(--panel);
+}
+
 .taxo-facts dt {
   font-weight: 600;
 }
@@ -2788,14 +2859,19 @@ table.count-table a {
   list-style: none;
 }
 
-.taxo-jump button {
-  font: inherit;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
+/* A class code beside its readable name: muted mono, never broken (the readable name wraps at its spaces). */
+.taxo-code {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* The code of a class page, as a chip right under its heading. */
+.taxo-code-line {
+  margin: 0 0 0.75rem;
+}
+
+.taxo-chip {
+  font-size: 12.5px;
 }
 
 /* The sources row a ?source= link targets: weight, not colour (REQ-016). */
@@ -2887,10 +2963,12 @@ table.count-table a {
   margin: 0;
 }
 
-.bench-control select,
-.bench-control button,
-.bench-more {
+.bench-control select {
   font: inherit;
+  max-width: 100%;
+}
+
+.bench-more {
   max-width: 100%;
 }
 
@@ -2948,12 +3026,47 @@ table.count-table a {
   max-width: 18rem;
 }
 
-.wf-order {
-  white-space: nowrap;
+/* Steps of the builder: one card per step, its heading and order buttons on top, its three fields below. */
+.wf-steps {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 60rem;
 }
 
-.wf-order button {
-  margin-right: 0.25rem;
+.wf-steps .wf-step {
+  padding: 10px 14px 12px;
+  border-radius: var(--radius-md);
+}
+
+.wf-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.wf-step-head h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.wf-step-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.wf-order {
+  display: inline-flex;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .wf-messages {
@@ -3016,7 +3129,7 @@ table.count-table a {
   max-width: 100%;
 }
 
-.wf-step {
+section.wf-step {
   border-top: 1px solid var(--line);
   padding-top: 0.5rem;
 }

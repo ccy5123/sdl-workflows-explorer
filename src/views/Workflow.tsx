@@ -2,6 +2,8 @@
 // (SPEC-SIM-001 REQ-005 to REQ-020). Loaded lazily; data/simulation.json is fetched by this module on first use.
 import { useEffect, useMemo, useState } from "react";
 import { CycleRange } from "../components/CycleRange";
+import { HowItWorks } from "../components/HowItWorks";
+import { Loading } from "../components/Loading";
 import { SimilarPlatforms } from "../components/SimilarPlatforms";
 import { SimulationPanel } from "../components/SimulationPanel";
 import { WorkflowEditor } from "../components/WorkflowEditor";
@@ -56,11 +58,13 @@ export function Workflow() {
   }, []);
   // The heading appears with the builder, so a page that shows its heading has its controls too.
   if (loadError) return <p role="alert">Could not load the data: {loadError}</p>;
-  if (!sim) return <p>Loading…</p>;
+  if (!sim) return <Loading />;
   return (
     <article className="workflow">
       <h1>Workflow builder</h1>
-      <p>{WORKFLOW_INTRO}</p>
+      <HowItWorks>
+        <p>{WORKFLOW_INTRO}</p>
+      </HowItWorks>
       <Builder sim={sim} />
     </article>
   );

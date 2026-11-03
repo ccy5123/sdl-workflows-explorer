@@ -35,7 +35,7 @@ test("AC-5, AC-6: empty builder, title and nav; build, edit and refuse values", 
   await m.getByLabel("Unit operation of the new step").selectOption("measure_optical");
   await m.getByLabel("Type of its new module").selectOption("instrument_optical");
   await m.getByRole("button", { name: "Add step" }).click();
-  await expect(m.locator('table[data-table="wf-steps"] tbody tr')).toHaveCount(3);
+  await expect(m.locator('[data-list="wf-steps"] > li')).toHaveCount(3);
   await expect(m).not.toContainText("Add at least one step");
 
   await m.getByRole("button", { name: "Move step 3 up" }).click();
@@ -80,7 +80,7 @@ test("AC-8: start from a coded platform", async ({ page }) => {
   const m = main(page);
   await m.getByLabel("Start from a coded platform").selectOption("Aand2024/P1");
   await m.getByRole("button", { name: "Fill the builder from this platform" }).click();
-  await expect(m.locator('table[data-table="wf-steps"] tbody tr')).toHaveCount(6);
+  await expect(m.locator('[data-list="wf-steps"] > li')).toHaveCount(6);
   await expect(m.locator(".wf-message")).toContainText("Filled from Aand2024/P1: steps and their unit operations");
 });
 

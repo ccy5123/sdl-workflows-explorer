@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.5.1"
+version: "0.6.0"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -37,6 +37,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   This supersedes the checkbox column and the "Filters (N active)" toggle of SPEC-BROWSE-001 and SPEC-TRENDS-001.
 - 2026-11-03 0.5.1 REQ-028: phase 4 leftovers approved by the researcher (Trends labels, a Columns popover, popover
   options that were clipped and named with the code twice). Supersedes SPEC-TRENDS-001's "value as stored" labels.
+- 2026-11-03 0.6.0 REQ-029 to REQ-034: phase 5 of the plan (Taxonomy, Benchmark, Workflow builder, About) with the
+  Workflow chart restyle, approved by the researcher. Presentation only.
 
 ## 1. Why
 
@@ -185,3 +187,23 @@ taken from the built release data.
   popovers. A popover grows to fit its options up to the window's width less 16 px (at most 560 px); an option whose
   name and code do not fit on one line puts the whole code under the name. Each option shows its code once and its
   checkbox is named "Name (code)".
+
+### Phase 5: Taxonomy, Benchmark, Workflow builder, About (presentation only)
+
+- **REQ-029** (ubiquitous) The four pages shall show the skeleton of REQ-006 while their data loads, and each shall put
+  its long method prose in one closed "How this works" disclosure: the overview caption's note on counts (Taxonomy),
+  the metric definition and "Run the evaluation yourself" (Benchmark), the builder's introduction (Workflow), and the
+  builder's method paragraphs (About). Results, counts, captions that state a result, messages and the correction
+  links stay visible; no wording changes.
+- **REQ-030** (ubiquitous) A taxonomy class page shall be headed by the readable name with the code as a chip under
+  it, and its document title shall be "Taxonomy: <readable name>"; overview and example links read readable names with
+  the code beside the link; benchmark label rows read readable names. Hrefs, URLs and commands keep codes.
+- **REQ-031** (ubiquitous) Statistics, counts inside statistics and intervals on Benchmark and Workflow shall use the
+  Latin Modern `.math` face (variables italic, numbers upright); the values are unchanged.
+- **REQ-032** (ubiquitous) The pages' sections and facts lists shall be cards with the site's buttons and chips.
+- **REQ-033** (ubiquitous, event-driven) The builder's steps shall be cards in an ordered list, each with its three
+  fields and the buttons "Move step i up", "Move step i down" and "Remove step i"; after a move, focus stays on the
+  moved step's button.
+- **REQ-034** (ubiquitous) The Workflow charts (simulation timeline, cycle-time and throughput strips) shall draw axis
+  text, ticks and gridlines in the chart tokens of the current theme, name rows and strips by readable names with the
+  code in `title`, and keep their data colours, limits and computed values.

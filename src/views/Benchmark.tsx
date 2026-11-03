@@ -3,6 +3,9 @@
 // data/benchmark.json (through the loader Home shares, useJson.ts) and, for the explorer, data/benchmark-items.json are
 // fetched once per page load.
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { HowItWorks } from "../components/HowItWorks";
+import { Label } from "../components/Label";
+import { Loading } from "../components/Loading";
 import { loadJsonOnce } from "../components/useJson";
 import { SPLITS, type BenchmarkItemsJson, type BenchmarkJson, type IndexJson, type Split } from "../data/types";
 import {
@@ -42,6 +45,7 @@ import {
   type CountCell,
   type ExplorerState,
 } from "../lib/benchmark";
+import { displayLabel } from "../lib/labels";
 import { parseRoute } from "../lib/route";
 
 export type BenchmarkRoute = { kind: "benchmark" } | { kind: "benchmarkItems"; query: string };
@@ -63,10 +67,10 @@ const loadItems = () => (itemsRequest ??= getJson<BenchmarkItemsJson>("data/benc
 const DASH = "—";
 const headingId = (text: string) => `bench-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, card = true, children }: { title: string; card?: boolean; children: ReactNode }) {
   const id = headingId(title);
   return (
-    <section aria-labelledby={id}>
+    <section aria-labelledby={id} className={card ? "card panel" : undefined}>
       <h2 id={id}>{title}</h2>
       {children}
     </section>
@@ -86,6 +90,12 @@ function Breakable({ text }: { text: string }) {
       ))}
     </>
   );
+}
+
+/** A vocabulary code of a "#/taxonomy/<kind>/<code>" link, shown by its readable name (SPEC-UI-001 REQ-008). */
+function linkedLabel(href: string, text: string): ReactNode {
+  const match = /^#\/taxonomy\/([^/]+)\/([^/?]+)$/.exec(href);
+  return match && decodeURIComponent(match[2]!) === text ? <Label kind={match[1]!} code={text} /> : <Breakable text={text} />;
 }
 
 function Count({ cell, label }: { cell: CountCell; label: string }) {
@@ -144,7 +154,7 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
   return (
     <Section title={task.task_id}>
       <p className="caption">{taskTitle(task.target)}</p>
-      <dl className="taxo-facts">
+      <dl className="taxo-facts card">
         <dt>Unit of an item</dt>
         <dd>{itemUnit(task.target)}</dd>
         <dt>Which items</dt>
@@ -167,9 +177,7 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
           {labelRows(data, index).map((r) => (
             <tr key={r.label}>
               <td data-label="Label">
-                <a href={r.href}>
-                  <Breakable text={r.label} />
-                </a>
+                <a href={r.href}>{linkedLabel(r.href, r.label)}</a>
               </td>
               {r.cells.map((c, i) => (
                 <Count key={SPLITS[i]} cell={c} label={SPLIT_LABELS[SPLITS[i]!]} />
@@ -186,7 +194,6 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
 function ReferenceResults({ data }: { data: BenchmarkJson }) {
   return (
     <Section title={SECTION_HEADINGS.reference}>
-      <p>{METRIC_DEFINITION}</p>
       {metricLines(data.tasks).map((line) => (
         <p key={line}>{line}</p>
       ))}
@@ -208,7 +215,8 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
               <tr key={row.task}>
                 {cells.map((text, i) => (
                   <td key={REFERENCE_HEADS[i]} data-label={REFERENCE_HEADS[i]} className={i > 0 ? "num" : undefined}>
-                    {i === 0 ? <Breakable text={text} /> : text}
+                    {/* Statistics and their counts in Latin Modern, numbers upright (SPEC-UI-001 REQ-003). */}
+                    {i === 0 ? <Breakable text={text} /> : <span className="math">{text}</span>}
                   </td>
                 ))}
               </tr>
@@ -252,7 +260,7 @@ function Evaluation({ data, doi }: { data: BenchmarkJson; doi: string }) {
   const note = evaluationNote(data);
   const doiUrl = `https://doi.org/${doi}`;
   return (
-    <Section title={SECTION_HEADINGS.evaluation}>
+    <Section title={SECTION_HEADINGS.evaluation} card={false}>
       <p>{note.release}</p>
       <p>
         {note.doiLead} <a href={doiUrl}>{doiUrl}</a>
@@ -341,7 +349,11 @@ function BenchmarkPage({ data, index }: { data: BenchmarkJson; index: IndexJson 
         <TaskSection key={t.task_id} data={data} index={i} />
       ))}
       <ReferenceResults data={data} />
-      <Evaluation data={data} doi={index.release.doi} />
+      {/* How the reference numbers are computed and how to rerun them (SPEC-UI-001 phase 5). */}
+      <HowItWorks>
+        <p>{METRIC_DEFINITION}</p>
+        <Evaluation data={data} doi={index.release.doi} />
+      </HowItWorks>
       <ItemsByPlatform data={data} index={index} />
     </div>
   );
@@ -418,8 +430,8 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
           <select value={state.label ?? ""} onChange={(e) => apply({ ...state, label: e.target.value || null })}>
             <option value="">All</option>
             {labels.map((l) => (
-              <option key={l.label} value={l.label}>
-                {l.label}
+              <option key={l.label} value={l.label} title={l.label}>
+                {displayLabel(task.target, l.label)}
               </option>
             ))}
           </select>
@@ -427,7 +439,7 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
         {state.platform !== null && (
           <p className="bench-control">
             Platform: {state.platform}{" "}
-            <button type="button" onClick={() => apply({ ...state, platform: null })}>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => apply({ ...state, platform: null })}>
               Remove platform
             </button>
           </p>
@@ -456,9 +468,7 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
                   {explorerCells(task.target, taskItems.columns, row).map((cell, i) => (
                     <td key={columns[i]!.head} data-label={columns[i]!.head}>
                       {cell.href ? (
-                        <a href={cell.href}>
-                          <Breakable text={cell.text} />
-                        </a>
+                        <a href={cell.href}>{linkedLabel(cell.href, cell.text)}</a>
                       ) : (
                         <Breakable text={cell.text} />
                       )}
@@ -469,7 +479,7 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
             </tbody>
           </table>
           {shown < matching.length && (
-            <button type="button" className="bench-more" onClick={() => setShown(shown + PAGE_SIZE)}>
+            <button type="button" className="btn btn-secondary bench-more" onClick={() => setShown(shown + PAGE_SIZE)}>
               {SHOW_MORE_TEXT}
             </button>
           )}
@@ -496,6 +506,6 @@ export function Benchmark({ index, route }: { index: IndexJson; route: Benchmark
   }, [explorer]);
 
   if (error) return <p role="alert">{loadErrorText(error)}</p>;
-  if (!data || (explorer && !items)) return <p>Loading…</p>;
+  if (!data || (explorer && !items)) return <Loading />;
   return explorer ? <Explorer data={data} items={items!} /> : <BenchmarkPage data={data} index={index} />;
 }

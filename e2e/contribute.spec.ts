@@ -66,7 +66,7 @@ test("AC-5: the evidence panel links to the correction form for the selected ite
 
 test("AC-6: a taxonomy class page links to the taxonomy form; the not-found page does not", async ({ page }) => {
   await page.goto(`/${CLASS}`);
-  await expect(page.getByRole("heading", { level: 1, name: "flow_reactor", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Flow reactor", exact: true })).toBeVisible();
   await expectIssueLink(links(page.locator("main"), TAXONOMY_LINK_TEXT), taxonomyUrl("module_type", "flow_reactor"));
 
   await page.goto("/#/taxonomy/module_type/no_such_class");

@@ -36,8 +36,9 @@ const region = (page: Page, name: string) => page.getByRole("region", { name, ex
 const countLine = (page: Page) => page.locator('.benchmark [aria-live="polite"]');
 const cellTexts = (page: Page, selector: string) =>
   page.locator(selector).evaluateAll((rows) => rows.map((r) => [...r.querySelectorAll("td")].map((td) => td.textContent ?? "")));
+// Label cells show the readable name, with the code in data-code (SPEC-UI-001 phase 5).
 const labelRow = (page: Page, task: string, label: string) =>
-  region(page, task).locator("tbody tr", { has: page.getByRole("link", { name: label, exact: true }) });
+  region(page, task).locator("tbody tr", { has: page.locator(`td[data-label="Label"] a [data-code="${label}"]`) });
 const platformRow = (page: Page, id: string) =>
   region(page, "Items by platform").locator("tbody tr", { has: page.getByRole("link", { name: id, exact: true }) });
 const explorerRow = (page: Page, item: string) =>
@@ -103,6 +104,8 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
   expect(await details.evaluate((d) => (d as HTMLDetailsElement).open)).toBe(false);
   expect(await details.locator("pre").textContent()).toBe(REFERENCE_TEXT);
 
+  // The evaluation notes sit in the closed "How this works" block (SPEC-UI-001 phase 5).
+  await page.locator("main details.how-it-works > summary").click();
   await expect(region(page, "Run the evaluation yourself").getByRole("link", { name: `https://doi.org/${PINNED_DOI}` })).toHaveAttribute(
     "href",
     `https://doi.org/${PINNED_DOI}`,
@@ -123,9 +126,9 @@ test("AC-11: label, platform and count links", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/benchmark");
   await expect(h1(page, "Benchmark chrono2023")).toBeVisible();
-  await region(page, TM).getByRole("link", { name: "mobile_robot", exact: true }).click();
+  await region(page, TM).getByRole("link", { name: "Mobile robot (mobile_robot)", exact: true }).click();
   expect(await hash(page)).toBe("#/taxonomy/transfer_mode/mobile_robot");
-  await expect(h1(page, "mobile_robot")).toBeVisible();
+  await expect(h1(page, "Mobile robot")).toBeVisible();
   await page.goBack();
 
   await platformRow(page, "Aand2024/P1").getByRole("link", { name: "Aand2024/P1", exact: true }).click();
@@ -319,8 +322,11 @@ test("AC-15: no horizontal scroll at 375 px; stacked cells carry their column la
 
   await page.goto("/#/benchmark");
   await expect(h1(page, "Benchmark chrono2023")).toBeVisible();
-  await page.locator("details summary").click();
-  expect(await page.locator("details").evaluate((d) => (d as HTMLDetailsElement).open)).toBe(true);
+  // Both disclosures open: the published JSON and "How this works" with its commands (SPEC-UI-001 phase 5).
+  for (const details of ["details.bench-published", "details.how-it-works"]) {
+    await page.locator(`${details} > summary`).click();
+    expect(await page.locator(details).evaluate((d) => (d as HTMLDetailsElement).open), details).toBe(true);
+  }
   expect(await noScroll()).toBe(true);
   expect(await stacked()).toEqual([]);
 

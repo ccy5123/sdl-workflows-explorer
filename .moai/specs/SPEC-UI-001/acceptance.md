@@ -160,6 +160,21 @@ progress.md.
   and the keyboard test name bars and cells by readable names ("2021, Fixed tubing: 9 of 17 papers") and the legend by
   readable names; `e2e/browse.spec.ts` AC-12 opens the Columns popover before using the chooser.
 
+### AC-29 to AC-34 Phase 5 (REQ-029 to REQ-034), `e2e/phase5.spec.ts` "UI AC-29" to "UI AC-34"
+- AC-29: after load no element's only text is "Loading…" on Taxonomy, Benchmark, Workflow and About, and each has one
+  closed `details.how-it-works` ("How this works") holding a moved paragraph.
+- AC-30: `#/taxonomy/module_type/flow_reactor` has the h1 "Flow reactor", the chip `flow_reactor` and the title
+  "Taxonomy: Flow reactor"; the overview link reads "Flow reactor" with the code beside it.
+- AC-31: benchmark statistics sit in `.math` elements in the Latin Modern face; the variable "n" is italic.
+- AC-32: three steps are `[data-list="wf-steps"] > li` cards; "Move step 3 up" by keyboard moves it and keeps focus on
+  its button at position 2; "Remove step 1" removes it.
+- AC-33: at 375 px the taxonomy overview and class page, Benchmark, Workflow and About do not scroll sideways.
+- AC-34: after a simulation, chart axis text, ticks and gridlines equal the chart tokens in light and in dark; a
+  readable unit-operation name appears with its code in `title`; a statistic sits in `.math`.
+- Changed existing tests: `tests/route.test.ts` and `e2e/routes.ts` (class title); `e2e/taxonomy.spec.ts` (caption
+  split, readable link and h1 names, the one allowed disclosure); `e2e/benchmark.spec.ts` (label rows by `data-code`,
+  readable names, How this works opened first); `e2e/workflow.spec.ts` (step cards); `e2e/contribute.spec.ts` (h1).
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

@@ -70,7 +70,10 @@ export function ThroughputPanel({
   const strip = (rows: ThroughputRow[], kind: string) => (
     <div className="wf-tp" data-kind={kind}>
       <h4>
-        {kind[0]!.toUpperCase() + kind.slice(1)} throughputs, n = {rows.length}
+        {kind[0]!.toUpperCase() + kind.slice(1)} throughputs,{" "}
+        <span className="math">
+          <i>n</i> = {rows.length}
+        </span>
       </h4>
       <StripPlot
         points={rows.map((t) => ({

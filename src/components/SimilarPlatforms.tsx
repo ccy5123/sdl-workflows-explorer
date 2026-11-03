@@ -38,7 +38,7 @@ export function SimilarPlatforms({ rows }: { rows: SimilarityRow[] }) {
     setSort((s) => (s?.key !== key ? { key, dir: "asc" } : s.dir === "asc" ? { key, dir: "desc" } : null));
 
   return (
-    <section aria-labelledby="wf-similar">
+    <section aria-labelledby="wf-similar" className="card panel">
       <h2 id="wf-similar">Similar platforms</h2>
       <p>{SIMILAR_INTRO}</p>
       <dl className="wf-measures">
@@ -91,7 +91,7 @@ export function SimilarPlatforms({ rows }: { rows: SimilarityRow[] }) {
       <p className="result-count">
         Showing {Math.min(shown, rows.length)} of {rows.length} platforms.{" "}
         {shown < rows.length && (
-          <button type="button" onClick={() => setShown((n) => n + 10)}>
+          <button type="button" className="btn btn-secondary" onClick={() => setShown((n) => n + 10)}>
             Show 10 more
           </button>
         )}

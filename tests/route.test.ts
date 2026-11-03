@@ -189,7 +189,7 @@ describe("routeTitle and navCurrent (SPEC-SITE-001)", () => {
     ["#/compare/Aand2024/P1,Li2020/P1", "Compare", null],
     ["#/trends", "Trends", "Trends"],
     ["#/taxonomy", "Taxonomy", "Taxonomy"],
-    ["#/taxonomy/module_type/flow_reactor", "Taxonomy: flow_reactor", "Taxonomy"],
+    ["#/taxonomy/module_type/flow_reactor", "Taxonomy: Flow reactor", "Taxonomy"],
     ["#/benchmark", "Benchmark", "Benchmark"],
     ["#/benchmark/items?task=x", "Benchmark items", "Benchmark"],
     ["#/nope", "Not found", null],

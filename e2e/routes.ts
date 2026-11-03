@@ -15,7 +15,7 @@ export const ROUTES: readonly SiteRoute[] = [
   { hash: "#/compare/Aand2024/P1,Li2020/P1", title: "Compare", current: null },
   { hash: "#/trends", title: "Trends", current: "Trends" },
   { hash: "#/taxonomy", title: "Taxonomy", current: "Taxonomy" },
-  { hash: "#/taxonomy/module_type/flow_reactor", title: "Taxonomy: flow_reactor", current: "Taxonomy" },
+  { hash: "#/taxonomy/module_type/flow_reactor", title: "Taxonomy: Flow reactor", current: "Taxonomy" },
   { hash: "#/benchmark", title: "Benchmark", current: "Benchmark" },
   { hash: "#/benchmark/items", title: "Benchmark items", current: "Benchmark" },
   { hash: "#/workflow", title: "Workflow builder", current: "Workflow" },

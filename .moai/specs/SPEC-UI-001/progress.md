@@ -112,6 +112,21 @@
   absolutely placed spans with spaces); each checkbox now carries `aria-label` "Name (code)" and shows the code once.
   Final: `npm test` 689 passed; `npm run typecheck` exit 0; `npm run e2e` 236 passed (2.9 min).
 
+- Phase 5 with the Workflow chart restyle (REQ-029 to REQ-034). Implemented by a delegated general-purpose agent on a
+  written brief (the manager-develop agent type tried to make its own worktree, which fails inside this worktree; the
+  `moai` CLI is not installed, so no per-spawn model was injected). Agent's RED: `npx playwright test e2e/phase5.spec.ts`
+  — AC-29 to AC-33 failed (h1 "flow_reactor", no How this works, no `.math`, no step cards); AC-34 failed on tick
+  strokes. Orchestrator review: `src/lib` diff limited to `route.ts` (readable class title) and `taxonomy.ts`
+  (`overviewCaptionParts`, whose joined text equals the old caption); no result text changed. Added after review: the
+  builder's selects read "Name (code)" instead of codes (values unchanged; tests select by value).
+  Verified independently: `npm test` 689 passed; `npm run typecheck` exit 0; `npm run e2e` 242 passed (2.8 min); after
+  the select change, workflow, phase5, a11y and site specs 99 passed and unit tests 689 passed. Sideways overflow 0 on
+  Trends, Browse (both tables), Taxonomy overview and class page, Benchmark, Workflow and About at 1440 and 375 px in
+  both themes (script). Screens: Browse Columns popover 1440 light; Taxonomy class page and Trends field split 1440
+  dark; Benchmark and Workflow step cards 1440 light; Workflow Gantt 1440 dark; About 375 light.
+  Still codes: the builder's utilization and waiting tables, cycle-time step table, events table and bottleneck
+  sentence; taxonomy family names; benchmark task ids and unit-operation families.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.

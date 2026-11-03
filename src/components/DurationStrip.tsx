@@ -70,9 +70,19 @@ export function StripPlot({
       marginRight: 16,
       marginBottom: 34,
       style: { background: "transparent", color: "var(--chart-ink-secondary)", fontSize: "12px" },
-      x: { domain: [d0, d1], label, labelAnchor: "center", ticks: tickValues, tickFormat: (v: number) => format(10 ** v) },
+      x: { domain: [d0, d1] },
       y: { domain: [...Array(LANES).keys()], axis: null, padding: 0.5, type: "point" },
+      // Axis text, tick marks and gridlines take the chart tokens of the current theme; marks keep their data colours.
       marks: [
+        Plot.gridX(tickValues, { stroke: "var(--chart-grid)", strokeOpacity: 1 }),
+        Plot.axisX({
+          ticks: tickValues,
+          tickFormat: (v: number) => format(10 ** v),
+          label,
+          labelAnchor: "center",
+          stroke: "var(--chart-axis)",
+          fill: "var(--chart-ink-secondary)",
+        }),
         logBand ? Plot.rectX([logBand], { x1: "x1", x2: "x2", fill: "var(--chart-im-3)", fillOpacity: 0.25 }) : null,
         Plot.ruleY(ranges, { x1: "lx1", x2: "lx2", y: "lane", stroke: "var(--chart-ink-secondary)", strokeWidth: 1 }),
         Plot.dot(lanes.filter((p) => p.ring), { x: "lx", y: "lane", r: 7, stroke: "var(--chart-ink)", strokeWidth: 1.5 }),
