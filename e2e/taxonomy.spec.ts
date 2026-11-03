@@ -13,8 +13,9 @@ const countLine = (page: Page) => page.locator('.browse [aria-live="polite"]');
 const region = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
 const link = (page: Page, name: string) => page.getByRole("link", { name, exact: true });
 const h1 = (page: Page, name: string) => page.getByRole("heading", { level: 1, name, exact: true });
-const CAPTION =
-  "The 69 classes of the release taxonomy: 10 field tags, 22 module types, 6 transfer modes and 31 unit operations. " +
+// The caption keeps the class counts; what the counts mean moved to "How this works" (SPEC-UI-001 phase 5).
+const CAPTION = "The 69 classes of the release taxonomy: 10 field tags, 22 module types, 6 transfer modes and 31 unit operations.";
+const COUNTS_NOTE =
   "Item counts are papers for field tags, modules for module types, connections for transfer modes and steps for unit operations. " +
   "A paper can carry several field tags, so the paper counts of the field tags need not add up to the number of papers.";
 const KIND_HEADINGS = ["Field tags", "Module types", "Transfer modes", "Unit operations"];
@@ -95,6 +96,7 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   expect(await hash(page)).toBe("#/taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
   await expect(page.getByText(CAPTION, { exact: true })).toBeVisible();
+  await expect(page.locator("main details.how-it-works p")).toHaveText(COUNTS_NOTE);
 
   const sources = region(page, "Sources of the correspondence");
   await expect(sources.locator("tbody tr")).toHaveCount(5);
@@ -111,20 +113,25 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   for (const [name, n] of [["Field tags", 10], ["Module types", 22], ["Transfer modes", 6], ["Unit operations", 31]] as const) {
     await expect(region(page, name).locator("tbody tr"), name).toHaveCount(n);
   }
-  const flow = region(page, "Module types").locator("tbody tr", { has: link(page, "flow_reactor") });
+  // Class links show the readable name; the code follows outside the link (SPEC-UI-001 phase 5).
+  const flow = region(page, "Module types").locator("tbody tr", { has: link(page, "Flow reactor") });
   await expect(flow).toContainText("139 modules");
   await expect(flow.getByRole("link")).toHaveAttribute("href", "#/taxonomy/module_type/flow_reactor");
-  await expect(region(page, "Field tags").locator("tbody tr", { has: link(page, "catalysis") })).toContainText("23 papers");
+  await expect(flow.locator(".taxo-code")).toHaveText("flow_reactor");
+  await expect(region(page, "Field tags").locator("tbody tr", { has: link(page, "Catalysis") })).toContainText("23 papers");
   const families = region(page, "Unit operations").getByRole("heading", { level: 3 });
   await expect(families).toHaveText([
-    "Family: analyze", "Family: form", "Family: handle", "Family: measure", "Family: mix",
-    "Family: plan", "Family: prepare", "Family: react", "Family: separate", "Family: unmapped",
+    "Family: Analyze (analyze)", "Family: Form (form)", "Family: Handle (handle)", "Family: Measure (measure)",
+    "Family: Mix (mix)", "Family: Plan (plan)", "Family: Prepare (prepare)", "Family: React (react)",
+    "Family: Separate (separate)", "Family: Other family (unmapped) (unmapped)",
   ]);
-  await expect(region(page, "Family: mix").locator("tbody tr td:first-child")).toHaveText(["mix", "sonicate"]);
+  // Family names read as words; the code stays in the label's title (SPEC-UI-001 phase 6).
+  await expect(families.first().locator(".label")).toHaveAttribute("title", "analyze");
+  await expect(region(page, "Family: Mix (mix)").locator("tbody tr td:first-child .taxo-code")).toHaveText(["mix", "sonicate"]);
   expect(errors).toEqual([]);
 });
 
-test("AC-11: overview order, no disclosure, and the On this page jump list", async ({ page }) => {
+test("AC-11: overview order, no disclosure besides How this works, and the On this page jump list", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
@@ -141,7 +148,9 @@ test("AC-11: overview order, no disclosure, and the On this page jump list", asy
     "h2:Relations",
   ]);
   expect(order.slice(0, 3)).toEqual(["h1:Taxonomy", `p:${CAPTION}`, "nav:On this page"]);
-  await expect(page.locator("main details")).toHaveCount(0);
+  // The only disclosure is the "How this works" block of SPEC-UI-001 phase 5; the tables are never folded away.
+  await expect(page.locator("main details:not(.how-it-works)")).toHaveCount(0);
+  await expect(page.locator("main details.how-it-works")).toHaveCount(1);
 
   const jump = page.getByRole("navigation", { name: "On this page", exact: true });
   await expect(jump.getByRole("button")).toHaveText(KIND_HEADINGS);
@@ -183,7 +192,7 @@ test("AC-11: ?source= targets one sources row and scrolls it into view", async (
   await expect(currentRows(fresh)).toHaveCount(0);
 
   await fresh.goto("/#/taxonomy/module_type/thermal_unit");
-  await expect(h1(fresh, "thermal_unit")).toBeVisible();
+  await expect(h1(fresh, "Thermal unit")).toBeVisible();
   await link(fresh, "OntoLab/SAREF").click();
   expect(await hash(fresh)).toBe("#/taxonomy?source=Bai2024");
   await expect(sourceRow(fresh, "Bai2024")).toHaveAttribute("aria-current", "true");
@@ -195,7 +204,7 @@ test("AC-11: ?source= targets one sources row and scrolls it into view", async (
 test("AC-12: module type, field tag and transfer mode pages with matching count lines", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/taxonomy/module_type/flow_reactor");
-  await expect(h1(page, "flow_reactor")).toBeVisible();
+  await expect(h1(page, "Flow reactor")).toBeVisible();
   await expect(page.locator(".taxo-facts")).toContainText("Module type");
   const counts = region(page, "Counts");
   await expect(counts).toContainText("139 modules");
@@ -211,7 +220,7 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   ).toBeVisible();
 
   await page.goto("/#/taxonomy/field_tag/catalysis");
-  await expect(h1(page, "catalysis")).toBeVisible();
+  await expect(h1(page, "Catalysis")).toBeVisible();
   await expect(region(page, "Counts").getByRole("listitem")).toHaveText(["23 platforms", "23 papers"]);
   expect(await followCount(page, "23 platforms")).toBe("23 of 279 platforms");
   expect(await followCount(page, "23 papers")).toBe("23 of 237 papers");
@@ -339,14 +348,15 @@ test("AC-15: lazy chunk and a single taxonomy.json request", async ({ page }) =>
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   }
   expect(requested.filter((p) => /\/Taxonomy[^/]*\.js$/.test(p))).toEqual([]);
-  expect(taxonomyJson()).toEqual([]);
+  // Home shows counts from taxonomy.json (SPEC-UI-001 REQ-011); the taxonomy view reuses that one request.
+  expect(taxonomyJson()).toHaveLength(1);
 
   await page.getByRole("navigation").getByRole("link", { name: "Taxonomy", exact: true }).click();
   await expect(h1(page, "Taxonomy")).toBeVisible();
   expect(chunks()).toHaveLength(1);
   expect(taxonomyJson()).toHaveLength(1);
-  await link(page, "flow_reactor").click();
-  await expect(h1(page, "flow_reactor")).toBeVisible();
+  await link(page, "Flow reactor").click();
+  await expect(h1(page, "Flow reactor")).toBeVisible();
   await page.getByRole("navigation").getByRole("link", { name: "Taxonomy", exact: true }).click();
   await expect(h1(page, "Taxonomy")).toBeVisible();
   expect(taxonomyJson()).toHaveLength(1);
@@ -359,7 +369,7 @@ test("AC-15: a taxonomy route requests no platform file", async ({ page }) => {
   await page.goto("/#/taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
   await page.goto("/#/taxonomy/module_type/flow_reactor");
-  await expect(h1(page, "flow_reactor")).toBeVisible();
+  await expect(h1(page, "Flow reactor")).toBeVisible();
   expect(requested.filter((p) => p.includes("/data/platforms/"))).toEqual([]);
 });
 
@@ -407,16 +417,16 @@ test("AC-16: no page-level horizontal scroll at 375 px", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   for (const [url, title] of [
     ["/#/taxonomy", "Taxonomy"],
-    ["/#/taxonomy/module_type/thermal_unit", "thermal_unit"],
-    ["/#/taxonomy/transfer_mode/mobile_robot", "mobile_robot"],
-    ["/#/taxonomy/unit_operation/sonicate", "sonicate"],
+    ["/#/taxonomy/module_type/thermal_unit", "Thermal unit"],
+    ["/#/taxonomy/transfer_mode/mobile_robot", "Mobile robot"],
+    ["/#/taxonomy/unit_operation/sonicate", "Sonicate"],
   ] as const) {
     await page.goto(url);
     await expect(h1(page, title)).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth), url).toBeLessThanOrEqual(375);
   }
   await page.goto("/#/taxonomy/module_type/thermal_unit");
-  await expect(h1(page, "thermal_unit")).toBeVisible();
+  await expect(h1(page, "Thermal unit")).toBeVisible();
   const cells = await region(page, "Correspondence")
     .locator("tbody td")
     .evaluateAll((tds) =>
@@ -439,7 +449,8 @@ for (const width of [800, 375]) {
     const classLinks = 'main section table a[href^="#/taxonomy/"]';
     await expect(page.locator(classLinks)).toHaveCount(69);
     expect(await badBreaks(page, classLinks)).toEqual([]);
-    const longest = ["instrument_electrochemical", "instrument_separation_ms", "sample_handling_station", "measure_electrochemical", "materials_polymer_soft"];
+    // The readable names of the longest codes (SPEC-UI-001 phase 5).
+    const longest = ["Electrochemical instrument", "Separation / MS instrument", "Sample handling station", "Electrochemical measurement", "Polymer and soft materials"];
     for (const name of longest) await expect(link(page, name)).toBeVisible();
     for (const url of ["/#/taxonomy/module_type/thermal_unit", "/#/taxonomy/transfer_mode/mobile_robot"]) {
       await page.goto(url);
@@ -456,13 +467,13 @@ test("AC-16: keyboard reaches and opens the taxonomy links", async ({ page }) =>
   await expect(h1(page, "Taxonomy")).toBeVisible();
   await tabToLink(page, "Taxonomy", "#/taxonomy");
   await tabToLink(page, "Field tags", undefined, 400, "BUTTON");
-  await tabToLink(page, "flow_reactor");
+  await tabToLink(page, "Flow reactor");
   await tabToLink(page, "doi:10.1126/science.abc2986");
   await page.reload();
   await expect(h1(page, "Taxonomy")).toBeVisible();
-  await tabToLink(page, "flow_reactor");
+  await tabToLink(page, "Flow reactor");
   await page.keyboard.press("Enter");
-  await expect(h1(page, "flow_reactor")).toBeVisible();
+  await expect(h1(page, "Flow reactor")).toBeVisible();
   await tabToLink(page, "127 platforms");
   await tabToLink(page, "Bedard2018/P11");
   await tabToLink(page, "XDL");

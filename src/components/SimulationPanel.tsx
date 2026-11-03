@@ -30,8 +30,10 @@ import {
   SIM_RULES,
   UTILIZATION_TEXT,
 } from "../lib/workflowText";
-import { rowName, Timeline, TIMELINE_LIMIT } from "./Timeline";
+import { Label } from "./Label";
+import { rowLabel, rowName, Timeline, TIMELINE_LIMIT } from "./Timeline";
 import { CommitField } from "./WorkflowEditor";
+import { MessageSlot } from "./WorkflowMessages";
 
 function Choice({
   label,
@@ -62,7 +64,8 @@ function Choice({
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 const tripleText = (t: { low: number; mid: number; high: number }) =>
   `${formatDuration(t.low)}, ${formatDuration(t.mid)}, ${formatDuration(t.high)}`;
-const dayText = (v: number | null) => (v === null ? "not defined: the time is 0 s" : formatNumber(v));
+// Statistics in Latin Modern, numbers upright; the "not defined" sentence stays in the text face (SPEC-UI-001 REQ-003).
+const dayText = (v: number | null) => (v === null ? "not defined: the time is 0 s" : <span className="math">{formatNumber(v)}</span>);
 
 export function SimulationPanel({
   state,
@@ -104,7 +107,7 @@ export function SimulationPanel({
         : null;
 
   return (
-    <section aria-labelledby="wf-sim" className="wf-sim">
+    <section aria-labelledby="wf-sim" className="card panel wf-sim">
       <h2 id="wf-sim">Simulation</h2>
       <p>{SIM_INTRO}</p>
 
@@ -169,9 +172,10 @@ export function SimulationPanel({
         ))}
       </ul>
 
+      <MessageSlot at="sim" />
       {blocked && <p className="wf-missing">{blocked}</p>}
       <p>
-        <button type="button" disabled={blocked !== null || running} onClick={run}>
+        <button type="button" className="btn btn-primary" disabled={blocked !== null || running} onClick={run}>
           Run simulation
         </button>{" "}
         {running && <span role="status">Running…</span>}
@@ -193,7 +197,9 @@ export function SimulationPanel({
               <tbody>
                 <tr>
                   <th scope="row">Time to finish all {state.n} batches</th>
-                  <td data-value="makespan">{tripleText(current.makespan)}</td>
+                  <td data-value="makespan">
+                    <span className="math">{tripleText(current.makespan)}</span>
+                  </td>
                 </tr>
                 <tr>
                   <th scope="row">Experiments per day (batches × batch size × 86,400 s / that time)</th>
@@ -218,10 +224,12 @@ export function SimulationPanel({
                 {Object.entries(current.utilization).map(([m, u]) => (
                   <tr key={m}>
                     <td>
-                      {m} ({state.modules[Number(m) - 1]!.type})
+                      {m} (<Label kind="module_type" code={state.modules[Number(m) - 1]!.type} inText />)
                     </td>
                     <td className="num">{state.modules[Number(m) - 1]!.devices}</td>
-                    <td className="num">{pct(u)}</td>
+                    <td className="num">
+                      <span className="math">{pct(u)}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -239,7 +247,7 @@ export function SimulationPanel({
                 {Object.entries(current.waiting).map(([step, w]) => (
                   <tr key={step}>
                     <td>
-                      {step} ({state.steps[Number(step) - 1]!.uo})
+                      {step} (<Label kind="unit_operation" code={state.steps[Number(step) - 1]!.uo} inText />)
                     </td>
                     <td className="num">{formatDuration(w)}</td>
                   </tr>
@@ -249,8 +257,15 @@ export function SimulationPanel({
           </div>
           <p data-value="bottleneck">
             {BOTTLENECK_TEXT}{" "}
-            {current.bottleneck &&
-              `Step ${current.bottleneck.step} (${state.steps[current.bottleneck.step - 1]!.uo}) on module ${current.bottleneck.module} (${state.modules[current.bottleneck.module - 1]!.type}), ${pct(current.bottleneck.utilization)}.`}
+            {current.bottleneck && (
+              <>
+                Step {current.bottleneck.step} (
+                <Label kind="unit_operation" code={state.steps[current.bottleneck.step - 1]!.uo} inText />) on module{" "}
+                {current.bottleneck.module} (
+                <Label kind="module_type" code={state.modules[current.bottleneck.module - 1]!.type} inText />),{" "}
+                {pct(current.bottleneck.utilization)}.
+              </>
+            )}
           </p>
           <h3>Timeline of run 1</h3>
           <p className="table-note">{GANTT_TEXT}</p>
@@ -288,7 +303,7 @@ function EventTable({ state, summary }: { state: WorkflowState; summary: SimSumm
                   <tr key={k}>
                     <td className="num">{e.batch}</td>
                     <td>{e.kind === "step" ? `step ${e.step}` : `transfer after step ${e.step}`}</td>
-                    <td>{rowName(state, e) ?? "none"}</td>
+                    <td title={rowName(state, e) ?? undefined}>{rowLabel(state, e) ?? "none"}</td>
                     <td className="num">{formatNumber(e.start)}</td>
                     <td className="num">{formatNumber(e.end)}</td>
                     <td className="num">{formatNumber(e.waited)}</td>

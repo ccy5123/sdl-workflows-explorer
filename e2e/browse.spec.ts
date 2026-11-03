@@ -17,6 +17,34 @@ const tableSwitch = (page: Page, name: string) => group(page, "Table shown").get
 const search = (page: Page) => page.getByLabel("Search ids, titles and platform names");
 const selectBox = (page: Page, id: string) => page.getByRole("checkbox", { name: `Select ${id} for comparison`, exact: true });
 const rows = (page: Page, table: string) => page.locator(`.browse [data-table="${table}"] tbody tr`);
+/** Popover button of a filter group in the filter bar ("Field tag" or "Field tag · 2"; SPEC-UI-001 REQ-025). */
+const filterButton = (page: Page, legend: string) =>
+  page.locator(".filter-panel").getByRole("button", { name: new RegExp(`^${legend}( · \\d+)?$`) });
+
+/** Opens a filter group's popover if it is closed. */
+async function openFilter(page: Page, legend: string) {
+  const b = filterButton(page, legend);
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+}
+
+/** Checkbox of a filter option, by its code (the name ends "(code)") or by a pattern, with the popover open. */
+async function filterBox(page: Page, legend: string, name: string | RegExp) {
+  await openFilter(page, legend);
+  return group(page, legend).getByRole("checkbox", { name: typeof name === "string" ? new RegExp(`\\(${name}\\)$`) : name });
+}
+
+/** Checkbox of a table's column chooser, with its "Columns · N" popover open (SPEC-UI-001 REQ-028). */
+async function columnBox(page: Page, chooser: string, name: string) {
+  const b = page.getByRole("button", { name: /^Columns · \d+$/ });
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+  return box(page, chooser, name);
+}
+
+/** all/any radio of a group's match control, with the popover open. */
+async function matchRadio(page: Page, legend: string, value: "all" | "any") {
+  await openFilter(page, legend);
+  return group(page, `${legend} match`).getByRole("radio", { name: value, exact: true });
+}
 
 /** Text of the cell under `header` in the first (or last) body row of a browser table. */
 async function cell(page: Page, table: string, header: string, which: "first" | "last" = "first") {
@@ -40,9 +68,10 @@ test("AC-9: a filtered URL opens the browser", async ({ page }) => {
   await expect(tableSwitch(page, "Platforms")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("From", { exact: true })).toHaveValue("2018");
   await expect(page.getByLabel("To", { exact: true })).toHaveValue("2024");
-  await expect(box(page, "Field tag", "catalysis")).toBeChecked();
-  await expect(box(page, "Module types", "flow_reactor")).toBeChecked();
-  await expect(group(page, "Module types match").getByRole("radio", { name: "all", exact: true })).toBeChecked();
+  await expect(await filterBox(page, "Field tag", "catalysis")).toBeChecked();
+  await expect(await filterBox(page, "Module types", "flow_reactor")).toBeChecked();
+  await expect(await matchRadio(page, "Module types", "all")).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(countLine(page)).toHaveText("6 of 279 platforms");
   await expect(countLine(page)).toHaveAttribute("aria-live", "polite");
 
@@ -50,7 +79,7 @@ test("AC-9: a filtered URL opens the browser", async ({ page }) => {
   await expect(countLine(page)).toHaveText("6 of 237 papers");
   expect(await hash(page)).toBe("#/browse?years=2018-2024&field=catalysis&mt=flow_reactor");
 
-  await expect(box(page, "Software autonomy", /^3\b.*closed-loop iteration over an algorithm-generated search space/)).toBeVisible();
+  await expect(await filterBox(page, "Software autonomy", /^3\b.*closed-loop iteration over an algorithm-generated search space/)).toBeVisible();
 
   await page.goto("/#/browse?q=Bedard2018");
   const bedard = rows(page, "papers").filter({ has: page.locator("td:first-child", { hasText: /^Bedard2018$/ }) });
@@ -64,8 +93,8 @@ test("AC-9: a filtered URL opens the browser", async ({ page }) => {
   await expect(nav.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("href", "#/");
   await expect(nav.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute("href", "#/browse");
   await nav.getByRole("link", { name: "Home", exact: true }).click();
-  await expect(page.locator("table.counts")).toBeVisible();
-  await expect(page.locator('[data-table="platforms"] tbody tr')).toHaveCount(279);
+  await expect(page.locator(".stat-tiles")).toBeVisible(); // Home (SPEC-UI-001: stat tiles and a 20-row list)
+  await expect(page.locator("[data-list=platforms] > li")).toHaveCount(20);
   expect(errors).toEqual([]);
 });
 
@@ -81,7 +110,7 @@ test("AC-10: filters write the URL without adding history entries", async ({ pag
   expect(await page.evaluate(() => history.length)).toBe(length);
 
   await page.goBack();
-  await expect(page.locator("table.counts")).toBeVisible();
+  await expect(page.locator(".stat-tiles")).toBeVisible();
 });
 
 test("AC-10: the Browse link resets a filtered browser", async ({ page }) => {
@@ -122,18 +151,19 @@ test("AC-10: year inputs that cannot apply stay out of the URL", async ({ page }
   expect(await hash(page)).not.toContain("years");
 });
 
-test("AC-10: Clear filters keeps the table and the selection", async ({ page }) => {
+test("AC-10: Clear all keeps the table and the selection", async ({ page }) => {
   await page.goto("/#/browse?view=platforms&years=2020-2024&mt=flow_reactor&mtMatch=any&q=Aand2024");
   await selectBox(page, "Aand2024/P1").check();
-  await button(page, "Clear filters").click();
+  await button(page, "Clear all").click();
   await expect(countLine(page)).toHaveText("279 of 279 platforms");
   expect(await hash(page)).toBe("#/browse?view=platforms");
   await expect(page.getByLabel("From", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("To", { exact: true })).toHaveValue("");
   await expect(search(page)).toHaveValue("");
-  await expect(page.locator('.filter-panel input[type="checkbox"]:checked')).toHaveCount(0);
-  for (const name of ["Module types match", "Transfer modes match"]) {
-    await expect(group(page, name).getByRole("radio", { name: "all", exact: true })).toBeChecked();
+  await expect(page.locator(".filter-pills .pill")).toHaveCount(0);
+  await expect(filterButton(page, "Module types")).toHaveText("Module types");
+  for (const legend of ["Module types", "Transfer modes"]) {
+    await expect(await matchRadio(page, legend, "all")).toBeChecked();
   }
   await expect(page.getByRole("button", { name: /^Compare \(/ })).toHaveText("Compare (1)");
 });
@@ -141,12 +171,13 @@ test("AC-10: Clear filters keeps the table and the selection", async ({ page }) 
 test("AC-11: the match control switches between all and any", async ({ page }) => {
   await page.goto("/#/browse?view=platforms&mt=flow_reactor,liquid_handler");
   await expect(countLine(page)).toHaveText("25 of 279 platforms");
-  await group(page, "Module types match").getByRole("radio", { name: "any", exact: true }).check();
+  await (await matchRadio(page, "Module types", "any")).check();
   await expect(countLine(page)).toHaveText("209 of 279 platforms");
   expect(await hash(page)).toContain("mtMatch=any");
+  await page.keyboard.press("Escape");
   await tableSwitch(page, "Papers").click();
   await expect(countLine(page)).toHaveText("176 of 237 papers");
-  await group(page, "Module types match").getByRole("radio", { name: "all", exact: true }).check();
+  await (await matchRadio(page, "Module types", "all")).check();
   await expect(countLine(page)).toHaveText("19 of 237 papers");
   expect(await hash(page)).not.toContain("mtMatch");
 });
@@ -169,10 +200,11 @@ test("AC-12: sorting and the column chooser by keyboard", async ({ page }) => {
   await expect(yearHeader).toHaveAttribute("aria-sort", "none");
   expect(await cell(page, "papers", "Paper")).toBe("Aand2024");
 
-  await box(page, "Paper table columns", "Venue").press("Space");
+  await (await columnBox(page, "Paper table columns", "Venue")).press("Space");
   await expect(page.locator('.browse [data-table="papers"] thead th', { hasText: /^Venue$/ })).toHaveCount(0);
-  await expect(box(page, "Paper table columns", "Paper")).toBeChecked();
-  await expect(box(page, "Paper table columns", "Paper")).toBeDisabled();
+  await expect(await columnBox(page, "Paper table columns", "Paper")).toBeChecked();
+  await expect(await columnBox(page, "Paper table columns", "Paper")).toBeDisabled();
+  await page.keyboard.press("Escape");
 
   await page.goto("/#/browse?view=platforms");
   await expect(rows(page, "platforms")).toHaveCount(279);
@@ -189,8 +221,8 @@ test("AC-12: sorting and the column chooser by keyboard", async ({ page }) => {
   await expect(page.locator('.browse [data-table="platforms"] thead th', { hasText: /^Name$/ })).toHaveAttribute("aria-sort", "descending");
   expect(await cell(page, "platforms", "Name", "last")).toBe("—");
   for (const name of ["Platform", "Select"]) {
-    await expect(box(page, "Platform table columns", name)).toBeChecked();
-    await expect(box(page, "Platform table columns", name)).toBeDisabled();
+    await expect(await columnBox(page, "Platform table columns", name)).toBeChecked();
+    await expect(await columnBox(page, "Platform table columns", name)).toBeDisabled();
   }
 });
 
@@ -238,7 +270,7 @@ test("AC-13: selecting platforms for comparison", async ({ page }) => {
 });
 
 const cellsOf = (page: Page, table: string, key: string) =>
-  page.locator(`[data-table="${table}"] tbody tr`).filter({ has: page.locator("th", { hasText: new RegExp(`^${key}$`) }) }).locator("td");
+  page.locator(`[data-table="${table}"] tbody tr`).filter({ has: page.locator(`th [data-code="${key}"]`) }).locator("td");
 const stepOrders = (page: Page, id: string) =>
   page.locator(`[data-steps="${id}"] tbody tr`).evaluateAll((els) => els.map((e) => e.getAttribute("data-step-order")));
 
@@ -326,38 +358,34 @@ test("AC-16: no page-level horizontal scroll at 375 px", async ({ page }) => {
   }
 });
 
-test("Follow-up: at desktop width the filters sit beside the results, which are visible without scrolling", async ({ page }) => {
+test("Follow-up (SPEC-UI-001 REQ-025): at desktop width the filter bar sits above results visible without scrolling", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto("/#/browse?view=platforms&field=catalysis");
   await expect(rows(page, "platforms").first()).toBeVisible();
-  const toggle = page.getByRole("button", { name: /^Filters/ });
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await expect(toggle).toContainText("1 active");
+  await expect(filterButton(page, "Field tag")).toHaveText("Field tag · 1");
+  await expect(button(page, "Remove Field tag: Catalysis")).toBeVisible();
   for (const target of [countLine(page), rows(page, "platforms").first()]) {
     const b = (await target.boundingBox())!;
     expect(b.y + b.height).toBeLessThanOrEqual(720);
   }
+  // A popover opens over the results and closes again without changing the result or the URL.
+  await openFilter(page, "Field tag");
   await expect(group(page, "Field tag")).toBeVisible();
-  // Collapsing hides the controls but keeps the filtered result and the URL.
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await page.keyboard.press("Escape");
   await expect(group(page, "Field tag")).toBeHidden();
   await expect(countLine(page)).toHaveText("23 of 279 platforms");
   expect(await hash(page)).toBe("#/browse?view=platforms&field=catalysis");
-  await toggle.press("Enter");
-  await expect(group(page, "Field tag")).toBeVisible();
 });
 
-test("Follow-up: at phone width the filters start collapsed and open with the toggle", async ({ page }) => {
+test("Follow-up (SPEC-UI-001 REQ-025): at phone width the filter bar wraps and the count stays on the first screen", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto("/#/browse?field=catalysis&im=mixed");
-  const toggle = page.getByRole("button", { name: /^Filters/ });
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(toggle).toContainText("2 active");
+  await expect(filterButton(page, "Field tag")).toHaveText("Field tag · 1");
+  await expect(filterButton(page, "Integration mode")).toHaveText("Integration mode · 1");
   await expect(group(page, "Field tag")).toBeHidden();
   const b = (await countLine(page).boundingBox())!;
   expect(b.y + b.height).toBeLessThanOrEqual(800);
-  await toggle.click();
+  await openFilter(page, "Field tag");
   await expect(group(page, "Field tag")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
@@ -382,21 +410,23 @@ test("Follow-up: Compare shows the comparison page at once, before the hashchang
 test("SPEC-TAXO-001 AC-14: the unit-operation filter", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/browse?view=platforms");
+  // The group follows Transfer modes in the bar, and its popover holds the options then the match control.
+  const buttons = await page.locator(".filter-panel .filter-button").allTextContents();
+  expect(buttons.indexOf("Unit operations")).toBe(buttons.indexOf("Transfer modes") + 1);
+  await openFilter(page, "Unit operations");
   await expect(group(page, "Unit operations").getByRole("checkbox")).toHaveCount(31);
-  const names = await page.locator(".filter-panel legend").allTextContents();
-  expect(names.indexOf("Unit operations")).toBe(names.indexOf("Transfer modes match") + 1);
-  expect(names.indexOf("Unit operations match")).toBe(names.indexOf("Unit operations") + 1);
-  await expect(group(page, "Unit operations match").getByRole("radio", { name: "all", exact: true })).toBeChecked();
-  await box(page, "Unit operations", "sonicate").check();
+  expect(await page.locator(".filter-popover-panel legend").allTextContents()).toEqual(["Unit operations", "Unit operations match"]);
+  await expect(await matchRadio(page, "Unit operations", "all")).toBeChecked();
+  await (await filterBox(page, "Unit operations", "sonicate")).check();
   await expect(countLine(page)).toHaveText("5 of 279 platforms");
   expect(await hash(page)).toBe("#/browse?view=platforms&uo=sonicate");
-  await box(page, "Unit operations", "mix").check();
+  await (await filterBox(page, "Unit operations", "mix")).check();
   await expect(countLine(page)).toHaveText("0 of 279 platforms");
-  await group(page, "Unit operations match").getByRole("radio", { name: "any", exact: true }).check();
+  await (await matchRadio(page, "Unit operations", "any")).check();
   await expect(countLine(page)).toHaveText("111 of 279 platforms");
   expect(await hash(page)).toBe("#/browse?view=platforms&uo=mix,sonicate&uoMatch=any");
-  await expect(page.getByRole("button", { name: /^Filters/ })).toHaveText("Filters (1 active)");
-  await button(page, "Clear filters").click();
+  await expect(filterButton(page, "Unit operations")).toHaveText("Unit operations · 2");
+  await button(page, "Clear all").click();
   await expect(countLine(page)).toHaveText("279 of 279 platforms");
   expect(await hash(page)).toBe("#/browse?view=platforms");
   expect(errors).toEqual([]);

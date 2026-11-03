@@ -1,5 +1,6 @@
 // Hash routes of the site (REQ-001, REQ-002, REQ-004; SPEC-BROWSE-001 REQ-001; SPEC-TRENDS-001 REQ-001; SPEC-TAXO-001
 // REQ-009; SPEC-BENCH-001 REQ-005; SPEC-SITE-001 REQ-005; SPEC-SIM-001 REQ-005). Pure: never throws.
+import { displayLabel } from "./labels";
 
 export type Route =
   | { kind: "home" }
@@ -124,7 +125,8 @@ export function routeTitle(route: Route): string {
     case "taxonomy":
       return "Taxonomy";
     case "taxonomyClass":
-      return `Taxonomy: ${route.cls}`;
+      // The readable name of the class (SPEC-UI-001 phase 5); the hash keeps the code.
+      return `Taxonomy: ${displayLabel(route.classKind, route.cls)}`;
     case "benchmark":
       return "Benchmark";
     case "benchmarkItems":

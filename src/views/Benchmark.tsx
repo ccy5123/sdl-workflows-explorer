@@ -1,8 +1,12 @@
 // Benchmark view: the benchmark page (tasks, split, label counts, the reference results as published, how to run the
 // evaluation, items by platform) and the item explorer (SPEC-BENCH-001 REQ-007 to REQ-016). Loaded lazily;
-// data/benchmark.json and, for the explorer, data/benchmark-items.json are fetched by this module on first use and kept
-// for the page's lifetime.
+// data/benchmark.json (through the loader Home shares, useJson.ts) and, for the explorer, data/benchmark-items.json are
+// fetched once per page load.
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { HowItWorks } from "../components/HowItWorks";
+import { Label } from "../components/Label";
+import { Loading } from "../components/Loading";
+import { loadJsonOnce } from "../components/useJson";
 import { SPLITS, type BenchmarkItemsJson, type BenchmarkJson, type IndexJson, type Split } from "../data/types";
 import {
   BACK_LINK_TEXT,
@@ -36,16 +40,17 @@ import {
   platformsCountLine,
   referenceRow,
   splitTable,
+  taskItemsHead,
   taskTitle,
   uncertainSentence,
   type CountCell,
   type ExplorerState,
 } from "../lib/benchmark";
+import { displayLabel } from "../lib/labels";
 import { parseRoute } from "../lib/route";
 
 export type BenchmarkRoute = { kind: "benchmark" } | { kind: "benchmarkItems"; query: string };
 
-let benchmarkRequest: Promise<BenchmarkJson> | null = null;
 let itemsRequest: Promise<BenchmarkItemsJson> | null = null;
 
 function getJson<T>(path: string): Promise<T> {
@@ -55,21 +60,51 @@ function getJson<T>(path: string): Promise<T> {
   });
 }
 
-/** data/benchmark.json, requested at most once per page load. */
-const loadBenchmark = () => (benchmarkRequest ??= getJson<BenchmarkJson>("data/benchmark.json"));
+/** data/benchmark.json, requested at most once per page load (shared with Home, SPEC-UI-001). */
+const loadBenchmark = () => loadJsonOnce<BenchmarkJson>("data/benchmark.json");
 /** data/benchmark-items.json, requested at most once per page load and only by the explorer. */
 const loadItems = () => (itemsRequest ??= getJson<BenchmarkItemsJson>("data/benchmark-items.json"));
 
 const DASH = "—";
 const headingId = (text: string) => `bench-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/** A card section; `code` (a task id) shows beside the heading as secondary text, outside the heading's name. */
+function Section({ title, code, card = true, children }: { title: string; code?: string; card?: boolean; children: ReactNode }) {
   const id = headingId(title);
   return (
-    <section aria-labelledby={id}>
+    <section aria-labelledby={id} className={card ? "card panel" : undefined}>
       <h2 id={id}>{title}</h2>
+      {code && (
+        <p className="bench-task-id">
+          <code className="chip mono">{code}</code>
+        </p>
+      )}
       {children}
     </section>
+  );
+}
+
+/** A task by its readable name, the task id under it (SPEC-UI-001 phase 6). */
+function TaskName({ task }: { task: BenchmarkJson["tasks"][number] }) {
+  return (
+    <span className="bench-task-name" title={task.task_id}>
+      {taskTitle(task.target)}
+      <code className="bench-task-code">
+        <Breakable text={task.task_id} />
+      </code>
+    </span>
+  );
+}
+
+/** Head of a task's item-count column: "Module type items", the task id in `title` and as secondary text. */
+function ItemsHead({ task }: { task: BenchmarkJson["tasks"][number] }) {
+  return (
+    <span className="bench-task-name" title={task.task_id}>
+      {taskItemsHead(task.target)}
+      <code className="bench-task-code">
+        <Breakable text={task.task_id} />
+      </code>
+    </span>
   );
 }
 
@@ -88,6 +123,12 @@ function Breakable({ text }: { text: string }) {
   );
 }
 
+/** A vocabulary code of a "#/taxonomy/<kind>/<code>" link, shown by its readable name (SPEC-UI-001 REQ-008). */
+function linkedLabel(href: string, text: string): ReactNode {
+  const match = /^#\/taxonomy\/([^/]+)\/([^/?]+)$/.exec(href);
+  return match && decodeURIComponent(match[2]!) === text ? <Label kind={match[1]!} code={text} /> : <Breakable text={text} />;
+}
+
 function Count({ cell, label }: { cell: CountCell; label: string }) {
   return (
     <td data-label={label} className="num">
@@ -99,15 +140,16 @@ function Count({ cell, label }: { cell: CountCell; label: string }) {
 function SplitTable({ data }: { data: BenchmarkJson }) {
   const table = splitTable(data);
   const taskIds = data.tasks.map((t) => t.task_id);
+  const heads = data.tasks.map((t) => taskItemsHead(t.target));
   return (
     <table className="bench-table" aria-label="Split">
       <thead>
         <tr>
           <th scope="col">Split</th>
           <th scope="col">Papers</th>
-          {taskIds.map((id) => (
-            <th scope="col" key={id}>
-              <Breakable text={`${id} items`} />
+          {data.tasks.map((t) => (
+            <th scope="col" key={t.task_id}>
+              <ItemsHead task={t} />
             </th>
           ))}
         </tr>
@@ -120,7 +162,7 @@ function SplitTable({ data }: { data: BenchmarkJson }) {
               {r.papers}
             </td>
             {r.cells.map((c, i) => (
-              <Count key={taskIds[i]} cell={c} label={`${taskIds[i]} items`} />
+              <Count key={taskIds[i]} cell={c} label={heads[i]!} />
             ))}
           </tr>
         ))}
@@ -130,7 +172,7 @@ function SplitTable({ data }: { data: BenchmarkJson }) {
             {table.total.papers}
           </td>
           {table.total.cells.map((c, i) => (
-            <Count key={taskIds[i]} cell={c} label={`${taskIds[i]} items`} />
+            <Count key={taskIds[i]} cell={c} label={heads[i]!} />
           ))}
         </tr>
       </tbody>
@@ -142,9 +184,8 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
   const task = data.tasks[index]!;
   const summary = data.summaries[index]!;
   return (
-    <Section title={task.task_id}>
-      <p className="caption">{taskTitle(task.target)}</p>
-      <dl className="taxo-facts">
+    <Section title={taskTitle(task.target)} code={task.task_id}>
+      <dl className="taxo-facts card">
         <dt>Unit of an item</dt>
         <dd>{itemUnit(task.target)}</dd>
         <dt>Which items</dt>
@@ -167,9 +208,7 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
           {labelRows(data, index).map((r) => (
             <tr key={r.label}>
               <td data-label="Label">
-                <a href={r.href}>
-                  <Breakable text={r.label} />
-                </a>
+                <a href={r.href}>{linkedLabel(r.href, r.label)}</a>
               </td>
               {r.cells.map((c, i) => (
                 <Count key={SPLITS[i]} cell={c} label={SPLIT_LABELS[SPLITS[i]!]} />
@@ -186,7 +225,6 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
 function ReferenceResults({ data }: { data: BenchmarkJson }) {
   return (
     <Section title={SECTION_HEADINGS.reference}>
-      <p>{METRIC_DEFINITION}</p>
       {metricLines(data.tasks).map((line) => (
         <p key={line}>{line}</p>
       ))}
@@ -202,13 +240,16 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
         </thead>
         <tbody>
           {Object.values(data.reference_results).map((r) => {
+            const known = data.tasks.find((t) => t.task_id === r.task_id);
+            const taskCell = (text: string) => (known ? <TaskName task={known} /> : <Breakable text={text} />);
             const row = referenceRow(r);
             const cells = [row.task, row.testItems, row.baseline, row.reference, row.difference, row.interval, row.replicates];
             return (
               <tr key={row.task}>
                 {cells.map((text, i) => (
                   <td key={REFERENCE_HEADS[i]} data-label={REFERENCE_HEADS[i]} className={i > 0 ? "num" : undefined}>
-                    {i === 0 ? <Breakable text={text} /> : text}
+                    {/* Statistics and their counts in Latin Modern, numbers upright (SPEC-UI-001 REQ-003). */}
+                    {i === 0 ? taskCell(text) : <span className="math">{text}</span>}
                   </td>
                 ))}
               </tr>
@@ -232,7 +273,7 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
           {modelRows(data.tasks).map((m) => (
             <tr key={m.task}>
               <td data-label={MODEL_HEADS[0]}>
-                <Breakable text={m.task} />
+                <TaskName task={data.tasks.find((t) => t.task_id === m.task)!} />
               </td>
               <td data-label={MODEL_HEADS[1]}>{m.baseline}</td>
               <td data-label={MODEL_HEADS[2]}>{m.referenceModel}</td>
@@ -252,7 +293,7 @@ function Evaluation({ data, doi }: { data: BenchmarkJson; doi: string }) {
   const note = evaluationNote(data);
   const doiUrl = `https://doi.org/${doi}`;
   return (
-    <Section title={SECTION_HEADINGS.evaluation}>
+    <Section title={SECTION_HEADINGS.evaluation} card={false}>
       <p>{note.release}</p>
       <p>
         {note.doiLead} <a href={doiUrl}>{doiUrl}</a>
@@ -300,9 +341,9 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
             <th scope="col">Platform</th>
             <th scope="col">Name</th>
             <th scope="col">Split</th>
-            {taskIds.map((id) => (
-              <th scope="col" key={id}>
-                <Breakable text={`${id} items`} />
+            {data.tasks.map((t) => (
+              <th scope="col" key={t.task_id}>
+                <ItemsHead task={t} />
               </th>
             ))}
           </tr>
@@ -318,7 +359,7 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
               <td data-label="Name">{names.get(r.platform_id) ?? DASH}</td>
               <td data-label="Split">{r.split}</td>
               {r.cells.map((c, i) => (
-                <Count key={taskIds[i]} cell={c} label={`${taskIds[i]} items`} />
+                <Count key={taskIds[i]} cell={c} label={taskItemsHead(data.tasks[i]!.target)} />
               ))}
             </tr>
           ))}
@@ -341,7 +382,11 @@ function BenchmarkPage({ data, index }: { data: BenchmarkJson; index: IndexJson 
         <TaskSection key={t.task_id} data={data} index={i} />
       ))}
       <ReferenceResults data={data} />
-      <Evaluation data={data} doi={index.release.doi} />
+      {/* How the reference numbers are computed and how to rerun them (SPEC-UI-001 phase 5). */}
+      <HowItWorks>
+        <p>{METRIC_DEFINITION}</p>
+        <Evaluation data={data} doi={index.release.doi} />
+      </HowItWorks>
       <ItemsByPlatform data={data} index={index} />
     </div>
   );
@@ -396,8 +441,8 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
           Task{" "}
           <select value={state.task} onChange={(e) => apply({ ...state, task: e.target.value, label: null })}>
             {data.tasks.map((t) => (
-              <option key={t.task_id} value={t.task_id}>
-                {t.task_id}
+              <option key={t.task_id} value={t.task_id} title={t.task_id}>
+                {taskTitle(t.target)} ({t.task_id})
               </option>
             ))}
           </select>
@@ -418,8 +463,8 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
           <select value={state.label ?? ""} onChange={(e) => apply({ ...state, label: e.target.value || null })}>
             <option value="">All</option>
             {labels.map((l) => (
-              <option key={l.label} value={l.label}>
-                {l.label}
+              <option key={l.label} value={l.label} title={l.label}>
+                {displayLabel(task.target, l.label)}
               </option>
             ))}
           </select>
@@ -427,7 +472,7 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
         {state.platform !== null && (
           <p className="bench-control">
             Platform: {state.platform}{" "}
-            <button type="button" onClick={() => apply({ ...state, platform: null })}>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => apply({ ...state, platform: null })}>
               Remove platform
             </button>
           </p>
@@ -456,9 +501,9 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
                   {explorerCells(task.target, taskItems.columns, row).map((cell, i) => (
                     <td key={columns[i]!.head} data-label={columns[i]!.head}>
                       {cell.href ? (
-                        <a href={cell.href}>
-                          <Breakable text={cell.text} />
-                        </a>
+                        <a href={cell.href}>{linkedLabel(cell.href, cell.text)}</a>
+                      ) : columns[i]!.source.endsWith("_family") && cell.text !== "" ? (
+                        <Label kind="family" code={cell.text} />
                       ) : (
                         <Breakable text={cell.text} />
                       )}
@@ -469,7 +514,7 @@ function Explorer({ data, items }: { data: BenchmarkJson; items: BenchmarkItemsJ
             </tbody>
           </table>
           {shown < matching.length && (
-            <button type="button" className="bench-more" onClick={() => setShown(shown + PAGE_SIZE)}>
+            <button type="button" className="btn btn-secondary bench-more" onClick={() => setShown(shown + PAGE_SIZE)}>
               {SHOW_MORE_TEXT}
             </button>
           )}
@@ -496,6 +541,6 @@ export function Benchmark({ index, route }: { index: IndexJson; route: Benchmark
   }, [explorer]);
 
   if (error) return <p role="alert">{loadErrorText(error)}</p>;
-  if (!data || (explorer && !items)) return <p>Loading…</p>;
+  if (!data || (explorer && !items)) return <Loading />;
   return explorer ? <Explorer data={data} items={items!} /> : <BenchmarkPage data={data} index={index} />;
 }

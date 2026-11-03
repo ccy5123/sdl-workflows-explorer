@@ -2,9 +2,12 @@
 // (SPEC-SIM-001 REQ-005 to REQ-020). Loaded lazily; data/simulation.json is fetched by this module on first use.
 import { useEffect, useMemo, useState } from "react";
 import { CycleRange } from "../components/CycleRange";
+import { HowItWorks } from "../components/HowItWorks";
+import { Loading } from "../components/Loading";
 import { SimilarPlatforms } from "../components/SimilarPlatforms";
 import { SimulationPanel } from "../components/SimulationPanel";
 import { WorkflowEditor } from "../components/WorkflowEditor";
+import { WorkflowGraph } from "../components/WorkflowGraph";
 import type { SimulationJson } from "../data/types";
 import { cycleRange, jointOffers, singleStepGroups, stepSources } from "../lib/cycleRange";
 import { parseRoute, workflowHash } from "../lib/route";
@@ -20,6 +23,7 @@ import {
   type WorkflowState,
 } from "../lib/workflowState";
 import { WORKFLOW_INTRO, NEED_A_STEP } from "../lib/workflowText";
+import { MessageAnnouncer, MessageSlot, MessagesContext, slotAfter, type WorkflowMessages } from "../components/WorkflowMessages";
 
 let simRequest: Promise<SimulationJson> | null = null;
 
@@ -31,10 +35,7 @@ function loadSimulation(): Promise<SimulationJson> {
   }));
 }
 
-interface Messages {
-  notes: string[];
-  error: string | null;
-}
+type Messages = WorkflowMessages;
 
 /** State of the current hash; the hash is replaced by its canonical form so URL and inputs agree. */
 function stateFromLocation(catalog: Catalog): { state: WorkflowState; ignored: string[] } | null {
@@ -56,11 +57,13 @@ export function Workflow() {
   }, []);
   // The heading appears with the builder, so a page that shows its heading has its controls too.
   if (loadError) return <p role="alert">Could not load the data: {loadError}</p>;
-  if (!sim) return <p>Loading…</p>;
+  if (!sim) return <Loading />;
   return (
     <article className="workflow">
       <h1>Workflow builder</h1>
-      <p>{WORKFLOW_INTRO}</p>
+      <HowItWorks>
+        <p>{WORKFLOW_INTRO}</p>
+      </HowItWorks>
       <Builder sim={sim} />
     </article>
   );
@@ -101,7 +104,7 @@ function Builder({ sim }: { sim: SimulationJson }) {
   const platforms = useMemo(() => sim.platforms.map((p) => platformSets(p, catalog)), [sim, catalog]);
   const [initial] = useState(() => stateFromLocation(catalog) ?? decodeWorkflow("", catalog));
   const [state, setState] = useState<WorkflowState>(initial.state);
-  const [messages, setMessages] = useState<Messages>({ notes: [], error: null });
+  const [messages, setMessages] = useState<Messages>({ at: "end", notes: [], error: null });
   const [ignored, setIgnored] = useState<string | null>(ignoredMessage(initial.ignored));
 
   // replaceState fires no hashchange, so a hashchange means the visitor opened another link: decode it.
@@ -111,20 +114,21 @@ function Builder({ sim }: { sim: SimulationJson }) {
       if (!next) return;
       setState(next.state);
       setIgnored(ignoredMessage(next.ignored));
-      setMessages({ notes: [], error: null });
+      setMessages({ at: "end", notes: [], error: null });
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [catalog]);
 
+  // The messages show after the part of the builder the edit came from (the control that has focus when it is made).
   const commit = (next: WorkflowState, notes: string[]) => {
     setState(next);
-    setMessages({ notes, error: null });
+    setMessages({ at: slotAfter(document.activeElement), notes, error: null });
     history.replaceState(history.state, "", workflowHash(encodeWorkflow(next)));
   };
   const apply = (result: EditResult): boolean => {
     if (!result.ok) {
-      setMessages({ notes: [], error: result.error });
+      setMessages({ at: slotAfter(document.activeElement), notes: [], error: result.error });
       return false;
     }
     commit(result.state, result.notes);
@@ -138,26 +142,17 @@ function Builder({ sim }: { sim: SimulationJson }) {
   };
 
   return (
-    <>
+    <MessagesContext.Provider value={messages}>
+      <MessageAnnouncer />
       {ignored && (
         <p className="wf-message" role="status">
           {ignored}
         </p>
       )}
       <WorkflowEditor state={state} catalog={catalog} sim={sim} apply={apply} onStart={onStart} />
-      <div className="wf-messages" aria-live="polite">
-        {messages.error && (
-          <p className="wf-message wf-error" role="alert">
-            {messages.error}
-          </p>
-        )}
-        {messages.notes.map((n) => (
-          <p key={n} className="wf-message">
-            {n}
-          </p>
-        ))}
-      </div>
+      <MessageSlot at="end" />
+      <WorkflowGraph state={state} />
       {state.steps.length === 0 ? <p className="wf-empty">{NEED_A_STEP}</p> : <Outputs state={state} catalog={catalog} sim={sim} platforms={platforms} apply={apply} />}
-    </>
+    </MessagesContext.Provider>
   );
 }

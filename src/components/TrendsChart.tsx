@@ -16,6 +16,8 @@ import {
   type SplitValue,
 } from "../lib/trends";
 import type { FilterState } from "../lib/filterState";
+import { ValueName } from "./CountTable";
+import { unnameMarks } from "./plotMarks";
 
 const HEIGHT = 320;
 /** Below this width the x tick labels are rotated so the 13 bin labels fit. */
@@ -152,6 +154,7 @@ export function TrendsChart({
       ],
     });
     nameLinks(svg);
+    unnameMarks(svg);
     el.replaceChildren(svg);
     return () => svg.remove();
   }, [width, state, split, table, unit, offeredIm]);
@@ -166,7 +169,7 @@ export function ChartLegend({ split, values, offeredIm }: { split: Split; values
       {values.map((value) => (
         <li key={value}>
           <span className="legend-swatch" style={{ background: seriesColor(split, value, offeredIm) }} aria-hidden="true" />
-          {valueLabel(split, value)}
+          <ValueName split={split} value={value} />
         </li>
       ))}
     </ul>

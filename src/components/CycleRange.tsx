@@ -3,12 +3,15 @@
 import { useId } from "react";
 import type { DurationRow, SimulationJson } from "../data/types";
 import { formatDuration, formatNumber, type CycleResult, type StepRange } from "../lib/cycleRange";
+import { displayLabel } from "../lib/labels";
 import { platformHash } from "../lib/route";
 import { chooseJoint, setEntered, setOption, type Catalog, type EditResult, type WorkflowState } from "../lib/workflowState";
 import { BOUNDS_LABEL, MARKER_KEY, NO_WAITING, RANGE_INTRO, SOURCE_LABELS } from "../lib/workflowText";
 import { DURATION_TICKS, StripPlot, type StripPoint } from "./DurationStrip";
+import { Label } from "./Label";
 import { CommitField } from "./WorkflowEditor";
 import { ThroughputPanel } from "./ThroughputPanel";
+import { MessageSlot } from "./WorkflowMessages";
 
 const markers = (d: DurationRow) =>
   [d.bound === "upper" ? "≤" : d.bound === "lower" ? "≥" : "", d.approximate ? "≈" : ""].join("");
@@ -105,10 +108,13 @@ function StepDetail({
   return (
     <section className="wf-step" aria-labelledby={`wf-step-${i}`} data-step={i}>
       <h3 id={`wf-step-${i}`}>
-        Step {i}: {step.uo}
+        Step {i}: <Label kind="unit_operation" code={step.uo} />
       </h3>
       <p className="wf-n">
-        n = {n} recorded{left > 0 ? `; ${step.used.length} used, ${left} bound${left > 1 ? "s" : ""} left out` : ""}
+        <span className="math">
+          <i>n</i> = {n}
+        </span>{" "}
+        recorded{left > 0 ? `; ${step.used.length} used, ${left} bound${left > 1 ? "s" : ""} left out` : ""}
         {step.runs > 1 ? `; ${step.runs} runs per batch` : ""}
       </p>
       {n > 0 && (
@@ -116,7 +122,7 @@ function StepDetail({
           points={step.recorded.map((d) => pointOf(d, s.bounds))}
           domain={domain}
           label="Recorded duration (log scale)"
-          ariaLabel={`Recorded single-step durations of ${step.uo}: ${n} values from ${formatDuration(step.recorded[0]!.seconds)} to ${formatDuration(step.recorded.at(-1)!.seconds)}`}
+          ariaLabel={`Recorded single-step durations of ${displayLabel("unit_operation", step.uo)} (${step.uo}): ${n} values from ${formatDuration(step.recorded[0]!.seconds)} to ${formatDuration(step.recorded.at(-1)!.seconds)}`}
           format={formatDuration}
           ticks={DURATION_TICKS}
         />
@@ -129,7 +135,7 @@ function StepDetail({
         <div className="wf-entry">
           {step.kind === "missing" && (
             <p className="wf-missing">
-              No single-step duration is recorded for {step.uo}. Enter a duration for step {i} to get a cycle time.
+              No single-step duration is recorded for <Label kind="unit_operation" code={step.uo} inText />. Enter a duration for step {i} to get a cycle time.
             </p>
           )}
           <CommitField
@@ -150,7 +156,7 @@ function StepDetail({
             <a href={`https://doi.org/${chosen.doi}`}>doi:{chosen.doi}</a>, {chosen.evidence.doc}
             {chosen.evidence.page !== null ? ` p. ${chosen.evidence.page}` : ""}
             {chosen.evidence.locator ? `, ${chosen.evidence.locator}` : ""}).{" "}
-            <button type="button" onClick={() => apply(chooseJoint(s, catalog, i, null))}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => apply(chooseJoint(s, catalog, i, null))}>
               Stop using it
             </button>
           </p>
@@ -164,12 +170,19 @@ function StepDetail({
           <ul>
             {offers.map((d) => (
               <li key={d.step_id}>
-                Steps {i} to {i + d.joint!.step_ids.length - 1} ({d.joint!.unit_operations.join(" → ")}): {valueText(d)} per run,{" "}
+                Steps {i} to {i + d.joint!.step_ids.length - 1} (
+                {d.joint!.unit_operations.map((uo, k) => (
+                  <span key={k}>
+                    {k > 0 && " → "}
+                    <Label kind="unit_operation" code={uo} inText />
+                  </span>
+                ))}
+                ): {valueText(d)} per run,{" "}
                 <a href={platformHash(d.platform_id)}>{d.platform_id}</a>,{" "}
                 <a href={`https://doi.org/${d.doi}`}>doi:{d.doi}</a>, {d.evidence.doc}
                 {d.evidence.page !== null ? ` p. ${d.evidence.page}` : ""}
                 {d.evidence.locator ? `, ${d.evidence.locator}` : ""}{" "}
-                <button type="button" onClick={() => apply(chooseJoint(s, catalog, i, d.step_id))}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => apply(chooseJoint(s, catalog, i, d.step_id))}>
                   Use this for steps {i} to {i + d.joint!.step_ids.length - 1}
                 </button>
               </li>
@@ -177,6 +190,7 @@ function StepDetail({
           </ul>
         </details>
       )}
+      <MessageSlot at={`range-step-${i}`} />
     </section>
   );
 }
@@ -204,15 +218,17 @@ export function CycleRange({
   const all = result.steps.flatMap((x) => x.recorded.map((d) => d.seconds));
   const domain: [number, number] = all.length > 0 ? [Math.min(...all) / 1.5, Math.max(...all) * 1.5] : [1, 86_400];
   const { cycle, perDay } = result;
-  const dayText = (v: number | null) => (v === null ? "not defined: the cycle time is 0 s" : formatNumber(v));
+  // A per-day value in Latin Modern; the "not defined" sentence stays in the text face (SPEC-UI-001 REQ-003).
+  const dayText = (v: number | null) => (v === null ? "not defined: the cycle time is 0 s" : <span className="math">{formatNumber(v)}</span>);
   return (
-    <section aria-labelledby="wf-range" className="wf-range">
+    <section aria-labelledby="wf-range" className="card panel wf-range">
       <h2 id="wf-range">Cycle time and throughput</h2>
       <p>{RANGE_INTRO}</p>
       <p className="wf-check">
         <input id={boundsId} type="checkbox" checked={state.bounds} onChange={(e) => apply(setOption(state, catalog, { bounds: e.target.checked }))} />
         <label htmlFor={boundsId}>{BOUNDS_LABEL}</label>
       </p>
+      <MessageSlot at="range-bounds" />
       <div className="table-scroll">
         <table className="data" data-table="wf-range">
           <thead>
@@ -232,7 +248,9 @@ export function CycleRange({
             {result.steps.map((x) => (
               <tr key={x.step}>
                 <td className="num">{x.step}</td>
-                <td>{x.uo}</td>
+                <td>
+                  <Label kind="unit_operation" code={x.uo} />
+                </td>
                 <td className={x.kind === "entered" ? "wf-entered" : undefined}>{SOURCE_LABELS[x.kind]}</td>
                 <td className="num">{x.recorded.length}</td>
                 <td className="num">{x.used.length}</td>
@@ -259,14 +277,19 @@ export function CycleRange({
       <div className="wf-result" data-result="range">
         {cycle === null ? (
           <p className="wf-missing">
-            No cycle time yet: {result.missing.map((i) => `step ${i} (${state.steps[i - 1]!.uo})`).join(", ")}{" "}
+            No cycle time yet:{" "}
+            {result.missing.map((i, k) => (
+              <span key={i}>
+                {k > 0 && ", "}step {i} (<Label kind="unit_operation" code={state.steps[i - 1]!.uo} inText />)
+              </span>
+            ))}{" "}
             {result.missing.length > 1 ? "have" : "has"} no recorded duration and no value entered. Enter a duration for{" "}
             {result.missing.length > 1 ? "them" : "it"} below.
           </p>
         ) : (
           <>
             <p>
-              <strong>Cycle time per batch</strong> (lowest, median, highest): <span data-value="cycle">{tripleText(cycle)}</span>
+              <strong>Cycle time per batch</strong> (lowest, median, highest): <span data-value="cycle" className="math">{tripleText(cycle)}</span>
             </p>
             <p>
               <strong>Experiments per day</strong> (from the highest, median and lowest cycle time):{" "}

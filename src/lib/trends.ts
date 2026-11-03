@@ -4,6 +4,7 @@ import type { PaperRow, PlatformRow } from "../data/types";
 import { matchingPapers, matchingPlatforms } from "./filterApply";
 import { HW_LABELS, INTEGRATION_MODE_TEXT, SW_LABELS, offeredValues, sortedText, type FilterState, type Offered, type View, type YearRange } from "./filterState";
 import { decodeFilters, encodeFilters } from "./filterUrl";
+import { displayLabel } from "./labels";
 
 /** Category a dashboard splits the counts by; each is also a filter group of the browser. */
 export type Split = "im" | "field" | "sw" | "hw" | "mt" | "tm";
@@ -150,11 +151,19 @@ export function countTable(state: FilterState, split: Split, index: IndexRows, p
 
 // ---- Labels and accessible names (REQ-010, REQ-011) ----
 
-/** Value as stored, or "<level> — <category text>" for the autonomy splits. */
+/** Vocabulary kind of each coded split (integration mode values are transfer modes, "mixed" or "none"). */
+const SPLIT_KIND: Partial<Record<Split, string>> = { im: "transfer_mode", field: "field_tag", mt: "module_type", tm: "transfer_mode" };
+
+/** Code of a value for its title, or null for the autonomy levels (SPEC-UI-001 REQ-028). */
+export function valueCode(split: Split, value: SplitValue): string | null {
+  return SPLIT_KIND[split] ? String(value) : null;
+}
+
+/** Readable name of a value (SPEC-UI-001 REQ-028), or "<level> — <category text>" for the autonomy splits. */
 export function valueLabel(split: Split, value: SplitValue): string {
   if (split === "sw") return `${value} — ${SW_LABELS[Number(value)] ?? ""}`;
   if (split === "hw") return `${value} — ${HW_LABELS[Number(value)] ?? ""}`;
-  return String(value);
+  return displayLabel(SPLIT_KIND[split]!, String(value));
 }
 
 export const segmentName = (bin: string, value: string, count: number, n: number, unit: View): string =>

@@ -41,8 +41,8 @@ test("AC-5: the evidence panel links to the correction form for the selected ite
   await page.goto(`/${REF}`);
   const release = await version(page);
   const link = links(evidence(page), CORRECTION_LINK_TEXT);
-  await expect(evidenceId(page)).toHaveText("Aand2024/P1");
-  await expect(link).toHaveCount(0);
+  // Nothing is selected at first: no evidence sheet (SPEC-UI-001 REQ-019).
+  await expect(evidence(page)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Show platform evidence" }).click();
   await expect(evidenceId(page)).toHaveText("Aand2024/P1");
@@ -61,13 +61,12 @@ test("AC-5: the evidence panel links to the correction form for the selected ite
   await expectIssueLink(link, correctionUrl("Aand2024/P1/E1", release));
 
   await page.keyboard.press("Escape");
-  await expect(evidenceId(page)).toHaveText("Aand2024/P1");
-  await expect(link).toHaveCount(0);
+  await expect(evidence(page)).toHaveCount(0);
 });
 
 test("AC-6: a taxonomy class page links to the taxonomy form; the not-found page does not", async ({ page }) => {
   await page.goto(`/${CLASS}`);
-  await expect(page.getByRole("heading", { level: 1, name: "flow_reactor", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Flow reactor", exact: true })).toBeVisible();
   await expectIssueLink(links(page.locator("main"), TAXONOMY_LINK_TEXT), taxonomyUrl("module_type", "flow_reactor"));
 
   await page.goto("/#/taxonomy/module_type/no_such_class");

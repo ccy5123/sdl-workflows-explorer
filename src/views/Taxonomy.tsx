@@ -1,10 +1,15 @@
 // Taxonomy explorer: the overview of the release taxonomy and one page per class, with counts that open the matching
 // browser rows, example platforms and the correspondence to other vocabularies (SPEC-TAXO-001 REQ-009 to REQ-016).
-// Loaded lazily; data/taxonomy.json is fetched by this module on first use and kept for the page's lifetime.
+// Loaded lazily; data/taxonomy.json is fetched once per page load through the loader Home shares (useJson.ts).
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { HowItWorks } from "../components/HowItWorks";
 import { IssueLink } from "../components/IssueLink";
+import { Label } from "../components/Label";
+import { Loading } from "../components/Loading";
+import { loadJsonOnce } from "../components/useJson";
 import type { IndexJson, TaxonomyClass, TaxonomyJson, TaxonomySource } from "../data/types";
 import { TAXONOMY_LINK_TEXT, taxonomyUrl } from "../lib/contribute";
+import { displayLabel } from "../lib/labels";
 import { offeredValues } from "../lib/filterState";
 import { platformHash, taxonomyHash } from "../lib/route";
 import {
@@ -26,7 +31,7 @@ import {
   loadErrorText,
   noMappingText,
   notFoundText,
-  overviewCaption,
+  overviewCaptionParts,
   papersText,
   platformsText,
   relationMeaning,
@@ -35,39 +40,45 @@ import {
 
 export type TaxonomyRoute = { kind: "taxonomy"; source?: string } | { kind: "taxonomyClass"; classKind: string; cls: string };
 
-let request: Promise<TaxonomyJson> | null = null;
-
-/** data/taxonomy.json, requested at most once per page load. */
-function loadTaxonomy(): Promise<TaxonomyJson> {
-  request ??= fetch("data/taxonomy.json").then((response) => {
-    if (!response.ok) throw new Error(`data/taxonomy.json: HTTP ${response.status}`);
-    return response.json() as Promise<TaxonomyJson>;
-  });
-  return request;
-}
+/** data/taxonomy.json, requested at most once per page load (shared with Home, SPEC-UI-001). */
+const loadTaxonomy = () => loadJsonOnce<TaxonomyJson>("data/taxonomy.json");
 
 const DASH = "—";
 const headingId = (text: string) => `taxo-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
 function Reference({ source }: { source: TaxonomySource }) {
   const { before, doiText, after } = splitReference(source);
+  // Word joiners keep a range such as "FW1–FW3" or "101–108" on one line (SPEC-SITE-001 REQ-014).
+  const keepRanges = (text: string) => text.replace(/(\w)–(\w)/g, "$1⁠–⁠$2");
   return (
     <>
-      {before}
+      {keepRanges(before)}
       {doiText && <a href={`https://doi.org/${source.doi}`}>{doiText}</a>}
-      {after}
+      {keepRanges(after)}
     </>
   );
 }
 
-function Section({ title, level = 2, children }: { title: string; level?: 2 | 3; children: ReactNode }) {
+/** `title` names the section (and its heading id); `heading`, when given, is what the heading shows instead. */
+function Section({
+  title,
+  heading,
+  level = 2,
+  children,
+}: {
+  title: string;
+  heading?: ReactNode;
+  level?: 2 | 3;
+  children: ReactNode;
+}) {
   const id = headingId(title);
   const Heading = level === 2 ? "h2" : "h3";
   return (
-    <section aria-labelledby={id}>
+    // A page section is a card panel; a family group inside the unit-operation card is not (SPEC-UI-001 phase 5).
+    <section aria-labelledby={id} className={level === 2 ? "card panel" : undefined}>
       {/* tabIndex -1: the jump list moves focus to a kind's heading. */}
       <Heading id={id} tabIndex={-1}>
-        {title}
+        {heading ?? title}
       </Heading>
       {children}
     </section>
@@ -101,7 +112,7 @@ function JumpList({ kinds }: { kinds: readonly string[] }) {
       <ul>
         {kinds.map((k) => (
           <li key={k}>
-            <button type="button" onClick={() => jump(kindHeading(k))}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => jump(kindHeading(k))}>
               {kindHeading(k)}
             </button>
           </li>
@@ -125,9 +136,11 @@ function ClassTable({ classes }: { classes: readonly TaxonomyClass[] }) {
         {classes.map((c) => (
           <tr key={c.class}>
             <td data-label="Class">
+              {/* The readable name is the link; the code follows it for readers matching against the CSV. */}
               <a href={taxonomyHash(c.class_kind, c.class)}>
-                <Breakable text={c.class} />
-              </a>
+                <span className="taxo-name">{displayLabel(c.class_kind, c.class)}</span>
+              </a>{" "}
+              <span className="mono taxo-code">{c.class}</span>
             </td>
             <td data-label="Definition">{c.definition}</td>
             <td data-label="Items" className="num">
@@ -143,6 +156,7 @@ function ClassTable({ classes }: { classes: readonly TaxonomyClass[] }) {
 function Overview({ data, source }: { data: TaxonomyJson; source: string | undefined }) {
   const { classes } = data;
   const kinds = kindsInOrder(classes);
+  const caption = overviewCaptionParts(classes);
   const sourcesBody = useRef<HTMLTableSectionElement>(null);
   // The targeted sources row is scrolled into view on load and on every change of the target (REQ-011).
   useEffect(() => {
@@ -151,13 +165,25 @@ function Overview({ data, source }: { data: TaxonomyJson; source: string | undef
   return (
     <div className="taxonomy">
       <h1>Taxonomy</h1>
-      <p className="caption">{overviewCaption(classes)}</p>
+      <p className="caption">{caption.counts}</p>
+      <HowItWorks>
+        <p>{caption.note}</p>
+      </HowItWorks>
       <JumpList kinds={kinds} />
       {kinds.map((kind) => (
         <Section key={kind} title={kindHeading(kind)}>
           {kind === "unit_operation" ? (
             familyGroups(classes).map((g) => (
-              <Section key={g.family} title={`Family: ${g.family}`} level={3}>
+              <Section
+                key={g.family}
+                title={`Family: ${g.family}`}
+                heading={
+                  <>
+                    Family: <Label kind="family" code={g.family} />
+                  </>
+                }
+                level={3}
+              >
                 <ClassTable classes={g.classes} />
               </Section>
             ))
@@ -258,14 +284,19 @@ function ClassPage({ cls, data, index }: { cls: TaxonomyClass; data: TaxonomyJso
   const papers = papersText(cls.n_papers);
   return (
     <article className="taxonomy">
-      <h1>{cls.class}</h1>
-      <dl className="taxo-facts">
+      <h1>{displayLabel(cls.class_kind, cls.class)}</h1>
+      <p className="taxo-code-line">
+        <span className="chip mono taxo-chip">{cls.class}</span>
+      </p>
+      <dl className="taxo-facts card">
         <dt>Kind</dt>
         <dd>{kindLabel(cls.class_kind)}</dd>
         {cls.class_kind === "unit_operation" && cls.family !== null && (
           <>
             <dt>Family</dt>
-            <dd>{cls.family}</dd>
+            <dd>
+              <Label kind="family" code={cls.family} />
+            </dd>
           </>
         )}
       </dl>
@@ -334,7 +365,7 @@ export function Taxonomy({ index, route }: { index: IndexJson; route: TaxonomyRo
   }, []);
 
   if (error) return <p role="alert">{loadErrorText(error)}</p>;
-  if (!data) return <p>Loading…</p>;
+  if (!data) return <Loading />;
   if (route.kind === "taxonomy") return <Overview data={data} source={route.source} />;
   const cls = data.classes.find((c) => c.class_kind === route.classKind && c.class === route.cls);
   return cls ? <ClassPage cls={cls} data={data} index={index} /> : <ClassNotFound kind={route.classKind} cls={route.cls} />;

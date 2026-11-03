@@ -1,14 +1,18 @@
-// One platform: header, graph, steps, evidence, legend and text tables (REQ-001, REQ-002, REQ-005 to REQ-016).
-import { useEffect, useMemo, useReducer, useState, type KeyboardEvent } from "react";
+// One platform: header, graph, steps, evidence, legend and text tables (REQ-001, REQ-002, REQ-005 to REQ-016); laid out
+// as a header card, a full-width graph, the step timeline beside the tables, and an evidence sheet that opens on a
+// selection with an empty state before it (SPEC-UI-001 REQ-017 to REQ-020).
+import { MousePointerClick } from "lucide-react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
 import { EvidencePanel } from "../components/EvidencePanel";
 import { Graph } from "../components/Graph";
 import { Header } from "../components/Header";
-import { Legend } from "../components/Legend";
+import { Label } from "../components/Label";
 import { StepList } from "../components/StepList";
 import type { IndexJson, PlatformFile, PlatformGraph } from "../data/types";
 import { formatEvidence } from "../lib/evidence";
 import { sharedIdentityLinks } from "../lib/identity";
 import { selectionReducer, sortSteps, type Selection } from "../lib/steps";
+import { Loading } from "../components/Loading";
 import { NotFound } from "./NotFound";
 
 type Load = { state: "loading" } | { state: "ready"; platform: PlatformGraph } | { state: "missing" };
@@ -21,6 +25,25 @@ interface Props {
 }
 
 const yesNo = (v: boolean) => (v ? "yes" : "no");
+
+/** How long after the selection is cleared a focus event is not taken as a preview (the sheet hands focus back). */
+const QUIET_FOCUS_MS = 100;
+
+/**
+ * Scrolls the graph into view when less than half of it shows, so the modules a chosen step uses are seen
+ * highlighted (SPEC-UI-001 UI AC-46). Only on a step's selection (click, Enter or Space), never on hover or focus,
+ * so the page does not move under the pointer. The top bar is cleared by the root's `scroll-padding-top`.
+ */
+function revealGraph(root: HTMLElement | null) {
+  const graph = root?.querySelector<HTMLElement>(".graph-wrap");
+  if (!graph) return;
+  const box = graph.getBoundingClientRect();
+  const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  const shown = Math.min(box.bottom, window.innerHeight) - Math.max(box.top, top);
+  if (shown >= box.height / 2) return;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  graph.scrollIntoView({ block: "start", behavior: still ? "auto" : "smooth" });
+}
 
 function activate(e: KeyboardEvent, action: () => void) {
   if (e.key === "Enter" || e.key === " ") {
@@ -52,22 +75,40 @@ export function PlatformView({ index, paperId, platformId, hash }: Props) {
     };
   }, [paperId, platformId]);
 
-  if (load.state === "loading") return <p>Loading…</p>;
+  if (load.state === "loading") return <Loading />;
   if (load.state === "missing") return <NotFound hash={hash} />;
-  return <Platform index={index} platform={load.platform} />;
+  // Keyed by the platform, so a selection never carries over to another platform (SPEC-UI-001 REQ-023).
+  return <Platform key={load.platform.platform_id} index={index} platform={load.platform} />;
 }
 
 function Platform({ index, platform }: { index: IndexJson; platform: PlatformGraph }) {
   const [selection, dispatch] = useReducer(selectionReducer, null as Selection);
   const select = (s: NonNullable<Selection>) => dispatch({ type: "select", selection: s });
+  // A step under the pointer or keyboard focus, previewed in the graph without selecting it (SPEC-UI-001 UI AC-38).
+  const [preview, setPreview] = useState<string | null>(null);
+  // Set while the sheet returns focus to the step that opened it, so that focus does not bring the highlight back.
+  const quietFocus = useRef(false);
+  const root = useRef<HTMLDivElement>(null);
+  const clear = useCallback(() => {
+    quietFocus.current = true;
+    setPreview(null);
+    dispatch({ type: "clear" });
+    setTimeout(() => {
+      quietFocus.current = false;
+    }, QUIET_FOCUS_MS);
+  }, []);
+  const onPreview = (stepId: string | null, by: "pointer" | "focus") => {
+    if (stepId && by === "focus" && quietFocus.current) return;
+    setPreview(stepId);
+  };
 
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") dispatch({ type: "clear" });
+      if (e.key === "Escape") clear();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [clear]);
 
   const steps = useMemo(() => sortSteps(platform.steps), [platform]);
   const paper = index.papers.find((p) => p.paper_id === platform.paper_id);
@@ -75,7 +116,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
   const isPicked = (kind: string, id: string) => selection?.kind === kind && selection.id === id;
 
   return (
-    <div className="platform">
+    <div className="platform" ref={root}>
       <Header
         platform={platform}
         paper={paper}
@@ -83,22 +124,34 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
         release={index.release.version}
         onSelectPlatform={() => select({ kind: "platform", id: platform.platform_id })}
       />
+      <Graph platform={platform} selection={selection} preview={preview} onSelect={select} />
+      {!selection && (
+        <p className="evidence-empty">
+          <MousePointerClick size={16} aria-hidden="true" />
+          Select a module or connection in the graph, a step or a table row to see the page in the paper that describes
+          it.
+        </p>
+      )}
+      {selection && (
+        <EvidencePanel
+          view={formatEvidence(platform, selection)}
+          release={index.release.version}
+          onClose={clear}
+        />
+      )}
       <div className="viewer">
-        <div className="viewer-main">
-          <Graph platform={platform} selection={selection} onSelect={select} />
-        </div>
-        <div className="viewer-side">
-          <EvidencePanel view={formatEvidence(platform, selection)} release={index.release.version} />
-          <StepList
-            steps={steps}
-            modules={platform.modules}
-            selectedStepId={selection?.kind === "step" ? selection.id : null}
-            onSelect={(id) => select({ kind: "step", id })}
-          />
-        </div>
-      </div>
-      <Legend />
-      <section className="panel" aria-labelledby="modules-heading">
+        <StepList
+          steps={steps}
+          modules={platform.modules}
+          selectedStepId={selection?.kind === "step" ? selection.id : null}
+          onSelect={(id) => {
+            select({ kind: "step", id });
+            revealGraph(root.current);
+          }}
+          onPreview={onPreview}
+        />
+        <div className="viewer-tables">
+      <section className="card panel" aria-labelledby="modules-heading">
         <h2 id="modules-heading">Modules</h2>
         <div className="table-scroll">
           <table className="data" data-table="modules">
@@ -122,7 +175,9 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
                   <td>
                     <code>{m.module_id}</code>
                   </td>
-                  <td>{m.module_type}</td>
+                  <td>
+                    <Label kind="module_type" code={m.module_type} />
+                  </td>
                   <td>{m.name_in_paper ?? "—"}</td>
                   <td>{yesNo(m.on_platform)}</td>
                 </tr>
@@ -135,7 +190,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
           Part of the platform: yes for modules of the platform, no for equipment outside it that the loop uses.
         </p>
       </section>
-      <section className="panel" aria-labelledby="connections-heading">
+      <section className="card panel" aria-labelledby="connections-heading">
         <h2 id="connections-heading">Connections</h2>
         <div className="table-scroll">
           <table className="data" data-table="connections">
@@ -163,7 +218,9 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
                   <td>
                     <code>{c.to_module}</code>
                   </td>
-                  <td>{c.transfer_mode}</td>
+                  <td>
+                    <Label kind="transfer_mode" code={c.transfer_mode} />
+                  </td>
                   <td>{yesNo(c.stated)}</td>
                   <td>{c.uncertain ? "yes ?" : "no"}</td>
                 </tr>
@@ -172,6 +229,8 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
           </table>
         </div>
       </section>
+        </div>
+      </div>
     </div>
   );
 }

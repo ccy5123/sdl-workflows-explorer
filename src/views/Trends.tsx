@@ -1,12 +1,12 @@
 // Trends dashboard: counts by first public year, split by one category, with the browser's filters and URL
-// (SPEC-TRENDS-001 REQ-001 to REQ-016). Loaded lazily with Observable Plot (REQ-015).
+// (SPEC-TRENDS-001 REQ-001 to REQ-016). Loaded lazily with Observable Plot (REQ-015). The filter bar sits above the
+// chart and "Split by" is a segmented control over the same radio buttons (SPEC-UI-001 REQ-025, REQ-026).
 import { useEffect, useMemo, useState } from "react";
 import { CountTable } from "../components/CountTable";
 import { FilterPanel } from "../components/FilterPanel";
 import { ChartLegend, TrendsChart } from "../components/TrendsChart";
 import type { IndexJson } from "../data/types";
 import {
-  activeFilterCount,
   clearFilters,
   offeredValues,
   yearsFromInputs,
@@ -34,8 +34,6 @@ import {
 } from "../lib/trends";
 
 const yearText = (years: YearRange) => ({ from: years.from?.toString() ?? "", to: years.to?.toString() ?? "" });
-/** Width from which the filters sit in a sidebar beside the chart (matches styles.css and Browse.tsx). */
-const SIDEBAR_QUERY = "(min-width: 1000px)";
 
 interface TrendsState {
   state: FilterState;
@@ -56,7 +54,6 @@ export function Trends({ index }: { index: IndexJson }) {
   const offered = useMemo(() => offeredValues(index), [index]);
   const [{ state, split }, setTrends] = useState<TrendsState>(() => stateFromLocation(offered) ?? decodeTrends("", offered));
   const [years, setYears] = useState(() => yearText(state.years));
-  const [filtersOpen, setFiltersOpen] = useState(() => window.matchMedia(SIDEBAR_QUERY).matches);
 
   // replaceState fires no hashchange, so read the real hash on every navigation while the dashboard is shown.
   useEffect(() => {
@@ -93,34 +90,22 @@ export function Trends({ index }: { index: IndexJson }) {
   return (
     <div className="trends">
       <h1>Trends</h1>
+      <FilterPanel
+        idPrefix="trends-filter"
+        state={state}
+        offered={offered}
+        yearText={years}
+        inverted={yearsFromInputs(years.from, years.to).inverted}
+        onState={apply}
+        onYearText={onYearText}
+        onClear={onClear}
+      />
       <div className="browse-layout">
-        <aside className="browse-filters">
-          <button
-            type="button"
-            className="filter-toggle"
-            aria-expanded={filtersOpen}
-            aria-controls="trends-filter-panel"
-            onClick={() => setFiltersOpen((open) => !open)}
-          >
-            Filters ({activeFilterCount(state)} active)
-          </button>
-          <div id="trends-filter-panel" hidden={!filtersOpen}>
-            <FilterPanel
-              state={state}
-              offered={offered}
-              yearText={years}
-              inverted={yearsFromInputs(years.from, years.to).inverted}
-              onState={apply}
-              onYearText={onYearText}
-              onClear={onClear}
-            />
-          </div>
-        </aside>
         <div className="browse-results">
-          <fieldset className="filter-group split-control">
+          <fieldset className="split-control segmented">
             <legend>Split by</legend>
             {SPLITS.map((s) => (
-              <label key={s}>
+              <label key={s} className={split === s ? "checked" : undefined}>
                 <input type="radio" name="split" value={s} checked={split === s} onChange={() => apply(state, s)} />
                 {SPLIT_LABELS[s]}
               </label>

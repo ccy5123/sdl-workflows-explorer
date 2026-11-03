@@ -1,35 +1,37 @@
-// Filter controls of the browser (REQ-004; SPEC-TAXO-001 REQ-007): year range, checkbox groups, match controls, search
-// and "Clear filters".
-import { HW_LABELS, SW_LABELS, type FilterState, type Match, type Offered } from "../lib/filterState";
+// Filter bar of the browser and the Trends dashboard (REQ-004; SPEC-TAXO-001 REQ-007; SPEC-UI-001 REQ-025): search and
+// year range in the bar, one popover button per checkbox group ("Field tag · 2"), and below it a pill per active filter
+// with "Clear all". Options show readable names with the code beside them.
+// One popover is open at a time (components/Popover.tsx). An option shows its name and its code once; the checkbox is
+// named "Name (code)" (SPEC-UI-001 REQ-028).
+import { Search, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { FILTER_GROUPS, filterPills, optionLabel, type FilterGroup } from "../lib/filterLabels";
+import type { FilterState, Match, Offered } from "../lib/filterState";
+import { Popover } from "./Popover";
 
-type ListKey = "field" | "im" | "sw" | "hw" | "mt" | "tm" | "uo";
-
-function CheckboxGroup<V extends string | number>({
-  legend,
-  options,
-  selected,
-  label = String,
-  onChange,
-}: {
-  legend: string;
-  options: readonly V[];
-  selected: readonly V[];
-  label?: (value: V) => string;
-  onChange: (next: V[]) => void;
-}) {
+function CheckboxGroup({ group, options, state, onState }: { group: FilterGroup; options: readonly (string | number)[]; state: FilterState; onState: (next: FilterState) => void }) {
+  const selected = state[group.key] as (string | number)[];
   return (
     <fieldset className="filter-group">
-      <legend>{legend}</legend>
+      <legend>{group.legend}</legend>
       {options.map((value) => {
         const checked = selected.includes(value);
+        const { name, code } = optionLabel(group.key, value);
         return (
-          <label key={value}>
+          <label key={value} className="filter-option">
             <input
               type="checkbox"
+              aria-label={code ? `${name} (${code})` : undefined}
               checked={checked}
-              onChange={() => onChange(checked ? selected.filter((v) => v !== value) : [...selected, value])}
+              onChange={() => onState({ ...state, [group.key]: checked ? selected.filter((v) => v !== value) : [...selected, value] })}
             />
-            {label(value)}
+            <span className="filter-option-name">{name}</span>
+            {code && (
+              <>
+                {" "}
+                <code>{code}</code>
+              </>
+            )}
           </label>
         );
       })}
@@ -51,7 +53,10 @@ function MatchControl({ legend, name, value, onChange }: { legend: string; name:
   );
 }
 
+const countLabel = (legend: string, count: number) => (count ? `${legend} · ${count}` : legend);
+
 export function FilterPanel({
+  idPrefix,
   state,
   offered,
   yearText,
@@ -60,6 +65,8 @@ export function FilterPanel({
   onYearText,
   onClear,
 }: {
+  /** Prefix of the popover ids, so two bars never share one. */
+  idPrefix: string;
   state: FilterState;
   offered: Offered;
   yearText: { from: string; to: string };
@@ -68,55 +75,80 @@ export function FilterPanel({
   onYearText: (from: string, to: string) => void;
   onClear: () => void;
 }) {
-  const setList = (key: ListKey) => (next: (string | number)[]) => onState({ ...state, [key]: next });
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const close = useRef(() => setOpenKey(null)).current;
+  const pills = filterPills(state);
 
   return (
     <section className="filter-panel" aria-label="Filters">
-      <fieldset className="filter-group years">
-        <legend>Year</legend>
-        <label>
-          From
-          <input type="number" inputMode="numeric" value={yearText.from} onChange={(e) => onYearText(e.target.value, yearText.to)} />
+      <div className="filter-bar">
+        <label className="filter search">
+          <Search size={15} className="search-icon" aria-hidden="true" />
+          <span className="visually-hidden">Search ids, titles and platform names</span>
+          <input
+            type="search"
+            value={state.q}
+            placeholder="Search ids, titles, names"
+            autoComplete="off"
+            onChange={(e) => onState({ ...state, q: e.target.value })}
+          />
         </label>
-        <label>
-          To
-          <input type="number" inputMode="numeric" value={yearText.to} onChange={(e) => onYearText(yearText.from, e.target.value)} />
-        </label>
-        {inverted && (
-          <p className="year-error" role="status">
-            From year is after To year
-          </p>
-        )}
-      </fieldset>
-      <label className="filter search">
-        Search ids, titles and platform names
-        <input type="search" value={state.q} autoComplete="off" onChange={(e) => onState({ ...state, q: e.target.value })} />
-      </label>
-      <CheckboxGroup legend="Field tag" options={offered.field} selected={state.field} onChange={setList("field")} />
-      <CheckboxGroup legend="Integration mode" options={offered.im} selected={state.im} onChange={setList("im")} />
-      <CheckboxGroup
-        legend="Software autonomy"
-        options={offered.sw}
-        selected={state.sw}
-        label={(v) => `${v} — ${SW_LABELS[v] ?? ""}`}
-        onChange={setList("sw")}
-      />
-      <CheckboxGroup
-        legend="Hardware autonomy"
-        options={offered.hw}
-        selected={state.hw}
-        label={(v) => `${v} — ${HW_LABELS[v] ?? ""}`}
-        onChange={setList("hw")}
-      />
-      <CheckboxGroup legend="Module types" options={offered.mt} selected={state.mt} onChange={setList("mt")} />
-      <MatchControl legend="Module types match" name="mtMatch" value={state.mtMatch} onChange={(mtMatch) => onState({ ...state, mtMatch })} />
-      <CheckboxGroup legend="Transfer modes" options={offered.tm} selected={state.tm} onChange={setList("tm")} />
-      <MatchControl legend="Transfer modes match" name="tmMatch" value={state.tmMatch} onChange={(tmMatch) => onState({ ...state, tmMatch })} />
-      <CheckboxGroup legend="Unit operations" options={offered.uo} selected={state.uo} onChange={setList("uo")} />
-      <MatchControl legend="Unit operations match" name="uoMatch" value={state.uoMatch} onChange={(uoMatch) => onState({ ...state, uoMatch })} />
-      <button type="button" className="clear-filters" onClick={onClear}>
-        Clear filters
-      </button>
+        <fieldset className="filter-group years">
+          <legend>Year</legend>
+          <input type="number" inputMode="numeric" placeholder="from" aria-label="From" value={yearText.from} onChange={(e) => onYearText(e.target.value, yearText.to)} />
+          <span aria-hidden="true">–</span>
+          <input type="number" inputMode="numeric" placeholder="to" aria-label="To" value={yearText.to} onChange={(e) => onYearText(yearText.from, e.target.value)} />
+        </fieldset>
+        {FILTER_GROUPS.map((group) => (
+          <Popover
+            key={group.key}
+            id={`${idPrefix}-${group.key}`}
+            label={countLabel(group.legend, (state[group.key] as unknown[]).length)}
+            active={(state[group.key] as unknown[]).length > 0}
+            open={openKey === group.key}
+            onOpen={() => setOpenKey(group.key)}
+            onClose={close}
+          >
+            <CheckboxGroup group={group} options={offered[group.key]} state={state} onState={onState} />
+            {group.match && (
+              <MatchControl
+                legend={`${group.legend} match`}
+                name={group.match}
+                value={state[group.match]}
+                onChange={(m) => onState({ ...state, [group.match!]: m })}
+              />
+            )}
+          </Popover>
+        ))}
+      </div>
+      {inverted && (
+        <p className="year-error" role="status">
+          From year is after To year
+        </p>
+      )}
+      {pills.length > 0 && (
+        <ul className="filter-pills" aria-label="Active filters">
+          {pills.map((pill) => (
+            <li key={pill.id} className="pill">
+              {pill.text}
+              <button
+                type="button"
+                className="pill-remove"
+                aria-label={pill.removeLabel}
+                title={pill.removeLabel}
+                onClick={() => (pill.id === "years" ? onYearText("", "") : onState(pill.remove(state)))}
+              >
+                <X size={13} aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+          <li>
+            <button type="button" className="btn btn-ghost btn-sm clear-filters" onClick={onClear}>
+              Clear all
+            </button>
+          </li>
+        </ul>
+      )}
     </section>
   );
 }

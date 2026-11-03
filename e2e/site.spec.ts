@@ -1,8 +1,9 @@
-// SPEC-SITE-001 AC-6, AC-7: the home and about pages in Chromium against the e2e build.
+// SPEC-SITE-001 AC-6, AC-7 and SPEC-UI-001 AC-8 to AC-10: the home and about pages in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
-import type { IndexJson, ReleaseDocs } from "../src/data/types";
+import type { IndexJson, ReleaseDocs, TaxonomyJson } from "../src/data/types";
 import { formatCitation } from "../src/lib/citation";
-import { ABOUT_AUTHOR_LEAD, AUTHOR, PLATFORM_LIST_BUTTON } from "../src/lib/siteText";
+import { FEATURED_PLATFORM, SEARCH_EXAMPLES } from "../src/lib/home";
+import { ABOUT_AUTHOR_LEAD, AUTHOR, VIEWS, heroLead, heroTitle, searchPlaceholder } from "../src/lib/siteText";
 
 const fetchJson = <T>(page: Page, path: string) =>
   page.evaluate((p) => fetch(p).then((r) => r.json()), path) as Promise<T>;
@@ -23,43 +24,70 @@ const ownText = (page: Page) =>
     return copy.innerText;
   });
 
-test("AC-6: home page order, links, citation and platform list", async ({ page }) => {
+// SPEC-UI-001 AC-8 replaces SPEC-SITE-001 AC-6's home order: the redesigned Home, in document order.
+test("AC-8: home order, links, citation and featured platform", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/");
   const docs = await fetchJson<ReleaseDocs>(page, "data/release-docs.json");
   const index = await fetchJson<IndexJson>(page, "data/index.json");
+  const taxonomy = await fetchJson<TaxonomyJson>(page, "data/taxonomy.json");
   const main = page.locator("main");
 
-  await expect(main.locator("h1")).toHaveText("SDL Workflows Explorer");
-  const intro = main.locator(".home-intro");
-  await expect(intro).toContainText(`Release ${index.release.version}`);
-  await expect(intro).toContainText("279 platforms");
-  await expect(intro).toContainText("237 papers");
-
-  const views = main.locator("table.views tbody tr");
-  await expect(views).toHaveCount(5);
-  await expect(views.locator("th")).toHaveText(["Platform viewer", "Browse and compare", "Trends", "Taxonomy", "Benchmark"]);
-  await expect(views.nth(0).getByRole("button", { name: PLATFORM_LIST_BUTTON })).toHaveCount(1);
-  for (const [i, href] of [[1, "#/browse"], [2, "#/trends"], [3, "#/taxonomy"], [4, "#/benchmark"]] as const) {
-    await expect(views.nth(i).getByRole("link")).toHaveAttribute("href", href);
-  }
-
-  await expect(main.locator("table.counts")).toBeVisible();
-  const download = main.getByRole("link", { name: "Download the data", exact: true });
+  await expect(main.locator("h1")).toHaveText(heroTitle(index.counts.platforms));
+  await expect(main.locator(".hero-lead")).toHaveText(heroLead(index.counts.papers));
+  await expect(main.locator(".hero-chips")).toContainText(`Release ${index.release.version}`);
+  await expect(main.locator(".hero-chips")).toContainText("CC BY 4.0");
+  const search = main.getByRole("searchbox", { name: "Search platforms by name, paper or id" });
+  await expect(search).toHaveAttribute("placeholder", searchPlaceholder(index.counts.platforms));
+  await expect(main.getByRole("link", { name: "Explore platforms" })).toHaveAttribute("href", "#/browse?view=platforms");
+  const download = main.getByRole("link", { name: "Download data", exact: true });
   await expect(download).toHaveAttribute("href", `https://doi.org/${index.release.doi}`);
+
+  const featured = main.locator(".featured");
+  await expect(featured).toContainText("Featured platform");
+  await expect(featured).toContainText(FEATURED_PLATFORM);
+  await expect(featured.locator(".fp-step")).toHaveText([
+    /^1Dispense liquid/, /^2Photo\/electro reaction/, /^3Optical measurement/, /^4Handle sample/, /^5Analyze data/,
+    /^6Plan next experiment/,
+  ]);
+  await expect(featured.locator(".fp-step").first().locator("[title]")).toHaveAttribute("title", "dispense_liquid");
+  await expect(featured.getByRole("link", { name: "Open in viewer" })).toHaveAttribute("href", `#/platform/${FEATURED_PLATFORM}`);
+
+  const tiles = main.locator(".stat-tile");
+  await expect(tiles).toHaveCount(6);
+  await expect(tiles.locator(".stat-value")).toHaveText([
+    index.counts.papers, index.counts.platforms, index.counts.modules, index.counts.steps, index.counts.connections,
+      taxonomy.classes.length,
+  ].map((n) => n.toLocaleString("en")));
+
+  const cards = main.locator(".view-card");
+  await expect(cards).toHaveCount(6);
+  await expect(cards.locator(".view-card-name")).toHaveText(VIEWS.map((v) => v.name));
+  for (const [i, href] of [`#/platform/${FEATURED_PLATFORM}`, "#/browse", "#/trends", "#/taxonomy", "#/benchmark", "#/workflow"].entries()) {
+    await expect(cards.nth(i).locator("a.view-card-link")).toHaveAttribute("href", href);
+  }
+  await expect(main.getByRole("link", { name: "Trends", exact: true })).toHaveAccessibleDescription(VIEWS[2]!.description);
+
+  await expect(main.locator('[data-list="platforms"] > li')).toHaveCount(20);
   await expect(main.locator(".citation")).toHaveText(formatCitation(docs.citation));
-  await expect(main).toContainText("CC BY 4.0");
+  await expect(main.locator(".home-card-chips")).toHaveText(/Data CC BY 4\.0\s*Code MIT/);
   const cff = main.locator("details.citation-cff");
   await expect(cff).not.toHaveAttribute("open", "");
   expect(await cff.locator("pre").textContent()).toBe(docs.citation_cff);
-  await expect(main.locator('[data-table="platforms"] tbody tr')).toHaveCount(279);
+  await expect(main.getByRole("link", { name: "Read the data card" })).toHaveAttribute("href", "#/about");
 
-  // Document order: intro, views, counts, download, citation, CITATION.cff block, platform list.
+  // Document order: hero heading, search, buttons, featured card, stat tiles, view cards, list, citation, sample card.
   const tops = await Promise.all(
-    [intro, main.locator("table.views"), main.locator("table.counts"), download, main.locator(".citation"), cff,
-      main.locator('[data-table="platforms"]')].map((l) => l.evaluate((e) => e.getBoundingClientRect().top + window.scrollY)),
+    [main.locator("h1"), search, download, featured, tiles.first(), cards.first(), main.locator('[data-list="platforms"]'),
+      main.locator("#cite-title")].map((l) => l.evaluate((e) => e.getBoundingClientRect().top + window.scrollY)),
   );
-  expect([...tops].sort((a, b) => a - b)).toEqual(tops);
+  // The sample card sits beside the citation card at this width, after it in reading order.
+  const [cite, sample] = await Promise.all(["#cite-title", "#sample-title"].map((s) => main.locator(s).boundingBox()));
+  expect(sample!.x).toBeGreaterThan(cite!.x);
+  expect(Math.abs(sample!.y - cite!.y)).toBeLessThan(40);
+  // The featured card sits beside the hero text at this width, so it is compared with what follows it only.
+  expect(tops.slice(0, 3)).toEqual([...tops.slice(0, 3)].sort((a, b) => a - b));
+  expect(tops.slice(3)).toEqual([...tops.slice(3)].sort((a, b) => a - b));
 
   const dataLinks = await main.locator("a").evaluateAll((as) =>
     as.map((a) => a.getAttribute("href") ?? "").filter((h) => h.startsWith("data/") || h.startsWith("./data/")),
@@ -68,24 +96,68 @@ test("AC-6: home page order, links, citation and platform list", async ({ page }
   expect(errors).toEqual([]);
 });
 
-test("AC-6: the platform-viewer button moves focus to the platform filter", async ({ page }) => {
+test("AC-9: hero search suggests platforms, Enter opens the first, and the list takes the query", async ({ page }) => {
   await page.goto("/#/");
-  const filter = page.getByLabel("Filter by platform id, name or paper id");
-  await page.getByRole("button", { name: PLATFORM_LIST_BUTTON }).click();
-  await expect(filter).toBeFocused();
+  const main = page.locator("main");
+  await expect(main.locator("h1")).toBeVisible();
   await page.locator("h1").click();
-  await page.getByRole("button", { name: PLATFORM_LIST_BUTTON }).focus();
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("/");
+  const search = main.getByRole("searchbox", { name: "Search platforms by name, paper or id" });
+  await expect(search).toBeFocused();
+  await page.keyboard.type("Aand2024");
+  await expect(main.locator(".search-count")).toHaveText("1 of 279 platforms match");
+  await expect(main.locator(".search-suggestions a")).toHaveAttribute("href", "#/platform/Aand2024/P1");
+
+  await main.getByRole("button", { name: "Show the match in the list" }).click();
+  const filter = main.getByRole("searchbox", { name: "Filter platforms by name, paper or id" });
   await expect(filter).toBeFocused();
+  await expect(filter).toHaveValue("Aand2024");
+  await expect(main.locator('[data-list="platforms"] > li')).toHaveCount(1);
+
+  await search.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#\/platform\/Aand2024\/P1$/);
 });
 
-test("screen check: at 375 px each view's description sits under its name, not in a narrow column", async ({ page }) => {
+test("AC-9: the try chips fill the search; the list shows 20 rows, then all", async ({ page }) => {
+  await page.goto("/#/");
+  const main = page.locator("main");
+  for (const q of SEARCH_EXAMPLES) {
+    await main.locator(".search-examples").getByRole("button", { name: q, exact: true }).click();
+    await expect(main.getByRole("searchbox", { name: "Search platforms by name, paper or id" })).toHaveValue(q);
+    await expect(main.locator(".search-suggestions a").first()).toBeVisible();
+  }
+  const rows = main.locator('[data-list="platforms"] > li');
+  await expect(rows).toHaveCount(20);
+  await main.getByRole("button", { name: "Show all 279 platforms" }).click();
+  await expect(rows).toHaveCount(279);
+  await expect(main.locator(".platform-row-year").first()).toHaveText("2026");
+});
+
+test("AC-10: the citation copy button writes the citation to the clipboard", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/#/");
+  const docs = await fetchJson<ReleaseDocs>(page, "data/release-docs.json");
+  // Located by class: the button's name changes to "Copied" and back after two seconds.
+  const button = page.locator(".copy-button");
+  await expect(button).toHaveText("Copy citation");
+  await button.click();
+  await expect(button).toHaveText("Copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(formatCitation(docs.citation));
+});
+
+test("screen check: at 375 px the hero stacks above the featured card and the cards fit the screen", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/#/");
-  const row = page.locator("table.views tbody tr").nth(1);
-  const [name, text] = await Promise.all([row.locator("th").boundingBox(), row.locator("td").boundingBox()]);
-  expect(text!.y).toBeGreaterThanOrEqual(name!.y + name!.height - 1);
-  expect(text!.width).toBeGreaterThan(300);
+  await expect(page.locator(".fp-step").first()).toBeVisible();
+  const [lead, featured, card] = await Promise.all(
+    [".hero-actions", ".featured", ".view-card"].map((s) => page.locator(s).first().boundingBox()),
+  );
+  expect(featured!.y).toBeGreaterThan(lead!.y + lead!.height - 1);
+  for (const box of [featured!, card!]) {
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(375);
+  }
 });
 
 test("AC-7: about page summary, limits and full data card", async ({ page }) => {
@@ -148,9 +220,9 @@ test("release 1.1.0: About sections in order, timing and human-intervention text
     expect(text, phrase).toContain(phrase);
   }
   await page.goto("/#/");
-  const intro = page.locator(".home-intro");
-  await expect(intro).toContainText("batch sizes");
-  await expect(intro).toContainText("human intervention");
+  const sample = page.locator("main .home-card", { hasText: "About the sample" });
+  await expect(sample).toContainText("batch sizes");
+  await expect(sample).toContainText("human intervention");
 });
 
 test("AC-7: home and about text draw no conclusion about the field", async ({ page }) => {

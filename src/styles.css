@@ -1,16 +1,35 @@
 /* Site styles. Plain CSS; panels stack vertically below 800px. Colour tokens equal SITE_TOKENS in
-   src/lib/siteTokens.ts (SPEC-SITE-001 REQ-008, REQ-009); data-theme on <html> follows prefers-color-scheme. */
+   src/lib/siteTokens.ts (SPEC-SITE-001 REQ-008, REQ-009; SPEC-UI-001 REQ-001, mock variant B). data-theme on <html>
+   follows the visitor's stored choice, else prefers-color-scheme (SPEC-UI-001 REQ-005). */
 :root {
   --bg: #ffffff;
-  --text: #1f2328;
-  --muted: #57606a;
-  --line: #d0d7de;
-  --panel: #f6f8fa;
-  --accent: #0969da;
-  --highlight: #ddf4ff;
+  --panel: #f6f7f9;
+  --card: #ffffff;
+  --text: #0e1116;
+  --muted: #586170;
+  --line: #e4e7ec;
+  --line-strong: #cdd2da;
+  --accent: #4338ca;
+  --accent-ink: #ffffff;
+  --accent-text: #3730a3;
+  --highlight: #eef0ff;
   --warn: #b35900;
   --danger: #cf222e;
   --unmapped: #000000;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --shadow-lg: 0 12px 32px -8px rgba(16, 24, 40, 0.14), 0 2px 6px rgba(16, 24, 40, 0.06);
+  /* Typefaces (SPEC-UI-001 REQ-003): Arial for UI text (not shipped), JetBrains Mono for ids and codes, Latin Modern
+     Roman for statistics and formulas; the last two are self-hosted from public/fonts/. */
+  --font-ui: Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --font-math: "Latin Modern Roman", "Latin Modern Math", "Times New Roman", serif;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --content-width: 1200px;
+  --gutter: 24px;
+  --dur: 150ms;
   /* Shared table and spacing values (SPEC-SITE-001 REQ-012). */
   --table-border: var(--line);
   --cell-pad-y: 0.3rem;
@@ -18,37 +37,86 @@
   --th-weight: 600;
   --section-gap: 1.5rem;
   color-scheme: light;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.5;
+  font-family: var(--font-ui);
+  line-height: 1.55;
   color: var(--text);
 }
 
 :root[data-theme="dark"] {
-  --bg: #1a1a19;
-  --text: #f0efec;
-  --muted: #b8b7ae;
-  --line: #4a4a46;
-  --panel: #242422;
-  --accent: #6cb4ff;
-  --highlight: #1d3350;
+  --bg: #0b0d12;
+  --panel: #11141a;
+  --card: #151922;
+  --text: #eceef2;
+  --muted: #a0a8b6;
+  --line: #252b36;
+  --line-strong: #363d4a;
+  --accent: #8c94ff;
+  --accent-ink: #0b0d12;
+  --accent-text: #b9beff;
+  --highlight: #1d2142;
   --warn: #e8a25c;
   --danger: #ff7b72;
-  --unmapped: #f0efec;
+  --unmapped: #eceef2;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-latin-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Latin Modern Roman";
+  src: url("/fonts/lmroman10-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Latin Modern Roman";
+  src: url("/fonts/lmroman10-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  /* Keeps a focused or scrolled-to element clear of the sticky top bar. */
+  scroll-padding-top: 88px;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
+}
+
+a:hover {
+  color: var(--text);
 }
 
 :focus-visible {
@@ -56,17 +124,41 @@ a {
   outline-offset: 2px;
 }
 
-code {
+code,
+kbd,
+samp,
+.mono {
   /* An explicit stack avoids the browser's shrunken default monospace and odd fallbacks in CJK locales. */
-  font-family: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, "Liberation Mono", monospace;
-  font-size: 0.92em;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+code {
   overflow-wrap: anywhere;
 }
 
-.page {
-  max-width: 76rem;
+/* Statistics and formulas (SPEC-UI-001 REQ-003): Latin Modern, 10% larger than the surrounding text because its
+   strokes are thinner and its x-height smaller. Variables in <i> are italic; numbers and intervals stay upright. */
+.math {
+  font-family: var(--font-math);
+  font-size: 1.1em;
+  font-style: normal;
+  font-weight: 400;
+  font-variant-numeric: lining-nums;
+}
+
+.math i {
+  font-style: italic;
+}
+
+/* Page shell (SPEC-UI-001 REQ-004): sticky top bar, content column, compact footer. */
+.page-main {
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding: 1rem;
+  padding: 28px var(--gutter) 56px;
+  /* At least the window below the top bar, so the footer starts out of view and does not jump while a view loads
+     (Lighthouse layout shift, SPEC-UI-001 phase 6). */
+  min-height: calc(100vh - 64px);
 }
 
 /* Skip link: off screen until it receives focus (SPEC-SITE-001 REQ-010). */
@@ -77,8 +169,8 @@ code {
   padding: 0.5rem 0.75rem;
   background: var(--bg);
   border: 1px solid var(--accent);
-  border-radius: 4px;
-  z-index: 10;
+  border-radius: var(--radius-sm);
+  z-index: 30;
 }
 
 .skip-link:focus {
@@ -93,78 +185,1496 @@ main:focus-visible {
   outline: 3px solid var(--accent);
 }
 
-.site-nav a[aria-current="page"] {
-  font-weight: 700;
-  text-decoration: none;
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-inner {
+  position: relative;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
 }
 
 .site-nav {
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 28px;
 }
 
 .site-title {
-  font-weight: 700;
-  font-size: 1.15rem;
-  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
   color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.site-title-sub {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.logo-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-tabs {
+  list-style: none;
+  margin: 0;
+  /* Room for the focus outline inside the scroll box. */
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.nav-tabs a {
+  display: block;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--dur) ease, color var(--dur) ease;
+}
+
+.nav-tabs a:hover {
+  color: var(--text);
+  background: var(--panel);
+}
+
+.nav-tabs a[aria-current="page"] {
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.version-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.version-chip:hover {
+  border-color: var(--line-strong);
+}
+
+/* Menu (SPEC-UI-001 REQ-016): below 800px the tabs give way to a menu button whose panel floats under the top bar. */
+/* Scoped to the top bar so it outranks the .btn display rule further down. */
+.topbar-actions .menu-button {
+  display: none;
+}
+
+.site-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: var(--gutter);
+  width: min(280px, calc(100vw - 2 * var(--gutter)));
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  animation: menu-in var(--dur) ease-out;
+}
+
+.site-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-menu a {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.site-menu a:hover {
+  background: var(--panel);
+}
+
+.site-menu a[aria-current="page"] {
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* From 800 to 1023px the seven tabs still fit in one row: no version chip, no "Explorer", tighter gaps. */
+@media (max-width: 1023.98px) {
+  .version-chip {
+    display: none;
+  }
+
+  /* Hidden from view only, so the link keeps its full name for screen readers. */
+  .site-title-sub {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .topbar-inner,
+  .site-nav {
+    gap: 12px;
+  }
+
+  .nav-tabs a {
+    padding: 7px 10px;
+  }
+}
+
+@media (max-width: 799.98px) {
+  .topbar-inner {
+    min-height: 56px;
+    padding: 0 var(--gutter);
+  }
+
+  .nav-tabs {
+    display: none;
+  }
+
+  .topbar-actions .menu-button {
+    display: inline-flex;
+  }
 }
 
 .site-footer {
-  margin-top: 2rem;
-  padding-top: 0.75rem;
+  margin-top: 24px;
   border-top: 1px solid var(--line);
-  font-size: 0.9rem;
+  background: var(--panel);
   color: var(--muted);
+  font-size: 13px;
+}
+
+.footer-inner {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 22px var(--gutter);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 24px;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --gutter: 16px;
+  }
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   margin: 0 0 0.25rem;
 }
 
 h2 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
   margin: 0 0 calc(var(--section-gap) / 3);
 }
 
 h3 {
-  font-size: 0.95rem;
+  font-size: 1rem;
   margin: 0.75rem 0 0.25rem;
 }
 
-/* Home */
-.counts {
-  border-collapse: collapse;
-  margin-bottom: 1.5rem;
-  min-width: min(100%, 24rem);
-}
+/* Components (SPEC-UI-001 REQ-006). One section each; every transition is switched off under reduced motion. */
 
-.counts caption {
-  text-align: left;
+/* Button: primary, secondary, ghost, icon; sizes sm and lg. Also used on links. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 14px;
   font-weight: 600;
-  padding-bottom: 0.5rem;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur) ease, border-color var(--dur) ease, color var(--dur) ease,
+    transform var(--dur) ease;
 }
 
-.counts th,
-.counts td {
-  padding: var(--cell-pad-y) var(--cell-pad-x);
-  border-bottom: 1px solid var(--table-border);
+.btn:active {
+  transform: translateY(1px);
 }
 
-.counts th {
-  text-align: left;
-  font-weight: var(--th-weight);
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-/* Home and about (SPEC-SITE-001). Verbatim release files wrap instead of scrolling sideways. */
-.home section,
+.btn:disabled:active {
+  transform: none;
+}
+
+.btn-sm {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.btn-lg {
+  height: 46px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+
+.btn-primary,
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-primary:hover {
+  background: var(--accent-text);
+}
+
+.btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.btn-secondary:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--accent-text);
+}
+
+.btn-ghost:hover {
+  background: var(--highlight);
+  color: var(--accent-text);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border-color: var(--line);
+  background: var(--card);
+  color: var(--text);
+}
+
+.btn-icon:hover {
+  background: var(--panel);
+}
+
+/* Chip: neutral, accent and outline; a group-coloured dot can lead it. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.chip-accent {
+  border-color: transparent;
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.chip-outline {
+  background: transparent;
+  color: var(--muted);
+}
+
+.chip-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Card; a card-link is a whole card that is one link. */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.card-link {
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--dur) ease, box-shadow var(--dur) ease, transform var(--dur) ease;
+}
+
+.card-link:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+/* StatTile: one count with its name and a note. */
+.stat-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.stat-value {
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.stat-note {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Skeleton: a shimmering placeholder while data loads; its text is for screen readers only. */
+.skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--panel) 25%, var(--line) 50%, var(--panel) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* How this works: a closed card holding a page's method notes (SPEC-UI-001 phase 5). No animation, so nothing to switch
+   off under reduced motion. */
+.how-it-works {
+  margin-bottom: 12px;
+  padding: 0 18px;
+  background: var(--panel);
+}
+
+.how-it-works > summary {
+  padding: 12px 0;
+  color: var(--accent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.how-it-works[open] {
+  padding-bottom: 6px;
+}
+
+.how-it-works[open] > summary {
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.how-it-works p {
+  max-width: 60rem;
+}
+
+.how-it-works section {
+  margin-top: var(--section-gap);
+}
+
+.how-it-works h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+/* Cards of the taxonomy, benchmark, workflow and about pages stack with the section gap (SPEC-UI-001 phase 5). */
+.taxonomy > .card,
+.benchmark > .card,
+.workflow > .card,
+.about > .card {
+  margin-top: var(--section-gap);
+}
+
+.taxonomy .panel > :last-child,
+.benchmark .panel > :last-child,
+.workflow .panel > :last-child,
+.about .panel > :last-child {
+  margin-bottom: 0;
+}
+
+/* CopyButton: a secondary button whose label turns to "Copied" for a moment. */
+.copy-button[data-copied="true"] {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .card-link,
+  .nav-tabs a {
+    transition: none;
+  }
+
+  .btn:active,
+  .card-link:hover {
+    transform: none;
+  }
+
+  .skeleton,
+  .site-menu {
+    animation: none;
+  }
+}
+
+/* Home (SPEC-UI-001 REQ-010) */
+.page-main:has(> .home) {
+  padding-top: 0;
+}
+
+/* The featured card's loading state about as tall as the card, so the Home sections below do not jump when it fills
+   (Lighthouse layout shift, SPEC-UI-001 phase 6). */
+.featured[aria-busy="true"] {
+  min-height: 540px;
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  padding-bottom: 16px;
+}
+
+.hero {
+  padding-top: 56px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 48px;
+  align-items: center;
+}
+
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+.hero-chips,
+.home-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hero-chips .chip {
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 50px;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.hero-lead {
+  margin: 0;
+  max-width: 34em;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.hero-search {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Search field: an input with a leading icon and, in the hero, a "/" key hint. */
+.search-field {
+  position: relative;
+  display: block;
+}
+
+.search-field .search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search-field input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px 0 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.search-field input::placeholder {
+  color: var(--muted);
+}
+
+.search-field-lg .search-icon {
+  left: 16px;
+}
+
+.search-field-lg input {
+  height: 54px;
+  padding: 0 56px 0 46px;
+  border-radius: 12px;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+}
+
+.search-field kbd {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.search-count {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.search-count:empty {
+  display: none;
+}
+
+.search-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-suggestions a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.search-suggestions a:hover {
+  background: var(--panel);
+}
+
+.suggestion-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.suggestion-id {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.search-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.chip-button {
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color var(--dur) ease;
+}
+
+.chip-button:hover {
+  border-color: var(--line-strong);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* Featured platform card. */
+.featured {
+  min-width: 0;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.featured-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.featured-title-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.featured h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.featured-meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.featured-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.featured-graph {
+  padding: 18px 20px 6px;
+  background: var(--panel);
+}
+
+.fp-control {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.fp-control .fp-module {
+  width: 220px;
+}
+
+.fp-data-links {
+  display: flex;
+  justify-content: center;
+  gap: 140px;
+  padding: 2px 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.fp-data-links span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fp-data-links span::before {
+  content: "";
+  height: 16px;
+  border-left: 1.5px solid var(--line-strong);
+}
+
+/* position: relative contains the visually hidden link text, which would otherwise widen the page on a phone. */
+.fp-chain-scroll {
+  position: relative;
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+
+.fp-chain {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  margin: 0 auto;
+}
+
+.fp-chain-item {
+  display: flex;
+  align-items: center;
+}
+
+.fp-module {
+  width: 100px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.fp-module-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.fp-module-name {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fp-link {
+  width: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.fp-link-mode {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.fp-link-line,
+.fp-legend-line {
+  width: 100%;
+  border-top: 2px solid var(--accent);
+}
+
+.fp-link-inferred .fp-link-line,
+.fp-legend-inferred {
+  border-top-style: dashed;
+}
+
+.fp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 12px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.fp-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fp-legend-line {
+  width: 18px;
+}
+
+.featured-foot {
+  padding: 14px 20px 18px;
+}
+
+.featured-steps-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.fp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fp-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+}
+
+.fp-step-n {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.featured-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 16px;
+}
+
+.featured-evidence {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.featured-error {
+  margin: 0;
+  padding: 20px;
+}
+
+/* Stats caption and section heads. */
+.home-stats {
+  margin-top: -16px;
+}
+
+.home-caption {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.section-head {
+  margin-bottom: 18px;
+}
+
+.section-head-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.home-section h2 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: -0.025em;
+}
+
+.section-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+/* View cards. */
+.view-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+
+/* min-width: 0 keeps a long single-line preview (ellipsis) from widening the grid track on a phone. */
+.view-cards > li {
+  display: flex;
+  min-width: 0;
+}
+
+.view-card {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.view-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.view-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--highlight);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.view-card-name {
+  font-size: 16.5px;
+  font-weight: 700;
+}
+
+.view-card-link {
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* The name's link covers the whole card. */
+.view-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+}
+
+.view-card:has(.view-card-link:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.view-card-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.view-card-preview {
+  margin-top: auto;
+  font-size: 12.5px;
+}
+
+.vc-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+
+.vc-facts {
+  gap: 4px;
+}
+
+.vc-facts > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.vc-facts > span > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.vc-muted {
+  color: var(--muted);
+}
+
+.vc-strong {
+  font-weight: 600;
+}
+
+.vc-caption {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.vc-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vc-bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.vc-bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.vc-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--panel);
+}
+
+.vc-bench .vc-bar-track {
+  background: var(--line);
+}
+
+.vc-bar-fill {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.vc-bar-muted {
+  background: var(--muted);
+}
+
+.vc-bar-n {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 70px;
+}
+
+.vc-spark-bar {
+  flex: 1 1 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent);
+}
+
+.vc-spark-partial {
+  opacity: 0.45;
+}
+
+.vc-spark-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.vc-count {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-bench {
+  gap: 8px;
+}
+
+.vc-bench-row {
+  display: grid;
+  grid-template-columns: 112px 1fr 52px;
+  align-items: center;
+  gap: 8px;
+}
+
+.vc-bench-row .math {
+  text-align: right;
+}
+
+.vc-nowrap {
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.vc-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.vc-flow-step {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.vc-flow-add {
+  border: 1px dashed var(--accent);
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* Platform list: compact rows, each one link. */
+.list-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-controls .search-field {
+  width: 260px;
+  max-width: 100%;
+}
+
+.home .result-count {
+  margin: 0 0 8px;
+}
+
+.platform-list-card {
+  overflow: hidden;
+}
+
+.platform-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.platform-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.platform-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 14px 20px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--dur) ease;
+}
+
+.platform-row:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.platform-row:focus-visible {
+  outline-offset: -3px;
+}
+
+.platform-row-main {
+  flex: 999 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.platform-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.platform-row-id {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.platform-row-chips {
+  flex: 1 1 260px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.platform-row-counts {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.platform-row-counts strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.platform-row-year {
+  width: 36px;
+  text-align: right;
+}
+
+.platform-list-empty {
+  margin: 0;
+  padding: 20px;
+  color: var(--muted);
+}
+
+.list-more {
+  margin-top: 12px;
+}
+
+/* Citation and sample cards. */
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+}
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  min-width: 0;
+}
+
+.home-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-card h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.citation {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.home-card-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.home-card-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.citation-cff summary {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .home {
+    gap: 48px;
+  }
+
+  .hero {
+    padding-top: 32px;
+    gap: 32px;
+  }
+
+  .hero h1 {
+    font-size: 34px;
+  }
+
+  .hero-lead {
+    font-size: 16px;
+  }
+
+  /* No "/" key on a phone keyboard: the hint goes, and the placeholder gets its room. */
+  .search-field kbd {
+    display: none;
+  }
+
+  .search-field-lg input {
+    padding-right: 14px;
+  }
+
+  .fp-data-links {
+    gap: 80px;
+  }
+
+  .home-section h2 {
+    font-size: 22px;
+  }
+
+  .platform-row {
+    padding: 12px 16px;
+  }
+
+  .list-controls,
+  .list-controls .search-field {
+    width: 100%;
+  }
+}
+
+/* About (SPEC-SITE-001). Verbatim release files wrap instead of scrolling sideways. */
 .about section {
   margin-top: var(--section-gap);
 }
 
-.home-intro,
 .about p {
   max-width: 48rem;
 }
@@ -174,70 +1684,17 @@ h3 {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   margin: 0.5rem 0;
-  padding: 0.5rem;
+  padding: 0.75rem;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  font-family: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, "Liberation Mono", monospace;
-  font-size: 0.85rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
 }
 
 .home details summary,
 .about details summary {
   cursor: pointer;
-}
-
-.citation {
-  padding-left: 1rem;
-  border-left: 3px solid var(--line);
-}
-
-table.views th[scope="row"] {
-  white-space: nowrap;
-  vertical-align: top;
-}
-
-/* On a phone each view's description goes under its name instead of in a narrow second column. */
-@media (max-width: 600px) {
-  table.views thead {
-    display: none;
-  }
-
-  table.views tr,
-  table.views th[scope="row"],
-  table.views td {
-    display: block;
-  }
-
-  table.views th[scope="row"] {
-    border-bottom: 0;
-    padding-bottom: 0;
-  }
-}
-
-/* A button that reads as a link: an in-page action, not a navigation. */
-.link-button {
-  font: inherit;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.filter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-width: 28rem;
-}
-
-.filter input {
-  font: inherit;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
 }
 
 .result-count {
@@ -262,6 +1719,8 @@ table.data td > code {
 /* Tables */
 .table-scroll {
   overflow-x: auto;
+  /* Holds the visually hidden codes of <Label> inside the scroll box (they are absolutely placed). */
+  position: relative;
 }
 
 table.data {
@@ -299,30 +1758,81 @@ table.data tbody tr[aria-selected="true"] {
   background: var(--highlight);
 }
 
-/* Platform */
+/* Graph minimap tokens (SPEC-UI-001 UI AC-37), drawn from the site tokens of each theme. */
+:root {
+  --minimap-surface: color-mix(in srgb, var(--card) 92%, transparent);
+  --minimap-stroke: var(--line-strong);
+  --minimap-view-fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  --minimap-view-stroke: var(--accent);
+}
+
+:root[data-theme="dark"] {
+  --minimap-surface: color-mix(in srgb, var(--panel) 92%, transparent);
+  --minimap-stroke: var(--line-strong);
+  --minimap-view-fill: color-mix(in srgb, var(--accent) 18%, transparent);
+  --minimap-view-stroke: var(--accent);
+}
+
+/* Platform viewer (SPEC-VIEW-001; laid out by SPEC-UI-001 REQ-017 to REQ-020): header card, full-width graph with a
+   floating toolbar and legend, the step timeline beside the tables, and an evidence sheet. */
+.platform {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .platform-header {
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+}
+
+.platform-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px 24px;
+}
+
+.platform-title-block {
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.platform-header h1 {
+  margin: 2px 0 0;
 }
 
 .platform-id {
-  margin: 0 0 0.5rem;
+  margin: 0;
+  font-size: 13px;
   color: var(--muted);
 }
 
-.badge {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0 0.5rem;
-  border: 1px solid var(--muted);
-  border-radius: 1rem;
-  font-size: 0.8rem;
+.platform-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.platform-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.platform-chips .chip {
+  font-size: 12.5px;
 }
 
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 0.15rem 1rem;
-  margin: 0 0 0.75rem;
+  gap: 4px 16px;
+  margin: 0;
+  font-size: 14px;
 }
 
 .facts dt {
@@ -331,6 +1841,7 @@ table.data tbody tr[aria-selected="true"] {
 
 .facts dd {
   margin: 0;
+  min-width: 0;
 }
 
 .shared {
@@ -338,133 +1849,135 @@ table.data tbody tr[aria-selected="true"] {
   padding-left: 1.1rem;
 }
 
+.platform-header .report {
+  margin: 0;
+  font-size: 13px;
+}
+
 button {
   font: inherit;
   cursor: pointer;
 }
 
-.platform-header > button,
-.graph-fit {
-  padding: 0.3rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
-}
-
-.viewer {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.viewer-side {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  min-width: 0;
-}
-
 .graph-wrap {
   position: relative;
+  overflow: hidden;
 }
 
 .graph {
-  height: 34rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
+  height: 560px;
+  background: var(--card);
 }
 
-.graph-fit {
+/* Equipment-name captions under the bold type labels (SPEC-UI-001 UI AC-35): an HTML layer over the canvas, placed
+   and scaled by the Graph from Cytoscape's label boxes; clipped to the graph's box and never in the way of a click. */
+.graph-captions {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.panel {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: var(--bg);
-}
-
-.viewer-side .panel {
-  margin-bottom: 0;
-}
-
-.evidence dl {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.1rem 0.75rem;
-  margin: 0;
-}
-
-.evidence dt {
-  color: var(--muted);
-}
-
-.evidence dd {
-  margin: 0;
+.graph-caption {
+  position: absolute;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
   overflow-wrap: anywhere;
+  text-align: center;
+  font-family: var(--font-ui);
+  color: var(--muted);
+  transition: opacity var(--dur) ease;
 }
 
-.steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 28rem;
-  overflow-y: auto;
-}
-
-.step {
-  display: flex;
-  gap: 0.5rem;
-  width: 100%;
+.graph-captions.is-beside .graph-caption {
   text-align: left;
-  padding: 0.4rem;
-  margin-bottom: 0.25rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
 }
 
-.step[aria-pressed="true"] {
-  background: var(--highlight);
-  border-color: var(--accent);
+.graph-caption.is-dimmed {
+  opacity: 0.25;
 }
 
-.step-order {
-  font-weight: 700;
-  min-width: 1.5rem;
+/* Minimap of a graph that does not fit its box (UI AC-37), in the bottom-left corner. */
+.graph-minimap {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  border: 1px solid var(--minimap-stroke);
+  border-radius: var(--radius-sm);
+  background: var(--minimap-surface);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: none;
 }
 
-.step-body {
+.graph-minimap-edge {
+  stroke: var(--minimap-stroke);
+  stroke-width: 1;
+}
+
+.graph-minimap-view {
+  fill: var(--minimap-view-fill);
+  stroke: var(--minimap-view-stroke);
+  stroke-width: 1.5;
+}
+
+.graph-toolbar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
   display: flex;
-  flex-direction: column;
-  min-width: 0;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow);
 }
 
-.step-op {
-  font-weight: 600;
+.graph-toolbar .btn-icon {
+  width: 34px;
+  height: 34px;
+  border-color: transparent;
 }
 
-.step-meta,
-.step-modules {
-  font-size: 0.85rem;
-  color: var(--muted);
-  overflow-wrap: anywhere;
+.graph-toolbar .btn-icon[aria-expanded="true"] {
+  background: var(--highlight);
+  color: var(--accent-text);
 }
 
-.uncertain,
-.marker {
-  font-weight: 700;
-  color: var(--warn);
+/* Legend: floats over the graph's top-right corner, below the toolbar, and scrolls inside itself. */
+.legend {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  width: min(340px, calc(100% - 24px));
+  max-height: calc(100% - 72px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Legend */
+.legend[hidden] {
+  display: none;
+}
+
+.legend h2 {
+  margin: 0 0 calc(var(--section-gap) / 6);
+  font-size: 15px;
+}
+
+.legend h3 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+}
+
 .legend ul {
   list-style: none;
   margin: 0;
@@ -473,11 +1986,25 @@ button {
 
 .legend li {
   margin-bottom: 0.2rem;
-  font-size: 0.9rem;
+  font-size: 13px;
+}
+
+.legend .legend-types {
+  margin: 2px 0 6px 1.2rem;
+}
+
+.legend .legend-types li {
+  margin-bottom: 0.1rem;
+  font-size: 12.5px;
+}
+
+.legend code {
+  font-size: 11.5px;
+  color: var(--muted);
 }
 
 .legend .note {
-  font-size: 0.85rem;
+  font-size: 12.5px;
   color: var(--muted);
   margin: 0 0 0.25rem;
 }
@@ -507,17 +2034,298 @@ button {
   border-top-style: dashed;
 }
 
+/* Empty state of the evidence sheet: shown under the graph while nothing is selected. */
+.evidence-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.evidence-empty svg {
+  flex-shrink: 0;
+}
+
+/* Evidence sheet: from 1024px a column beside the content that stays in view below the top bar, so it covers no
+   header or graph control; a bottom sheet below 1024px (SPEC-UI-001 REQ-022). */
+.evidence-sheet {
+  position: sticky;
+  top: 80px;
+  z-index: 15;
+  align-self: start;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  animation: sheet-in-side var(--dur) ease-out;
+}
+
+@media (min-width: 1024px) {
+  /* The open sheet takes the side margin first: the page widens by the sheet's column, up to the window, so the
+     graph keeps as much width as it had (REQ-024). */
+  .page-main:has(.platform > .evidence-sheet) {
+    max-width: calc(var(--content-width) + 336px);
+  }
+
+  .platform:has(> .evidence-sheet) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 16px;
+  }
+
+  .platform:has(> .evidence-sheet) > * {
+    grid-column: 1;
+  }
+
+  /* Header, graph and the steps-and-tables grid: the sheet spans all three rows and sticks while they scroll. */
+  .platform > .evidence-sheet {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+}
+
+.evidence-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.evidence-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.evidence dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.evidence dt {
+  color: var(--muted);
+}
+
+.evidence dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.evidence .report {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+@keyframes sheet-in-side {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@keyframes sheet-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* Steps beside the tables. */
+.viewer {
+  display: grid;
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.viewer-tables {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.steps-card,
+.panel {
+  padding: 16px 18px;
+}
+
+.steps-card h2,
+.panel h2 {
+  margin: 0 0 calc(var(--section-gap) / 2);
+  font-size: 17px;
+}
+
+/* Step timeline: a numbered marker on a vertical line, then the operation, performer and modules. */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.steps li {
+  position: relative;
+}
+
+.steps li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 34px;
+  bottom: -6px;
+  border-left: 2px solid var(--line);
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text);
+  transition: background-color var(--dur) ease;
+}
+
+.step:hover {
+  background: var(--panel);
+}
+
+.step[aria-pressed="true"] {
+  background: var(--highlight);
+  border-color: var(--accent);
+}
+
+.step-marker {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step[aria-pressed="true"] .step-marker {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.step-order {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-top: 3px;
+}
+
+.step-op {
+  font-weight: 700;
+}
+
+.step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.step-performer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-modules {
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.uncertain,
+.marker {
+  font-weight: 700;
+  color: var(--warn);
+}
+
 .not-found code {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1023.98px) {
   .viewer {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .evidence-sheet {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 60vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 0;
+    animation-name: sheet-in-bottom;
+  }
+
+  /* Room below the content while the bottom sheet is open, so the last items can scroll above it. */
+  .page-main:has(.evidence-sheet) {
+    padding-bottom: 60vh;
+  }
+}
+
+@media (max-width: 799.98px) {
+  .platform-header {
+    padding: 16px;
+  }
+
+  /* Taller on phones: the top-to-bottom layout grows downwards (REQ-036). The toolbar moves to the bottom corner
+     so it does not cover the platform's title at the top; the legend then opens from the top. */
   .graph {
-    height: 24rem;
+    height: min(70vh, 600px);
+  }
+
+  .graph-toolbar {
+    top: auto;
+    bottom: 12px;
+  }
+
+  .legend {
+    top: 12px;
+  }
+
+  /* A smaller minimap covers less of a phone-width graph; its view box scales with it. */
+  .graph-minimap {
+    width: 112px;
+    height: 70px;
+    left: 8px;
+    bottom: 8px;
   }
 
   .facts {
@@ -527,78 +2335,410 @@ button {
   .facts dt {
     margin-top: 0.35rem;
   }
+
 }
 
-/* Navigation links (SPEC-BROWSE-001) */
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 1rem;
+@media (prefers-reduced-motion: reduce) {
+  .evidence-sheet {
+    animation: none;
+  }
+
+  .step,
+  .graph-caption {
+    transition: none;
+  }
 }
 
-/* Browser */
+/* Browser and Trends: filter bar of popover buttons, active-filter pills (SPEC-UI-001 REQ-025), segmented switches
+   (REQ-026) and the browser tables' tools (REQ-027). */
 .filter-panel {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.filter-group,
-.column-chooser {
-  min-width: 0;
-  margin: 0;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
+.filter-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.15rem 0.75rem;
-  font-size: 0.9rem;
-}
-
-.filter-group legend,
-.column-chooser legend {
-  font-weight: 600;
-}
-
-.filter-group label,
-.column-chooser label {
-  display: inline-flex;
-  gap: 0.3rem;
-  align-items: baseline;
-  overflow-wrap: anywhere;
-}
-
-.filter-group.years input {
-  width: 6rem;
-  font: inherit;
-}
-
-.year-error {
-  flex-basis: 100%;
-  margin: 0;
-  color: var(--danger);
+  align-items: center;
+  gap: 8px;
 }
 
 .filter.search {
+  position: relative;
+  flex: 1 1 220px;
   min-width: 0;
-  flex: 1 1 14rem;
+  max-width: 320px;
 }
 
-.table-switch {
+.filter.search .search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.filter.search input,
+.filter-group.years input {
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.filter.search input {
+  width: 100%;
+  padding: 0 10px 0 32px;
+}
+
+.filter-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.filter-group label {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: baseline;
+}
+
+.filter-group.years {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A floated legend is laid out as an ordinary item, so it sits in the row with the inputs. */
+.filter-group.years legend,
+.segmented legend {
+  float: left;
+  padding: 0 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.filter-group.years input {
+  width: 76px;
+  padding: 0 8px;
+}
+
+.filter-popover {
+  position: relative;
+}
+
+.filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  white-space: nowrap;
+  transition: background-color var(--dur) ease, border-color var(--dur) ease;
+}
+
+.filter-button:hover {
+  background: var(--panel);
+}
+
+.filter-button svg {
+  transition: transform var(--dur) ease;
+}
+
+.filter-button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.filter-button.active {
+  border-color: var(--accent);
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.filter-popover-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 240px;
+  max-width: min(560px, calc(100vw - 16px));
+  max-height: min(60vh, 440px);
+  overflow-y: auto;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  animation: menu-in var(--dur) ease-out;
+}
+
+.filter-popover-panel .filter-group {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 1px;
 }
 
+.filter-popover-panel .filter-group legend {
+  padding: 0 6px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.filter-popover-panel .filter-group.match {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 8px 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.filter-popover-panel .filter-group.match legend {
+  float: left;
+  padding: 0;
+}
+
+.filter-option {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filter-option:hover {
+  background: var(--panel);
+}
+
+/* Name and code share a line while they fit; otherwise the code wraps under the name, whole. */
+.filter-option {
+  flex-wrap: wrap;
+}
+
+.filter-option-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.filter-option code {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.year-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13.5px;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 4px 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-size: 13px;
+}
+
+.pill-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+
+.pill-remove:hover {
+  background: var(--card);
+}
+
+/* Segmented switches: Trends "Split by" over radio buttons, the table and unit switches over pressed buttons. */
+.segmented,
+.table-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 12px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+
+.segmented legend {
+  padding: 0 6px 0 8px;
+}
+
+.segmented label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--dur) ease, color var(--dur) ease;
+}
+
+/* The radio covers its segment, transparent: it takes the click and stays focusable; the label is what shows. */
+.segmented input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.segmented label.checked,
 .table-switch button[aria-pressed="true"] {
-  font-weight: 700;
+  background: var(--card);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow);
 }
 
-.column-chooser {
-  margin: 0.5rem 0;
+.table-switch button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.table-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+
+/* "Scroll sideways for more columns", while a column is out of the box's view. */
+.table-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 0 auto;
+  align-self: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* A fade at the edge of the box where columns are out of view. */
+.table-frame {
+  position: relative;
+}
+
+.table-frame::before,
+.table-frame::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  z-index: 2;
+  width: 32px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur) ease;
+}
+
+.table-frame::before {
+  left: 1px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: linear-gradient(to right, var(--card), transparent);
+}
+
+.table-frame::after {
+  right: 1px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: linear-gradient(to left, var(--card), transparent);
+}
+
+.table-frame.more-left::before,
+.table-frame.more-right::after {
+  opacity: 1;
+}
+
+/* The browser tables scroll inside their box, so the header row can stay in view; the row under the pointer is
+   highlighted. */
+/* position: relative keeps absolutely placed descendants (the visually hidden codes of <Label>) inside the clipped box. */
+.table-scroll-sticky {
+  position: relative;
+  max-height: min(70vh, 720px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.table-scroll-sticky thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--card);
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+.table-scroll-sticky tbody tr:hover {
+  background: var(--panel);
+}
+
+.truncate {
+  display: block;
+  /* 26ch: with Title and Venue cut at this width the papers and platforms tables fit their box at 1440 px. */
+  max-width: 26ch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .sort-button {
@@ -615,46 +2755,28 @@ button {
   gap: 0 0.4rem;
 }
 
-.filter-toggle {
-  margin-bottom: 0.5rem;
-  padding: 0.3rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
+/* Each platform number is a 24 px target (WCAG 2.5.8; axe target-size, SPEC-UI-001 UI AC-49). */
+.platform-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
 }
 
 .browse-results {
   min-width: 0;
 }
 
-/* From 1000px the filters stand in a sidebar beside the results (SIDEBAR_QUERY in Browse.tsx). */
-@media (min-width: 1000px) {
-  .browse-layout {
-    display: grid;
-    grid-template-columns: 17rem minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: start;
+@media (prefers-reduced-motion: reduce) {
+  .filter-popover-panel {
+    animation: none;
   }
 
-  .browse-filters {
-    position: sticky;
-    top: 0.5rem;
-    max-height: calc(100vh - 1rem);
-    overflow-y: auto;
-  }
-
-  .browse-filters .filter-panel {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
-  }
-
-  .browse-filters .filter-group:not(.years):not(.match) {
-    flex-direction: column;
-  }
-
-  .browse-filters .filter.search {
-    flex: none;
+  .filter-button,
+  .filter-button svg,
+  .segmented label {
+    transition: none;
   }
 }
 
@@ -739,13 +2861,6 @@ button {
   --chart-axis: #383835;
 }
 
-.split-control {
-  margin-bottom: 0.5rem;
-}
-
-.unit-switch {
-  margin-bottom: 0.5rem;
-}
 
 .platforms-line,
 .trends-caption,
@@ -876,6 +2991,26 @@ table.count-table a {
   font-weight: var(--th-weight);
 }
 
+/* A benchmark task by its readable name, the task id under it as secondary text (SPEC-UI-001 phase 6). */
+.bench-task-name {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bench-task-code {
+  /* Breaks only at the <wbr> after "_" (and after the hyphen), like the other ids in benchmark tables. */
+  overflow-wrap: normal;
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.bench-task-id {
+  margin: -0.25rem 0 0.75rem;
+}
+
 .taxo-table td.num,
 .bench-table td.num {
   white-space: nowrap;
@@ -886,6 +3021,16 @@ table.count-table a {
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 0.1rem 0.75rem;
   margin: 0 0 0.75rem;
+}
+
+/* A facts list as a card; inside a card panel it takes the panel colour to stand apart. */
+.taxo-facts.card {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+}
+
+.card .taxo-facts.card {
+  background: var(--panel);
 }
 
 .taxo-facts dt {
@@ -911,14 +3056,19 @@ table.count-table a {
   list-style: none;
 }
 
-.taxo-jump button {
-  font: inherit;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
+/* A class code beside its readable name: muted mono, never broken (the readable name wraps at its spaces). */
+.taxo-code {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* The code of a class page, as a chip right under its heading. */
+.taxo-code-line {
+  margin: 0 0 0.75rem;
+}
+
+.taxo-chip {
+  font-size: 12.5px;
 }
 
 /* The sources row a ?source= link targets: weight, not colour (REQ-016). */
@@ -986,7 +3136,7 @@ table.count-table a {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 4px;
-  font-family: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.9rem;
 }
 
@@ -1008,12 +3158,16 @@ table.count-table a {
 
 .bench-control {
   margin: 0;
+  /* The task select reads "Name (id)" and is wider than a phone; the label caps it at the row. */
+  max-width: 100%;
 }
 
-.bench-control select,
-.bench-control button,
-.bench-more {
+.bench-control select {
   font: inherit;
+  max-width: 100%;
+}
+
+.bench-more {
   max-width: 100%;
 }
 
@@ -1071,18 +3225,74 @@ table.count-table a {
   max-width: 18rem;
 }
 
+/* Steps of the builder: one card per step, its heading and order buttons on top, its three fields below. */
+.wf-steps {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 60rem;
+}
+
+.wf-steps .wf-step {
+  padding: 10px 14px 12px;
+  border-radius: var(--radius-md);
+}
+
+.wf-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.wf-step-head h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.wf-step-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+  margin-top: 0.5rem;
+}
+
 .wf-order {
+  display: inline-flex;
+  gap: 6px;
   white-space: nowrap;
 }
 
-.wf-order button {
-  margin-right: 0.25rem;
+/* Read-only workflow graph (SPEC-UI-001 UI AC-39 to UI AC-41): the viewer's graph inside the section's card. */
+.wf-graph-box {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
 }
 
-.wf-messages {
-  position: sticky;
-  bottom: 0;
-  background: var(--bg);
+.wf-graph-box .graph {
+  height: 440px;
+}
+
+/* On phones as tall as the viewer's graph, so a fitted top-to-bottom workflow keeps its last caption clear of the
+   toolbar in the bottom corner (UI AC-47). */
+@media (max-width: 799.98px) {
+  .wf-graph-box .graph {
+    height: min(70vh, 600px);
+  }
+}
+
+.wf-graph-empty {
+  color: var(--muted);
+}
+
+/* In the flow after the part of the builder an edit came from; nothing sits under it (UI AC-54). */
+.wf-messages:empty {
+  display: none;
 }
 
 .wf-message {
@@ -1104,6 +3314,65 @@ table.count-table a {
 /* Absolutely placed hidden labels inside a scrolling table stay inside it instead of widening the page. */
 .workflow .table-scroll {
   position: relative;
+}
+
+/* Below 800 px the builder's module and transfer tables become one block per row: the module or step pair on top,
+   then each field under its column name, so a select never runs past the box (SPEC-UI-001 UI AC-53). */
+@media (max-width: 799.98px) {
+  .wf-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .wf-table,
+  .wf-table tbody,
+  .wf-table tr,
+  .wf-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .wf-table tr {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--table-border);
+  }
+
+  .wf-table td,
+  .wf-table td.num {
+    padding: 0.15rem 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .wf-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+  }
+
+  .wf-table td[data-label="Module"],
+  .wf-table td.wf-between {
+    font-weight: 600;
+  }
+
+  .wf-table td[data-label="Module type"]::before,
+  .wf-table td[data-label="Devices"]::before,
+  .wf-table td[data-label="Transfer mode"]::before,
+  .wf-table td[data-label="Transfer time (s)"]::before {
+    display: block;
+    content: attr(data-label);
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .wf-table .wf-field,
+  .wf-table select {
+    width: 100%;
+  }
 }
 
 .wf-measures {
@@ -1139,7 +3408,7 @@ table.count-table a {
   max-width: 100%;
 }
 
-.wf-step {
+section.wf-step {
   border-top: 1px solid var(--line);
   padding-top: 0.5rem;
 }
@@ -1170,6 +3439,8 @@ table.count-table a {
 .wf-offers summary,
 .wf-throughput summary {
   cursor: pointer;
+  /* A 24 px target (WCAG 2.5.8). */
+  min-height: 24px;
 }
 
 .wf-offers li {

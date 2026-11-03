@@ -1,9 +1,12 @@
-// Platform header (REQ-005, REQ-015; SPEC-CONTRIB-001 REQ-003).
+// Platform header (REQ-005, REQ-015; SPEC-CONTRIB-001 REQ-003) as a card (SPEC-UI-001 REQ-017): the title, chips for
+// year, fields and a commercial system, the paper, and buttons for the paper's DOI and the platform's evidence.
+import { ExternalLink, FileSearch } from "lucide-react";
 import type { PaperRow, PlatformGraph } from "../data/types";
 import { CORRECTION_LINK_TEXT, correctionUrl } from "../lib/contribute";
 import type { SharedLink } from "../lib/identity";
 import { platformHash } from "../lib/route";
 import { IssueLink } from "./IssueLink";
+import { Label } from "./Label";
 
 interface Props {
   platform: PlatformGraph;
@@ -15,12 +18,36 @@ interface Props {
 
 export function Header({ platform, paper, shared, release, onSelectPlatform }: Props) {
   return (
-    <header className="platform-header">
-      <h1>{platform.name ?? platform.platform_id}</h1>
-      <p className="platform-id">
-        Platform <code>{platform.platform_id}</code>
-        {platform.commercial_integrated && <span className="badge">commercial integrated system</span>}
-      </p>
+    <header className="card platform-header">
+      <div className="platform-header-main">
+        <div className="platform-title-block">
+          <p className="platform-id">
+            Platform <code>{platform.platform_id}</code>
+          </p>
+          <h1>{platform.name ?? platform.platform_id}</h1>
+        </div>
+        <div className="platform-actions">
+          <a className="btn btn-secondary btn-sm" href={`https://doi.org/${platform.doi}`} aria-label="Paper DOI" title={`https://doi.org/${platform.doi}`}>
+            <ExternalLink size={15} aria-hidden="true" />
+            DOI
+          </a>
+          <button type="button" className="btn btn-primary btn-sm" onClick={onSelectPlatform}>
+            <FileSearch size={15} aria-hidden="true" />
+            Show platform evidence
+          </button>
+        </div>
+      </div>
+      <div className="platform-chips">
+        <span className="chip" data-field="year">
+          {platform.first_public_year}
+        </span>
+        {platform.field_tags.map((t) => (
+          <span key={t} className="chip" title={t}>
+            <Label kind="field_tag" code={t} />
+          </span>
+        ))}
+        {platform.commercial_integrated && <span className="chip chip-accent badge">commercial integrated system</span>}
+      </div>
       <dl className="facts">
         <dt>Paper</dt>
         <dd>
@@ -32,20 +59,12 @@ export function Header({ platform, paper, shared, release, onSelectPlatform }: P
             platform.paper_id
           )}
         </dd>
-        <dt>Year</dt>
-        <dd data-field="year">{platform.first_public_year}</dd>
-        <dt>Fields</dt>
-        <dd>{platform.field_tags.length ? platform.field_tags.join(", ") : "—"}</dd>
         {platform.campaigns && (
           <>
             <dt>Campaigns</dt>
             <dd>{platform.campaigns}</dd>
           </>
         )}
-        <dt>DOI</dt>
-        <dd>
-          <a href={`https://doi.org/${platform.doi}`}>{`https://doi.org/${platform.doi}`}</a>
-        </dd>
         {shared.length > 0 && (
           <>
             <dt>Same platform in</dt>
@@ -68,9 +87,6 @@ export function Header({ platform, paper, shared, release, onSelectPlatform }: P
           </>
         )}
       </dl>
-      <button type="button" onClick={onSelectPlatform}>
-        Show platform evidence
-      </button>
       <p className="report">
         <IssueLink href={correctionUrl(platform.platform_id, release)}>{CORRECTION_LINK_TEXT}</IssueLink>
       </p>

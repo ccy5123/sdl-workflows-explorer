@@ -31,6 +31,8 @@ describe("formatEvidence", () => {
       locator: "Table S1",
       note: "external NMR service",
       doiUrl: DOI_URL,
+      type: { kind: "module_type", code: "unmapped" },
+      name: null,
     });
   });
 
@@ -51,6 +53,8 @@ describe("formatEvidence", () => {
       locator: "—",
       note: "tubing assumed",
       doiUrl: DOI_URL,
+      type: { kind: "transfer_mode", code: "fixed_tubing" },
+      name: null,
     });
   });
 
@@ -63,6 +67,8 @@ describe("formatEvidence", () => {
       locator: "§1 ¶2",
       note: null,
       doiUrl: DOI_URL,
+      type: { kind: "unit_operation", code: "react_flow" },
+      name: null,
     });
   });
 
@@ -75,9 +81,16 @@ describe("formatEvidence", () => {
       locator: "Fig. 2",
       note: null,
       doiUrl: DOI_URL,
+      type: null,
+      name: null,
     };
     expect(formatEvidence(platform, null)).toEqual(expected);
     expect(formatEvidence(platform, { kind: "platform", id: "Test2020/P1" })).toEqual(expected);
+  });
+
+  // SPEC-UI-001 UI AC-35: the graph shows the name as a clamped caption, so the sheet carries it in full.
+  it("carries a module's name in the paper", () => {
+    expect(formatEvidence(platform, { kind: "module", id: "Test2020/P1/M1" }).name).toBe("planner");
   });
 
   it("falls back to the platform evidence for an id that is not in the platform", () => {

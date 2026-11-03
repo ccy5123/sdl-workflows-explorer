@@ -1,4 +1,7 @@
-// Column chooser of a browser table: one checkbox per column (REQ-012).
+// Column chooser of a browser table: one checkbox per column (REQ-012), in a "Columns · N" popover beside the table's
+// other tools (SPEC-UI-001 REQ-028); N is the number of columns shown.
+import { useRef, useState } from "react";
+import { Popover } from "./Popover";
 
 export interface ChooserItem {
   id: string;
@@ -9,16 +12,21 @@ export interface ChooserItem {
   onToggle: () => void;
 }
 
-export function ColumnChooser({ legend, items }: { legend: string; items: ChooserItem[] }) {
+export function ColumnChooser({ id, legend, items }: { id: string; legend: string; items: ChooserItem[] }) {
+  const [open, setOpen] = useState(false);
+  const close = useRef(() => setOpen(false)).current;
+  const shown = items.filter((item) => item.checked).length;
   return (
-    <fieldset className="column-chooser">
-      <legend>{legend}</legend>
-      {items.map((item) => (
-        <label key={item.id}>
-          <input type="checkbox" checked={item.checked} disabled={item.disabled} onChange={item.onToggle} />
-          {item.label}
-        </label>
-      ))}
-    </fieldset>
+    <Popover id={id} label={`Columns · ${shown}`} open={open} onOpen={() => setOpen(true)} onClose={close}>
+      <fieldset className="filter-group column-chooser">
+        <legend>{legend}</legend>
+        {items.map((item) => (
+          <label key={item.id} className="filter-option">
+            <input type="checkbox" checked={item.checked} disabled={item.disabled} onChange={item.onToggle} />
+            <span className="filter-option-name">{item.label}</span>
+          </label>
+        ))}
+      </fieldset>
+    </Popover>
   );
 }

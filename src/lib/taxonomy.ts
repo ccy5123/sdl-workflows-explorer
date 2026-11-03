@@ -64,15 +64,26 @@ export function joinWords(items: readonly string[]): string {
 /** Kinds in the order their classes first appear (classes.csv order). */
 export const kindsInOrder = (classes: readonly TaxonomyClass[]): string[] => [...new Set(classes.map((c) => c.class_kind))];
 
-/** Caption under the overview heading (REQ-011). */
-export function overviewCaption(classes: readonly TaxonomyClass[]): string {
+/**
+ * The overview caption in its two parts: the class counts (shown under the heading) and the note on what the item
+ * and paper counts mean (shown in "How this works", SPEC-UI-001 phase 5). Joined by a space they are overviewCaption.
+ */
+export function overviewCaptionParts(classes: readonly TaxonomyClass[]): { counts: string; note: string } {
   const kinds = kindsInOrder(classes);
   const parts = kinds.map((k) => countText(classes.filter((c) => c.class_kind === k).length, kindLabel(k).toLowerCase(), kindPlural(k)));
   const units = kinds.map((k) => `${words(k)?.unit[1] ?? "items"} for ${kindPlural(k)}`);
-  return (
-    `The ${classes.length} classes of the release taxonomy: ${joinWords(parts)}. Item counts are ${joinWords(units)}. ` +
-    "A paper can carry several field tags, so the paper counts of the field tags need not add up to the number of papers."
-  );
+  return {
+    counts: `The ${classes.length} classes of the release taxonomy: ${joinWords(parts)}.`,
+    note:
+      `Item counts are ${joinWords(units)}. ` +
+      "A paper can carry several field tags, so the paper counts of the field tags need not add up to the number of papers.",
+  };
+}
+
+/** Caption under the overview heading (REQ-011). */
+export function overviewCaption(classes: readonly TaxonomyClass[]): string {
+  const { counts, note } = overviewCaptionParts(classes);
+  return `${counts} ${note}`;
 }
 
 /** Name of the overview's jump list to the kind sections (REQ-011). */

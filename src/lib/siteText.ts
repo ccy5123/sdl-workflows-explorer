@@ -1,59 +1,83 @@
-// Text of the home and about pages (SPEC-SITE-001 REQ-003, REQ-005, REQ-006). Every number here is either filled in
-// from index.json or appears as a whole number in the pinned release's DATA_CARD.md; tests/siteText.test.ts checks
-// this (REQ-007), so a later release with different figures fails the test instead of leaving a stale number. Pure.
+// Text of the home and about pages (SPEC-SITE-001 REQ-003, REQ-005, REQ-006; SPEC-UI-001 REQ-010). Every number here
+// is either filled in from the built data or appears as a whole number in the pinned release's DATA_CARD.md;
+// tests/siteText.test.ts checks this (SPEC-SITE-001 REQ-007, SPEC-UI-001 REQ-011), so a later release with different
+// figures fails the test instead of leaving a stale number. Pure.
 
-export function homeIntro(version: string, platforms: number, papers: number): string {
-  return (
-    "sdl-workflows records which modules published closed-loop self-driving laboratories (SDLs) use, in what order one " +
-    "experimental cycle runs its steps on them, and how material moves between the modules. " +
-    `Release ${version} codes ${platforms} platforms described in ${papers} papers that one literature search found. ` +
-    "It also holds the times, batch sizes, throughput and cost that the papers state, and what each paper states " +
-    "about human intervention during its campaign."
-  );
-}
+const fmt = (n: number) => n.toLocaleString("en");
+
+export const heroTitle = (platforms: number): string =>
+  `The hardware workflows of ${fmt(platforms)} self-driving lab platforms`;
+
+export const heroLead = (papers: number): string =>
+  "Modules, cycle steps and material transfers of closed-loop self-driving laboratories (SDLs), coded from " +
+  `${fmt(papers)} papers. Every item links to the page in the paper it was read from.`;
+
+export const searchPlaceholder = (platforms: number): string => `Search ${fmt(platforms)} platforms by name, paper or id`;
+
+/** Caption under the stat tiles. */
+export const STATS_CAPTION = "Papers that passed the screening in the data card, not the whole field.";
+
+/** Caption of the papers-per-year preview; the date is the search date of the data card. */
+export const yearsCaption = (lastYear: number): string => `Papers per year; ${lastYear} covers the search to 20 October.`;
+
+export const fieldsCaption = (shown: number, inUse: number): string =>
+  `Papers per field tag, top ${shown} of ${inUse}; a paper can carry several.`;
+
+/** Paragraphs of the "About the sample" card. */
+export const sampleText = (candidates: number, papers: number): string[] => [
+  `${fmt(candidates)} candidate papers were screened; the ${fmt(papers)} that passed the screening described in the ` +
+    "data card were coded. The counts describe those papers, not every self-driving lab.",
+  "The release also holds the times, batch sizes, throughput and cost that the papers state, and what each paper " +
+    "states about human intervention during its campaign.",
+];
+
+export type ViewKey = "platform" | "browse" | "trends" | "taxonomy" | "benchmark" | "workflow";
 
 export interface ViewEntry {
+  key: ViewKey;
   name: string;
   description: string;
-  /** Route of the view; null for the platform viewer, which needs a platform chosen first. */
-  href: string | null;
 }
 
+/** The six view cards of Home; each card links to its view (the platform viewer opens the featured platform). */
 export const VIEWS: readonly ViewEntry[] = [
   {
+    key: "platform",
     name: "Platform viewer",
-    description:
-      "One platform's modules and connections as a graph, the steps of one cycle, and the page each item comes from. " +
-      "Choose a platform from the list on this page or from Browse.",
-    href: null,
+    description: "One platform's modules and connections as a graph, the steps of one cycle, and the page each item comes from.",
   },
   {
+    key: "browse",
     name: "Browse and compare",
     description: "Papers and platforms in filterable tables; pick two or three platforms to compare side by side.",
-    href: "#/browse",
   },
   {
+    key: "trends",
     name: "Trends",
     description:
-      "Papers or platforms counted by first public year, split by integration mode, field tag, autonomy, module type " +
-      "or transfer mode.",
-    href: "#/trends",
+      "Papers or platforms by first public year, split by integration mode, field tag, autonomy, module type or " +
+      "transfer mode.",
   },
   {
+    key: "taxonomy",
     name: "Taxonomy",
     description:
       "The classes used in the coding, with definitions, families, usage counts and correspondence to other " +
       "vocabularies.",
-    href: "#/taxonomy",
   },
   {
+    key: "benchmark",
     name: "Benchmark",
     description: "The chrono2023 tasks, their train/test split and the reference results as published.",
-    href: "#/benchmark",
+  },
+  {
+    key: "workflow",
+    name: "Workflow builder",
+    description:
+      "Lay out your own steps and modules, then see the coded platforms most like it, a cycle-time range and a " +
+      "batch simulation.",
   },
 ];
-
-export const PLATFORM_LIST_BUTTON = "Go to the platform list";
 
 /** Author of the dataset and the site, linked from the footer and the about page. */
 export const AUTHOR = { name: "Chan Young Joe", url: "https://ccy5123.github.io/" } as const;
