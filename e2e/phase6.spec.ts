@@ -59,6 +59,15 @@ test("UI AC-45: the class page names the family, the code in title", async ({ pa
   await expect(dd).toContainText("Mix");
 });
 
+test("UI AC-45: the comparison names module types, transfer modes and unit operations, the code in title", async ({ page }) => {
+  await page.goto("/#/compare/Aand2024/P1,Li2020/P1");
+  const m = main(page);
+  await expect(m.locator('[data-table="compare-modules"] tbody th [data-code="instrument_optical"]')).toContainText("Optical instrument");
+  await expect(m.locator('[data-table="compare-transfers"] tbody th [data-code="robot_arm_gantry"]')).toContainText("Robot arm / gantry");
+  await expect(m.locator(".compare-steps td .label").first()).toHaveAttribute("title", "dispense_liquid");
+  await expect(m.locator(".compare-steps td .label").first()).toContainText("Dispense liquid");
+});
+
 test("UI AC-46: selecting a step scrolls the graph into view; hovering does not move the page", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 1440, height: 900 });

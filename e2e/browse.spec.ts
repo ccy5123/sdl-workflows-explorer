@@ -270,7 +270,7 @@ test("AC-13: selecting platforms for comparison", async ({ page }) => {
 });
 
 const cellsOf = (page: Page, table: string, key: string) =>
-  page.locator(`[data-table="${table}"] tbody tr`).filter({ has: page.locator("th", { hasText: new RegExp(`^${key}$`) }) }).locator("td");
+  page.locator(`[data-table="${table}"] tbody tr`).filter({ has: page.locator(`th [data-code="${key}"]`) }).locator("td");
 const stepOrders = (page: Page, id: string) =>
   page.locator(`[data-steps="${id}"] tbody tr`).evaluateAll((els) => els.map((e) => e.getAttribute("data-step-order")));
 

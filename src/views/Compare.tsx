@@ -12,6 +12,7 @@ import {
 } from "../lib/compare";
 import { show } from "../lib/evidence";
 import { platformHash } from "../lib/route";
+import { Label } from "../components/Label";
 
 type Status = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; comparison: Comparison };
 type Loaded = { paperId: string; file: string; data?: PlatformFile; error?: string };
@@ -33,7 +34,8 @@ async function loadPaper(paperId: string, signal: AbortSignal): Promise<Loaded> 
   }
 }
 
-function CountTable({ name, label, ids, rows }: { name: string; label: string; ids: string[]; rows: CountRow[] }) {
+/** Counts per vocabulary class; each class reads as its name, the code in `title` (SPEC-UI-001 phase 6). */
+function CountTable({ name, label, kind, ids, rows }: { name: string; label: string; kind: string; ids: string[]; rows: CountRow[] }) {
   return (
     <div className="table-scroll">
       <table className="data" data-table={name}>
@@ -50,7 +52,9 @@ function CountTable({ name, label, ids, rows }: { name: string; label: string; i
         <tbody>
           {rows.map((row) => (
             <tr key={row.key}>
-              <th scope="row">{row.key}</th>
+              <th scope="row">
+                <Label kind={kind} code={row.key} />
+              </th>
               {row.counts.map((n, i) => (
                 <td key={ids[i]} className="num">
                   {show(n)}
@@ -154,10 +158,10 @@ export function Compare({ index, ids }: { index: IndexJson; ids: string[] }) {
       </div>
 
       <h2>Module types</h2>
-      <CountTable name="compare-modules" label="Module type" ids={platformIds} rows={c.moduleRows} />
+      <CountTable name="compare-modules" label="Module type" kind="module_type" ids={platformIds} rows={c.moduleRows} />
 
       <h2>Material transfer modes</h2>
-      <CountTable name="compare-transfers" label="Transfer mode" ids={platformIds} rows={c.transferRows} />
+      <CountTable name="compare-transfers" label="Transfer mode" kind="transfer_mode" ids={platformIds} rows={c.transferRows} />
 
       <h2>Steps</h2>
       <div className="compare-steps">
@@ -178,7 +182,9 @@ export function Compare({ index, ids }: { index: IndexJson; ids: string[] }) {
                 {steps.map((s, j) => (
                   <tr key={j} data-step-order={s.order}>
                     <td className="num">{s.order}</td>
-                    <td>{s.unitOperation}</td>
+                    <td>
+                      <Label kind="unit_operation" code={s.unitOperation} />
+                    </td>
                     <td>{show(s.performer)}</td>
                   </tr>
                 ))}
