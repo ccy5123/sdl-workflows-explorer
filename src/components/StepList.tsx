@@ -64,7 +64,11 @@ export function StepList({ steps, modules, selectedStepId, onSelect, onPreview }
                       <Icon size={14} aria-hidden="true" />
                       {show(s.performed_by)}
                     </span>
-                    {s.family && <span>family {s.family}</span>}
+                    {s.family && (
+                      <span>
+                        family <Label kind="family" code={s.family} inText />
+                      </span>
+                    )}
                   </span>
                   <span className="step-modules">{s.modules.length ? s.modules.map(nameOf).join("; ") : show(null)}</span>
                 </span>

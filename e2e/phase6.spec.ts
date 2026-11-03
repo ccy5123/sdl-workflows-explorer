@@ -55,3 +55,33 @@ test("UI AC-45: the class page names the family, the code in title", async ({ pa
   await expect(dd).toHaveAttribute("title", "mix");
   await expect(dd).toContainText("Mix");
 });
+
+test("UI AC-46: selecting a step scrolls the graph into view; hovering does not move the page", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/#/platform/Kim2026/P1");
+  const steps = main(page).locator("button.step");
+  const last = steps.last();
+  await last.scrollIntoViewIfNeeded();
+  const graphShown = () =>
+    page.evaluate(() => {
+      const r = document.querySelector(".graph-wrap")!.getBoundingClientRect();
+      return (Math.min(r.bottom, innerHeight) - Math.max(r.top, 88)) / r.height;
+    });
+  expect(await graphShown()).toBeLessThan(0.5);
+  const before = await page.evaluate(() => scrollY);
+  await last.hover();
+  expect(await page.evaluate(() => scrollY)).toBe(before);
+  await last.click();
+  await expect.poll(graphShown).toBeGreaterThan(0.95);
+  // The step is selected, so its modules stay highlighted in the graph that is now in view.
+  await expect(last).toHaveAttribute("aria-pressed", "true");
+
+  // From the keyboard: Escape clears; Enter on a step scrolls the graph into view again.
+  await page.keyboard.press("Escape");
+  await last.scrollIntoViewIfNeeded();
+  await last.focus();
+  expect(await graphShown()).toBeLessThan(0.5);
+  await page.keyboard.press("Enter");
+  await expect.poll(graphShown).toBeGreaterThan(0.95);
+});

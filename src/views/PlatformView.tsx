@@ -29,6 +29,22 @@ const yesNo = (v: boolean) => (v ? "yes" : "no");
 /** How long after the selection is cleared a focus event is not taken as a preview (the sheet hands focus back). */
 const QUIET_FOCUS_MS = 100;
 
+/**
+ * Scrolls the graph into view when less than half of it shows, so the modules a chosen step uses are seen
+ * highlighted (SPEC-UI-001 UI AC-46). Only on a step's selection (click, Enter or Space), never on hover or focus,
+ * so the page does not move under the pointer. The top bar is cleared by the root's `scroll-padding-top`.
+ */
+function revealGraph(root: HTMLElement | null) {
+  const graph = root?.querySelector<HTMLElement>(".graph-wrap");
+  if (!graph) return;
+  const box = graph.getBoundingClientRect();
+  const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  const shown = Math.min(box.bottom, window.innerHeight) - Math.max(box.top, top);
+  if (shown >= box.height / 2) return;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  graph.scrollIntoView({ block: "start", behavior: still ? "auto" : "smooth" });
+}
+
 function activate(e: KeyboardEvent, action: () => void) {
   if (e.key === "Enter" || e.key === " ") {
     e.preventDefault();
@@ -72,6 +88,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
   const [preview, setPreview] = useState<string | null>(null);
   // Set while the sheet returns focus to the step that opened it, so that focus does not bring the highlight back.
   const quietFocus = useRef(false);
+  const root = useRef<HTMLDivElement>(null);
   const clear = useCallback(() => {
     quietFocus.current = true;
     setPreview(null);
@@ -99,7 +116,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
   const isPicked = (kind: string, id: string) => selection?.kind === kind && selection.id === id;
 
   return (
-    <div className="platform">
+    <div className="platform" ref={root}>
       <Header
         platform={platform}
         paper={paper}
@@ -127,7 +144,10 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
           steps={steps}
           modules={platform.modules}
           selectedStepId={selection?.kind === "step" ? selection.id : null}
-          onSelect={(id) => select({ kind: "step", id })}
+          onSelect={(id) => {
+            select({ kind: "step", id });
+            revealGraph(root.current);
+          }}
           onPreview={onPreview}
         />
         <div className="viewer-tables">
