@@ -94,6 +94,7 @@ export function DataTable<T extends RowData>({
     <>
       <div className="table-tools">
         <ColumnChooser
+          id={`${name}-columns`}
           legend={chooserLabel}
           items={table.getAllLeafColumns().map((column) => ({
             id: column.id,

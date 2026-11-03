@@ -162,13 +162,13 @@ test("AC-11: cross links show equal count lines", async ({ page }) => {
 test("AC-12: bar chart, segment and bin-total links, legend", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/trends");
-  const segment = chartLink(page, "2021, fixed_tubing: 9 of 17 papers");
+  const segment = chartLink(page, "2021, Fixed tubing: 9 of 17 papers");
   await expect(segment).toHaveAttribute("href", "#/browse?years=2021-2021&im=fixed_tubing");
-  await expect(segment.locator("title")).toHaveText("2021, fixed_tubing: 9 of 17 papers");
+  await expect(segment.locator("title")).toHaveText("2021, Fixed tubing: 9 of 17 papers");
   expect(await style(segment.locator("rect"), "fill")).toBe("rgb(42, 120, 214)");
 
   const fixed = (await segment.locator("rect").boundingBox())!;
-  const human = (await chartLink(page, "2021, human_transfer: 1 of 17 papers").locator("rect").boundingBox())!;
+  const human = (await chartLink(page, "2021, Human transfer: 1 of 17 papers").locator("rect").boundingBox())!;
   expect(fixed.y).toBeGreaterThan(human.y);
 
   expect(await chart(page).locator('g[aria-label="text"] text').allTextContents()).toEqual(N_PAPERS);
@@ -181,14 +181,16 @@ test("AC-12: bar chart, segment and bin-total links, legend", async ({ page }) =
   for (const t of yTicks) expect(t).toMatch(/^\d+$/);
   expect(await xTicks(page)).toEqual(BINS);
 
-  await expect(legend(page)).toHaveText(["fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped"]);
+  await expect(legend(page)).toHaveText(["Fixed tubing", "Human transfer", "Mixed", "Mobile robot", "None", "Robot arm / gantry", "Other transfer (unmapped)"]);
+  await expect(legend(page).first().locator("[title]")).toHaveAttribute("title", "fixed_tubing");
   await expect(legend(page).locator(".legend-swatch")).toHaveCount(7);
 
   await page.locator(".trends-table-details summary").click();
   const rows = page.locator(".trends-table-details tbody tr");
   await expect(rows.nth(0)).toHaveText(["n", ...N_PAPERS].join(""));
   await expect(rows.nth(1).locator("td")).toHaveText(["15", "2", "4", "1", "11", "4", "8", "9", "9", "10", "9", "9", "8"]);
-  await expect(rows.nth(1).locator("th")).toHaveText("fixed_tubing");
+  await expect(rows.nth(1).locator("th")).toHaveText("Fixed tubing");
+  await expect(rows.nth(1).locator("th [title]")).toHaveAttribute("title", "fixed_tubing");
 
   await segment.click();
   expect(await hash(page)).toBe("#/browse?years=2021-2021&im=fixed_tubing");
@@ -200,7 +202,7 @@ test("AC-12: bar chart, segment and bin-total links, legend", async ({ page }) =
 
   await page.goto("/#/trends?view=platforms");
   await expect(chartLink(page, "2024: 36 platforms")).toHaveAttribute("href", "#/browse?view=platforms&years=2024-2024");
-  await chartLink(page, "2024, robot_arm_gantry: 2 of 36 platforms").click();
+  await chartLink(page, "2024, Robot arm / gantry: 2 of 36 platforms").click();
   await expect(countLine(page)).toHaveText("2 of 279 platforms");
 
   await page.goto("/#/trends?split=hw");
@@ -221,8 +223,8 @@ test("AC-12: bar chart, segment and bin-total links, legend", async ({ page }) =
   );
 
   await page.goto("/#/trends?im=mixed");
-  await expect(legend(page)).toHaveText(["mixed"]);
-  expect(await style(chartLink(page, "2021, mixed: 3 of 3 papers").locator("rect"), "fill")).toBe("rgb(27, 175, 122)");
+  await expect(legend(page)).toHaveText(["Mixed"]);
+  expect(await style(chartLink(page, "2021, Mixed: 3 of 3 papers").locator("rect"), "fill")).toBe("rgb(27, 175, 122)");
   expect(errors).toEqual([]);
 });
 
@@ -240,11 +242,11 @@ test("AC-13: count table as chart, cell links and shading", async ({ page }) => 
   ).toBeVisible();
   expect(await table.evaluate((t) => getComputedStyle(t.parentElement!).overflowX)).toBe("auto");
 
-  const nano = link(page, "2025, nanomaterials: 16 of 39 papers");
+  const nano = link(page, "2025, Nanomaterials: 16 of 39 papers");
   await expect(nano).toHaveText("16");
   expect(await style(nano.locator(".."), "background-color")).toBe("rgb(13, 54, 107)");
   expect(await style(nano, "color")).toBe("rgb(255, 255, 255)");
-  const zero = link(page, "2015, analytical_chemistry: 0 of 4 papers");
+  const zero = link(page, "2015, Analytical chemistry: 0 of 4 papers");
   await expect(zero).toHaveText("0");
   expect(await style(zero.locator(".."), "background-color")).toBe("rgba(0, 0, 0, 0)");
   expect(await style(zero, "color")).toBe("rgb(11, 11, 11)");
@@ -255,7 +257,7 @@ test("AC-13: count table as chart, cell links and shading", async ({ page }) => 
   await expect(countLine(page)).toHaveText("16 of 237 papers");
 
   await page.goto("/#/trends?view=platforms&split=mt");
-  await link(page, "2025, flow_reactor: 10 of 41 platforms").click();
+  await link(page, "2025, Flow reactor: 10 of 41 platforms").click();
   await expect(countLine(page)).toHaveText("10 of 279 platforms");
 });
 
@@ -333,17 +335,17 @@ test("AC-16: narrow screen, keyboard and empty result", async ({ page }) => {
   await tabUntil(page, () => (document.activeElement as HTMLInputElement | null)?.name === "split");
   await tabUntil(page, () => document.activeElement?.textContent === "Papers");
   await tabUntil(page, () => document.activeElement?.textContent === "Show these in Browse");
-  await tabUntil(page, () => document.activeElement?.getAttribute("aria-label") === "2021, fixed_tubing: 9 of 17 papers");
+  await tabUntil(page, () => document.activeElement?.getAttribute("aria-label") === "2021, Fixed tubing: 9 of 17 papers");
   await tabUntil(page, () => document.activeElement?.getAttribute("aria-label") === "2021: 17 papers");
   await page.goto("/#/trends");
   await expect(chart(page)).toBeVisible();
-  await tabUntil(page, () => document.activeElement?.getAttribute("aria-label") === "2021, fixed_tubing: 9 of 17 papers");
+  await tabUntil(page, () => document.activeElement?.getAttribute("aria-label") === "2021, Fixed tubing: 9 of 17 papers");
   await page.keyboard.press("Enter");
   await expect.poll(() => hash(page)).toBe("#/browse?years=2021-2021&im=fixed_tubing");
 
   await page.goto("/#/trends?split=field");
   await expect(page.locator("table.count-table")).toBeVisible();
-  await tabUntil(page, () => document.activeElement?.getAttribute("aria-label") === "2025, nanomaterials: 16 of 39 papers");
+  await tabUntil(page, () => document.activeElement?.getAttribute("aria-label") === "2025, Nanomaterials: 16 of 39 papers");
 
   await page.goto("/#/trends?q=zzzz");
   await expect(countLine(page)).toHaveText("0 of 237 papers");

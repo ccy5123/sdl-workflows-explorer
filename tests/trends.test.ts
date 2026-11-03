@@ -189,8 +189,10 @@ describe("offered split values and link state on a fixture (AC-4, AC-5)", () => 
 
 describe("value labels, accessible names and integer ticks (REQ-010, REQ-011)", () => {
   it("labels autonomy levels with their category text and other values as stored", () => {
-    expect(valueLabel("im", "fixed_tubing")).toBe("fixed_tubing");
-    expect(valueLabel("mt", "flow_reactor")).toBe("flow_reactor");
+    expect(valueLabel("im", "fixed_tubing")).toBe("Fixed tubing");
+    expect(valueLabel("mt", "flow_reactor")).toBe("Flow reactor");
+    expect(valueLabel("field", "chemistry_synthesis")).toBe("Chemistry synthesis");
+    expect(valueLabel("im", "mixed")).toBe("Mixed");
     expect(valueLabel("sw", 2)).toBe("2 — closed-loop iteration in which results choose the next experiment");
     expect(valueLabel("hw", 3)).toBe("3 — a fully automated laboratory running varied experiments without human intervention");
   });

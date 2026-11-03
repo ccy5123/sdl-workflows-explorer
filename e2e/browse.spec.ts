@@ -33,6 +33,13 @@ async function filterBox(page: Page, legend: string, name: string | RegExp) {
   return group(page, legend).getByRole("checkbox", { name: typeof name === "string" ? new RegExp(`\\(${name}\\)$`) : name });
 }
 
+/** Checkbox of a table's column chooser, with its "Columns · N" popover open (SPEC-UI-001 REQ-028). */
+async function columnBox(page: Page, chooser: string, name: string) {
+  const b = page.getByRole("button", { name: /^Columns · \d+$/ });
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+  return box(page, chooser, name);
+}
+
 /** all/any radio of a group's match control, with the popover open. */
 async function matchRadio(page: Page, legend: string, value: "all" | "any") {
   await openFilter(page, legend);
@@ -193,10 +200,11 @@ test("AC-12: sorting and the column chooser by keyboard", async ({ page }) => {
   await expect(yearHeader).toHaveAttribute("aria-sort", "none");
   expect(await cell(page, "papers", "Paper")).toBe("Aand2024");
 
-  await box(page, "Paper table columns", "Venue").press("Space");
+  await (await columnBox(page, "Paper table columns", "Venue")).press("Space");
   await expect(page.locator('.browse [data-table="papers"] thead th', { hasText: /^Venue$/ })).toHaveCount(0);
-  await expect(box(page, "Paper table columns", "Paper")).toBeChecked();
-  await expect(box(page, "Paper table columns", "Paper")).toBeDisabled();
+  await expect(await columnBox(page, "Paper table columns", "Paper")).toBeChecked();
+  await expect(await columnBox(page, "Paper table columns", "Paper")).toBeDisabled();
+  await page.keyboard.press("Escape");
 
   await page.goto("/#/browse?view=platforms");
   await expect(rows(page, "platforms")).toHaveCount(279);
@@ -213,8 +221,8 @@ test("AC-12: sorting and the column chooser by keyboard", async ({ page }) => {
   await expect(page.locator('.browse [data-table="platforms"] thead th', { hasText: /^Name$/ })).toHaveAttribute("aria-sort", "descending");
   expect(await cell(page, "platforms", "Name", "last")).toBe("—");
   for (const name of ["Platform", "Select"]) {
-    await expect(box(page, "Platform table columns", name)).toBeChecked();
-    await expect(box(page, "Platform table columns", name)).toBeDisabled();
+    await expect(await columnBox(page, "Platform table columns", name)).toBeChecked();
+    await expect(await columnBox(page, "Platform table columns", name)).toBeDisabled();
   }
 });
 

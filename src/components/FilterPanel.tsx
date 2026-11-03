@@ -1,15 +1,13 @@
 // Filter bar of the browser and the Trends dashboard (REQ-004; SPEC-TAXO-001 REQ-007; SPEC-UI-001 REQ-025): search and
 // year range in the bar, one popover button per checkbox group ("Field tag · 2"), and below it a pill per active filter
 // with "Clear all". Options show readable names with the code beside them.
-// The popover is the site menu's pattern (components/SiteMenu.tsx): one open at a time; it closes on Escape (focus back
-// on its button), on a click outside and when focus leaves it, and is moved left if it would cross the window's edge.
-import { ChevronDown, Search, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+// One popover is open at a time (components/Popover.tsx). An option shows its name and its code once; the checkbox is
+// named "Name (code)" (SPEC-UI-001 REQ-028).
+import { Search, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { FILTER_GROUPS, filterPills, optionLabel, type FilterGroup } from "../lib/filterLabels";
 import type { FilterState, Match, Offered } from "../lib/filterState";
-
-/** Space kept between a popover and the window's edges. */
-const EDGE = 8;
+import { Popover } from "./Popover";
 
 function CheckboxGroup({ group, options, state, onState }: { group: FilterGroup; options: readonly (string | number)[]; state: FilterState; onState: (next: FilterState) => void }) {
   const selected = state[group.key] as (string | number)[];
@@ -23,14 +21,15 @@ function CheckboxGroup({ group, options, state, onState }: { group: FilterGroup;
           <label key={value} className="filter-option">
             <input
               type="checkbox"
+              aria-label={code ? `${name} (${code})` : undefined}
               checked={checked}
               onChange={() => onState({ ...state, [group.key]: checked ? selected.filter((v) => v !== value) : [...selected, value] })}
             />
-            <span>{name}</span>
+            <span className="filter-option-name">{name}</span>
             {code && (
               <>
-                <code aria-hidden="true">{code}</code>
-                <span className="visually-hidden"> ({code})</span>
+                {" "}
+                <code>{code}</code>
               </>
             )}
           </label>
@@ -54,88 +53,7 @@ function MatchControl({ legend, name, value, onChange }: { legend: string; name:
   );
 }
 
-function FilterPopover({
-  id,
-  label,
-  count,
-  open,
-  onOpen,
-  onClose,
-  children,
-}: {
-  id: string;
-  label: string;
-  count: number;
-  open: boolean;
-  onOpen: () => void;
-  onClose: (refocus: boolean) => void;
-  children: ReactNode;
-}) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // Keep the panel inside the window: shift it left by any overflow, but not past the left edge.
-  useLayoutEffect(() => {
-    const panel = panelRef.current;
-    if (!open || !panel) return;
-    panel.style.left = "0px";
-    const r = panel.getBoundingClientRect();
-    const over = r.right - (document.documentElement.clientWidth - EDGE);
-    if (over > 0) panel.style.left = `${-Math.min(over, r.left - EDGE)}px`;
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    panelRef.current?.querySelector<HTMLElement>("input")?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose(false);
-        buttonRef.current?.focus();
-      }
-    };
-    const onPointer = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (!panelRef.current?.contains(target) && !buttonRef.current?.contains(target)) onClose(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer);
-    };
-  }, [open, onClose]);
-
-  return (
-    <div className="filter-popover">
-      <button
-        ref={buttonRef}
-        type="button"
-        className={count ? "filter-button active" : "filter-button"}
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => (open ? onClose(false) : onOpen())}
-      >
-        {count ? `${label} · ${count}` : label}
-        <ChevronDown size={14} aria-hidden="true" />
-      </button>
-      {open && (
-        <div
-          ref={panelRef}
-          id={id}
-          className="filter-popover-panel"
-          role="dialog"
-          aria-label={label}
-          onBlur={(e) => {
-            const next = e.relatedTarget as Node | null;
-            if (next && !panelRef.current?.contains(next) && !buttonRef.current?.contains(next)) onClose(false);
-          }}
-        >
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
+const countLabel = (legend: string, count: number) => (count ? `${legend} · ${count}` : legend);
 
 export function FilterPanel({
   idPrefix,
@@ -182,11 +100,11 @@ export function FilterPanel({
           <input type="number" inputMode="numeric" placeholder="to" aria-label="To" value={yearText.to} onChange={(e) => onYearText(yearText.from, e.target.value)} />
         </fieldset>
         {FILTER_GROUPS.map((group) => (
-          <FilterPopover
+          <Popover
             key={group.key}
             id={`${idPrefix}-${group.key}`}
-            label={group.legend}
-            count={(state[group.key] as unknown[]).length}
+            label={countLabel(group.legend, (state[group.key] as unknown[]).length)}
+            active={(state[group.key] as unknown[]).length > 0}
             open={openKey === group.key}
             onOpen={() => setOpenKey(group.key)}
             onClose={close}
@@ -200,7 +118,7 @@ export function FilterPanel({
                 onChange={(m) => onState({ ...state, [group.match!]: m })}
               />
             )}
-          </FilterPopover>
+          </Popover>
         ))}
       </div>
       {inverted && (

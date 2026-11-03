@@ -1,7 +1,7 @@
 ---
 id: SPEC-UI-001
 title: "Explorer UI redesign, phases 0 to 3: design tokens and shell, readable labels, Home, platform viewer"
-version: "0.5.0"
+version: "0.5.1"
 status: in-progress
 created: 2026-11-03
 updated: 2026-11-03
@@ -35,6 +35,8 @@ depends_on: [SPEC-SITE-001, SPEC-SIM-001]
   "Fit to view" was pressed; the researcher approved the refit fix.
 - 2026-11-03 0.5.0 REQ-025 to REQ-027: phase 4 of the plan (Browse and Trends filters), approved by the researcher.
   This supersedes the checkbox column and the "Filters (N active)" toggle of SPEC-BROWSE-001 and SPEC-TRENDS-001.
+- 2026-11-03 0.5.1 REQ-028: phase 4 leftovers approved by the researcher (Trends labels, a Columns popover, popover
+  options that were clipped and named with the code twice). Supersedes SPEC-TRENDS-001's "value as stored" labels.
 
 ## 1. Why
 
@@ -177,3 +179,9 @@ taken from the built release data.
   view, highlight the row under the pointer, and cut titles, venues and platform names to one line with the full text
   in `title`. Coded columns (field tags, integration mode, module types, transfer modes) show readable names (code in
   `title`); a "Show codes" button (`aria-pressed`) beside the column chooser switches them to the codes.
+- **REQ-028** (ubiquitous) Trends shall name coded split values by `displayLabel` in the count-table rows, the chart
+  legend and the bars' and cells' accessible names, with the code in `title`; links and the URL keep the codes. The
+  browser's column chooser shall be a "Columns · N" popover (N columns shown) beside "Show codes", built as the filter
+  popovers. A popover grows to fit its options up to the window's width less 16 px (at most 560 px); an option whose
+  name and code do not fit on one line puts the whole code under the name. Each option shows its code once and its
+  checkbox is named "Name (code)".

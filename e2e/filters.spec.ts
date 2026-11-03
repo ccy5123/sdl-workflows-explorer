@@ -159,3 +159,65 @@ test("UI AC-27: Show codes switches coded cells from names to codes", async ({ p
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   await expect(await fieldCell()).toHaveText("chemistry_synthesis");
 });
+
+// Phase 4 leftovers (REQ-028): readable Trends labels, a Columns popover, options that are never clipped.
+for (const width of [1440, 375]) {
+  test(`UI AC-28: at ${width} px each popover option shows its name and its whole code once`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/#/browse");
+    for (const legend of ["Field tag", "Module types", "Unit operations"]) {
+      const button = popoverButton(page, legend);
+      await button.click();
+      const panel = page.locator(`#${await button.getAttribute("aria-controls")}`);
+      await insideViewport(page, panel);
+      const bad = await panel.locator(".filter-option").evaluateAll((labels) => {
+        const p = labels[0]!.closest(".filter-popover-panel")!.getBoundingClientRect();
+        return labels
+          .map((l) => {
+            const code = l.querySelector("code")!;
+            const r = code.getBoundingClientRect();
+            const text = l.textContent!.trim();
+            const name = l.querySelector(".filter-option-name")!.textContent;
+            const once = l.querySelectorAll("code").length === 1 && text === `${name} ${code.textContent}`;
+            return code.scrollWidth > code.clientWidth + 1 || r.right > p.right + 0.5 || !once ? text : null;
+          })
+          .filter(Boolean);
+      });
+      expect(bad, legend).toEqual([]);
+      await page.keyboard.press("Escape");
+    }
+    await popoverButton(page, "Field tag").click();
+    await expect(page.getByRole("checkbox", { name: "Battery and electrochemistry (battery_electrochem)", exact: true })).toHaveCount(1);
+  });
+}
+
+test("UI AC-28: the column chooser is a Columns popover beside Show codes", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/#/browse");
+  const columns = page.getByRole("button", { name: /^Columns · \d+$/ });
+  await expect(columns).toHaveText("Columns · 9");
+  await expect(columns).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("group", { name: "Paper table columns" })).toHaveCount(0);
+  const [c, s] = [(await columns.boundingBox())!, (await page.getByRole("button", { name: "Show codes" }).boundingBox())!];
+  expect(Math.abs(c.y - s.y)).toBeLessThanOrEqual(2);
+  await columns.click();
+  const panel = page.locator(`#${await columns.getAttribute("aria-controls")}`);
+  await insideViewport(page, panel);
+  await panel.getByRole("checkbox", { name: "Venue", exact: true }).uncheck();
+  await expect(columns).toHaveText("Columns · 8");
+  await page.keyboard.press("Escape");
+  await expect(columns).toBeFocused();
+  await expect(page.locator('.browse [data-table="papers"] thead th', { hasText: /^Venue$/ })).toHaveCount(0);
+});
+
+test("UI AC-28: Trends rows and legend show readable names with the code in their title", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/#/trends?split=field");
+  const th = page.locator("table.count-table tbody tr").nth(1).locator("th");
+  await expect(th.locator("[title]")).toHaveAttribute("title", /^[a-z_]+$/);
+  expect(await th.innerText()).not.toContain("_");
+  await page.goto("/#/trends");
+  const first = page.locator(".trends-legend li").first();
+  await expect(first).toHaveText("Fixed tubing");
+  await expect(first.locator("[title]")).toHaveAttribute("title", "fixed_tubing");
+});

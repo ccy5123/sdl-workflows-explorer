@@ -148,6 +148,18 @@ progress.md.
   `e2e/trends.spec.ts` AC-10 (bar above the chart, pills, no toggle) and SPEC-TAXO-001 AC-8/AC-14. They open a
   popover before reading or checking an option, and press Escape before clicking outside it.
 
+### AC-28 Phase 4 leftovers (REQ-028), `e2e/filters.spec.ts` "UI AC-28", `tests/trends.test.ts`
+- At 1440 and 375 px, in the Field tag, Module types and Unit operations popovers (inside the window) every option has
+  one code element that ends inside the panel, and its text is exactly the name, a space and the code; the Field tag
+  checkbox "Battery and electrochemistry (battery_electrochem)" exists.
+- "Columns · 9" sits on the row of "Show codes", closed; its popover stays inside the window; unchecking Venue makes
+  it "Columns · 8" and removes the column; Escape returns focus to the button.
+- Trends `split=field`: the first value row's header has a code-only `title` and no underscore in its text; the
+  default legend's first entry reads "Fixed tubing" with `title` `fixed_tubing`.
+- Changed existing tests: `tests/trends.test.ts` (`valueLabel` gives readable names); `e2e/trends.spec.ts` AC-12, AC-13
+  and the keyboard test name bars and cells by readable names ("2021, Fixed tubing: 9 of 17 papers") and the legend by
+  readable names; `e2e/browse.spec.ts` AC-12 opens the Columns popover before using the chooser.
+
 ### AC-13 Browser check (REQ-010)
 - Home at 1440 px and 375 px, light and dark, compared with the mock boards `ArialLight`, `ArialDark`, `ArialPhone`;
   findings and fixes recorded in progress.md.

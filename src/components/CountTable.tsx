@@ -3,7 +3,13 @@
 import { RAMP, rampStep, textColorFor, tokenVar } from "../lib/chartTokens";
 import type { FilterState, View } from "../lib/filterState";
 import { browseHash } from "../lib/filterUrl";
-import { linkState, segmentName, totalName, valueLabel, type CountTable as Table, type Split } from "../lib/trends";
+import { linkState, segmentName, totalName, valueCode, valueLabel, type CountTable as Table, type Split, type SplitValue } from "../lib/trends";
+
+/** A split value's readable name, with its code in `title` (SPEC-UI-001 REQ-028); shared with the chart legend. */
+export function ValueName({ split, value }: { split: Split; value: SplitValue }) {
+  const code = valueCode(split, value);
+  return code ? <span title={code}>{valueLabel(split, value)}</span> : <>{valueLabel(split, value)}</>;
+}
 
 export function CountTable({
   state,
@@ -51,7 +57,9 @@ export function CountTable({
           </tr>
           {table.values.map((value, v) => (
             <tr key={value}>
-              <th scope="row">{valueLabel(split, value)}</th>
+              <th scope="row">
+                <ValueName split={split} value={value} />
+              </th>
               {table.bins.map((b, i) => {
                 const count = table.counts[v]![i]!;
                 return (

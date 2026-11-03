@@ -103,6 +103,15 @@
   Final: `npm test` 689 passed; `npm run typecheck` exit 0; `npm run e2e` 232 passed (3.1 min); after the last CSS
   change, filters, browse, trends and a11y specs 115 passed and the table and token unit tests 12 passed.
 
+- Phase 4 leftovers (REQ-028). RED: `npx playwright test e2e/filters.spec.ts -g "AC-28"` — 4 failed (codes in the
+  Trends rows and legend, no Columns button, clipped codes); `tests/trends.test.ts` failed on the new labels. GREEN after
+  `valueLabel`/`valueCode` in `lib/trends.ts` and `ValueName` in `CountTable.tsx` (the lazy chart imports it from there,
+  so Plot stays out of the main bundle), `components/Popover.tsx` (the filter popover moved out of `FilterPanel.tsx`),
+  `ColumnChooser.tsx` as a "Columns · N" popover, and options that wrap their code under the name. First try at
+  "Name (code)" with visually hidden brackets gave "( analytical_chemistry )" in Chromium's accessible name (it pads
+  absolutely placed spans with spaces); each checkbox now carries `aria-label` "Name (code)" and shows the code once.
+  Final: `npm test` 689 passed; `npm run typecheck` exit 0; `npm run e2e` 236 passed (2.9 min).
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 - run_status: audit-ready (phases 0 to 2); browser check of AC-13 recorded below.
