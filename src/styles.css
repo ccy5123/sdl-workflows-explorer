@@ -413,6 +413,17 @@ main:focus-visible {
   gap: 10px 24px;
 }
 
+/* Data line and, under it, the visitor count (SPEC-VISIT-001). */
+.footer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.footer-visitors {
+  font-variant-numeric: tabular-nums;
+}
+
 .footer-links {
   display: flex;
   flex-wrap: wrap;

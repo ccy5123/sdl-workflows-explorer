@@ -208,6 +208,7 @@ test("release 1.1.0: About sections in order, timing and human-intervention text
     "Limits",
     "Full text",
     "Workflow builder",
+    "Visitor count", // SPEC-VISIT-001 REQ-009
   ]);
   const text = await ownText(page);
   for (const phrase of [

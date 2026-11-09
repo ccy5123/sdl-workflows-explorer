@@ -1,9 +1,11 @@
 // About the data: a summary of the release's data card and its full text (SPEC-SITE-001 REQ-005, REQ-006), and what
-// the workflow builder's outputs show (SPEC-SIM-001 REQ-021).
+// the workflow builder's outputs show (SPEC-SIM-001 REQ-021), and what the footer's visitor count keeps (SPEC-VISIT-001
+// REQ-009).
 import { HowItWorks } from "../components/HowItWorks";
 import { useReleaseDocs } from "../components/useReleaseDocs";
 import type { IndexJson } from "../data/types";
 import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, PREPRINT, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
+import { VISITOR_ABOUT } from "../lib/visitors";
 
 export function About({ index }: { index: IndexJson }) {
   const { docs, error } = useReleaseDocs();
@@ -48,6 +50,12 @@ export function About({ index }: { index: IndexJson }) {
         <p>
           <a href="#/workflow">Open the workflow builder</a>.
         </p>
+      </section>
+      <section aria-labelledby="about-visitors" className="card panel">
+        <h2 id="about-visitors">{VISITOR_ABOUT.heading}</h2>
+        {VISITOR_ABOUT.paragraphs.map((p) => (
+          <p key={p}>{p}</p>
+        ))}
       </section>
     </article>
   );

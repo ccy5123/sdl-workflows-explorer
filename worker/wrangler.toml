@@ -1,0 +1,17 @@
+# The visitor Worker of the explorer (SPEC-VISIT-001). Deploy with `npx wrangler deploy` from this folder; see README.md.
+name = "sdl-visitors"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+# No request logs: the Worker keeps nothing about a check-in beyond the day's hash (REQ-005).
+[observability]
+enabled = false
+
+[[durable_objects.bindings]]
+name = "COUNTER"
+class_name = "VisitorCounter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["VisitorCounter"]

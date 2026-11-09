@@ -2,12 +2,14 @@
 // REQ-009, REQ-010; SPEC-BENCH-001 REQ-005, REQ-015): home, platform viewer, browser, trends dashboard, taxonomy,
 // benchmark, workflow builder (SPEC-SIM-001 REQ-005), comparison, about (SPEC-SITE-001 REQ-005), or not found. The
 // footer links to the author's site and to the missing-paper issue form (SPEC-CONTRIB-001 REQ-006). The sticky top bar,
-// its version chip and theme toggle, and the compact footer are SPEC-UI-001 REQ-004 and REQ-005.
+// its version chip and theme toggle, and the compact footer are SPEC-UI-001 REQ-004 and REQ-005; the footer's visitor
+// count is SPEC-VISIT-001.
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IssueLink } from "./components/IssueLink";
 import { Loading } from "./components/Loading";
 import { SiteMenu, type NavItem } from "./components/SiteMenu";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { VisitorCount } from "./components/VisitorCount";
 import type { IndexJson } from "./data/types";
 import { PAPER_LINK_TEXT, paperUrl } from "./lib/contribute";
 import { navCurrent, parseRoute, routeTitle } from "./lib/route";
@@ -173,10 +175,13 @@ export function App() {
       {index && (
         <footer className="site-footer">
           <div className="footer-inner">
-            <span>
-              SDL Workflows Explorer · Data version {index.release.version} ·{" "}
-              <a href={`https://doi.org/${index.release.doi}`}>doi:{index.release.doi}</a>
-            </span>
+            <div className="footer-meta">
+              <span>
+                SDL Workflows Explorer · Data version {index.release.version} ·{" "}
+                <a href={`https://doi.org/${index.release.doi}`}>doi:{index.release.doi}</a>
+              </span>
+              <VisitorCount />
+            </div>
             <span className="footer-links">
               <a href={AUTHOR.url}>{AUTHOR.name}</a>
               <a href={`https://doi.org/${PREPRINT.doi}`}>{PREPRINT.linkText}</a>
