@@ -28,3 +28,17 @@
   again → 1/1; another UA → 2/2; Googlebot and Origin `https://example.org` → not counted (2/2). The allowed origin
   gets `Access-Control-Allow-Origin` and `Cache-Control: no-store`; `https://example.org` gets no CORS header; no
   `Set-Cookie`. The local Durable Object SQLite file holds no `127.0.0.1`, `Firefox` or `Googlebot`.
+- `npm run e2e`: 316 passed, 1 failed (`site.spec.ts` About heading list, which now ends with "Visitor count"; the
+  list was extended). Rerun of site, visitors, pages and a11y specs: 102 passed.
+
+## §E.3 Deployment (approved by the researcher through AskUserQuestion, 2026-11-10)
+
+- The researcher signed in through `wrangler login` (scopes account:read, user:read, workers:write,
+  workers_scripts:write). The first `wrangler deploy` registered the `workers.dev` subdomain `sdl-visitors`; the
+  Worker is at `https://sdl-visitors.sdl-visitors.workers.dev` (version 836d5472, preview URLs off). Its TLS
+  certificate came up some minutes after the first deploy.
+- `main` pushed (2cca4e5..cb1908a); Pages workflow run 42647033483 passed (typecheck, Vitest, build, deploy).
+- Live check (built-in browser, `https://ccy5123.github.io/sdl-workflows-explorer/`): footer "1 online · 1 visitor
+  since 9 Nov 2026" on `#/` and `#/about`, which has the "Visitor count" section; `document.cookie` empty,
+  `localStorage` empty. `GET /` on the Worker returned `{"online":1,"visitors":1,"since":"2026-11-09"}`. That first
+  visitor is this check.

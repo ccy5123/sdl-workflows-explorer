@@ -2,7 +2,7 @@
 id: SPEC-VISIT-001
 title: "Visitor count in the site footer"
 version: "0.1.0"
-status: in-progress
+status: completed
 created: 2026-11-10
 updated: 2026-11-10
 author: cyjoe
