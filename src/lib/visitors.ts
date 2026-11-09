@@ -5,7 +5,7 @@
 export const SITE_ORIGIN = "https://ccy5123.github.io";
 
 /** The Worker's check-in route (worker/README.md). */
-export const VISITOR_API = "https://sdl-visitors.ccy5123.workers.dev/hit";
+export const VISITOR_API = "https://sdl-visitors.sdl-visitors.workers.dev/hit";
 
 /** The e2e build calls a reserved host that never resolves; e2e/visitors.spec.ts answers it with page.route. */
 export const E2E_VISITOR_API = "https://visitors.invalid/hit";

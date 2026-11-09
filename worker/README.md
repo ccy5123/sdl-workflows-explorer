@@ -36,12 +36,12 @@ npx wrangler login     # once, in the browser, with the Cloudflare account
 npx wrangler deploy
 ```
 
-The first deploy asks for a `workers.dev` subdomain. The Worker's URL is then
-`https://sdl-visitors.<subdomain>.workers.dev`; `VISITOR_API` in `src/lib/visitors.ts` must point at its `/hit`
-route. After changing `VISITOR_API`, run the Pages workflow to rebuild the site.
+The account's `workers.dev` subdomain is `sdl-visitors` (registered by the first deploy on 2026-11-09), so the
+Worker is at `https://sdl-visitors.sdl-visitors.workers.dev`. `VISITOR_API` in `src/lib/visitors.ts` points at its
+`/hit` route; after changing it, run the Pages workflow to rebuild the site.
 
 Check the live counts:
 
 ```bash
-curl -s https://sdl-visitors.<subdomain>.workers.dev/
+curl -s https://sdl-visitors.sdl-visitors.workers.dev/
 ```

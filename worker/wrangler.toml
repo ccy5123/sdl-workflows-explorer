@@ -3,6 +3,7 @@ name = "sdl-visitors"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 workers_dev = true
+preview_urls = false
 
 # No request logs: the Worker keeps nothing about a check-in beyond the day's hash (REQ-005).
 [observability]
