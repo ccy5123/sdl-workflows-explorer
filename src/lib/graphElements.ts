@@ -11,6 +11,23 @@ export function boundaryId(platform: Pick<PlatformGraph, "platform_id">): string
   return `boundary:${platform.platform_id}`;
 }
 
+/** Id of the compound node around every module, on and off the platform (the solid frame). */
+export function frameId(platform: Pick<PlatformGraph, "platform_id">): string {
+  return `frame:${platform.platform_id}`;
+}
+
+/**
+ * Caption under the solid frame: what the dashed box and the space outside it mean. Worded as the Modules table's
+ * note on "Part of the platform" (release data_dictionary.csv, module.on_platform).
+ */
+export function frameCaption(platform: Pick<PlatformGraph, "modules">): string {
+  const on = platform.modules.filter((m) => m.on_platform).length;
+  const off = platform.modules.length - on;
+  if (on === 0) return "None of these modules is part of the platform: all are equipment outside it that the loop uses.";
+  if (off === 0) return "Dashed box: the platform. Every module here is part of it.";
+  return "Dashed box: the platform. Modules outside it are equipment the loop uses that is not part of the platform.";
+}
+
 /** Node label size and wrap width (SPEC-UI-001 REQ-018); the caption layer of the Graph reads the same values. */
 export const LABEL_FONT_SIZE = 13;
 export const LABEL_MAX_WIDTH = 150;
@@ -38,13 +55,21 @@ export function captionReserve(name: string): string {
 
 // @MX:ANCHOR: [AUTO] element contract read by the Graph component, the unit tests and the e2e tests via window.__cy
 // @MX:REASON: class names (boundary, inferred, uncertain, mode-*) and data fields are matched by selectors elsewhere
-export function buildElements(platform: PlatformGraph): ElementDefinition[] {
+/**
+ * With `frame`, a solid compound node (class `frame`) holds every module and the dashed boundary, and carries
+ * frameCaption as its label; the force-laid-out graph uses it.
+ */
+export function buildElements(platform: PlatformGraph, options: { frame?: boolean } = {}): ElementDefinition[] {
   const elements: ElementDefinition[] = [];
   const parent = boundaryId(platform);
+  const outer = options.frame ? frameId(platform) : undefined;
+  if (outer) {
+    elements.push({ group: "nodes", data: { id: outer, label: frameCaption(platform) }, classes: "frame" });
+  }
   if (platform.modules.some((m) => m.on_platform)) {
     elements.push({
       group: "nodes",
-      data: { id: parent, label: `Platform: ${platform.name ?? platform.platform_id}` },
+      data: { id: parent, label: `Platform: ${platform.name ?? platform.platform_id}`, parent: outer },
       classes: "boundary",
     });
   }
@@ -60,7 +85,7 @@ export function buildElements(platform: PlatformGraph): ElementDefinition[] {
         label: room.length ? [type, ...room].join("\n") + LABEL_END : type,
         code: m.module_type,
         colour: groupOf(m.module_type).colour,
-        parent: m.on_platform ? parent : undefined,
+        parent: m.on_platform ? parent : outer,
       },
       classes: "module",
     });
@@ -99,7 +124,7 @@ const GRAPH_FONT = 'Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-
  */
 export function buildStylesheet(
   theme: Theme = "light",
-  options: { reducedMotion?: boolean; labelsBeside?: boolean; levelEdgeLabels?: boolean } = {},
+  options: { reducedMotion?: boolean; labelsBeside?: boolean; levelEdgeLabels?: boolean; labelBackdrop?: boolean } = {},
 ): StylesheetJson {
   const t = SITE_TOKENS[theme];
   // Cytoscape reads a bare transition-duration number as milliseconds.
@@ -161,12 +186,54 @@ export function buildStylesheet(
         ...fade,
       },
     },
+    // The solid frame around every module: a thin line, no fill, its caption below in the muted colour. It takes no
+    // pointer events, so a press on it pans the graph as the background does.
+    {
+      selector: "node.frame",
+      style: {
+        // Set, although drawn transparent: the node rule maps the fill to data(colour), which the frame has not got.
+        "background-color": t["--card"],
+        "background-opacity": 0,
+        "border-width": 1.5,
+        "border-style": "solid",
+        "border-color": t["--muted"],
+        padding: "12px",
+        "text-valign": "bottom",
+        "text-halign": "center",
+        "text-margin-y": 8,
+        "text-max-width": "440px",
+        "font-size": 13,
+        "font-weight": "normal",
+        color: t["--muted"],
+        events: "no",
+      },
+    },
     ...(options.labelsBeside
       ? [
           {
             selector: "node.module",
             style: { "text-valign": "center", "text-halign": "right", "text-justification": "left", "text-margin-x": 6, "text-margin-y": 0 },
           } as const,
+        ]
+      : []),
+    // Module labels over a backdrop of the graph's background, so an edge or edge label passing behind stays out of
+    // the text (force layouts, forceLayout.ts).
+    ...(options.labelBackdrop
+      ? [
+          {
+            selector: "node.module",
+            style: {
+              "text-background-color": t["--card"],
+              "text-background-opacity": 0.88,
+              "text-background-padding": "3px",
+              "text-background-shape": "roundrectangle",
+            },
+          } as const,
+          // The platform's name runs across its box rather than down a narrow column above it.
+          { selector: "node.boundary", style: { "text-max-width": "360px" } } as const,
+          // Edges run at any angle: level labels read more easily, except on a bundle of parallel edges.
+          { selector: "edge", style: { "text-rotation": "none" } } as const,
+          { selector: "edge.bundled", style: { "text-rotation": "autorotate" } } as const,
         ]
       : []),
     { selector: "edge.mode-data_transfer", style: { width: 1 } },

@@ -142,10 +142,13 @@ const bundleClashes = (page: Page, key: "__cy" | "__wfCy") =>
   }, key);
 
 test("UI AC-48: on Kim2026/P1 the labels of parallel edges stay off the module labels", async ({ page }) => {
+  // Four graphs, each laid out by a force simulation that animates before it rests.
+  test.setTimeout(180_000);
   for (const width of [1440, 375]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/#/platform/Kim2026/P1");
-    await page.waitForFunction(() => (window as Win).__cy !== undefined);
+    // Measured once the force layout has come to rest (src/lib/forceLayout.ts).
+    await page.waitForFunction(() => (window as Win).__cy?.scratch("_forceSettled") === true, null, { timeout: 60_000 });
     const viewer = await bundleClashes(page, "__cy");
     expect(viewer.bundled, `${width} px`).toBeGreaterThan(0);
     expect(viewer.out, `viewer at ${width} px`).toEqual([]);

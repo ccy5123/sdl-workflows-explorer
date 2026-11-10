@@ -6,6 +6,7 @@ import cytoscape, { type Core, type ElementDefinition, type StylesheetJson } fro
 import dagre from "cytoscape-dagre";
 import { Maximize, Shapes, ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useEffect, useRef, type MutableRefObject, type RefObject } from "react";
+import { CENTRE_FIT } from "../lib/forceLayout";
 import { buildStylesheet } from "../lib/graphElements";
 import { captionBox, centreOn, graphFits, minimapFrame, type CaptionBox, type Point } from "../lib/graphOverlay";
 import type { Theme } from "../lib/siteTokens";
@@ -80,10 +81,18 @@ export function layoutOf(cy: Core, rankDir: RankDir): cytoscape.LayoutOptions {
 /** Options of a graph's look: `levelEdgeLabels` keeps edge labels horizontal in the top-to-bottom layout. */
 export interface LookOptions {
   levelEdgeLabels?: boolean;
+  /** Label placement at every width; the graph is not laid out again when the window crosses the phone breakpoint. */
+  fixedDir?: RankDir;
 }
 
 export const stylesheet = (theme: Theme, reducedMotion: boolean, rankDir: RankDir, options: LookOptions = {}): StylesheetJson =>
-  buildStylesheet(theme, { reducedMotion, labelsBeside: rankDir === "TB", levelEdgeLabels: rankDir === "TB" && !!options.levelEdgeLabels });
+  buildStylesheet(theme, {
+    reducedMotion,
+    labelsBeside: rankDir === "TB",
+    levelEdgeLabels: rankDir === "TB" && !!options.levelEdgeLabels,
+    // A force layout runs edges in every direction, some under a label: the label gets a backdrop.
+    labelBackdrop: !!options.fixedDir,
+  });
 
 /** A Cytoscape instance in `container`, laid out in `rankDir`, read-only to drags. */
 export function createGraph(container: HTMLElement, elements: ElementDefinition[], style: StylesheetJson, rankDir: RankDir): Core {
@@ -111,21 +120,24 @@ export function useGraphLook(cyRef: MutableRefObject<Core | null>, movedRef: Mut
   const level = !!options.levelEdgeLabels;
   const theme = useTheme();
   const reducedMotion = useMedia(REDUCED_MOTION_QUERY);
-  const rankDir: RankDir = useMedia(PHONE_QUERY) ? "TB" : "LR";
-  const now = useRef({ theme, reducedMotion, rankDir, level });
-  now.current = { theme, reducedMotion, rankDir, level };
+  const phone = useMedia(PHONE_QUERY);
+  // A force-laid-out graph keeps one label placement at every width (`fixedDir`), so it never lays out again here.
+  const rankDir: RankDir = options.fixedDir ?? (phone ? "TB" : "LR");
+  const fixedDir = options.fixedDir;
+  const now = useRef({ theme, reducedMotion, rankDir, level, fixedDir });
+  now.current = { theme, reducedMotion, rankDir, level, fixedDir };
   // The direction the current layout was run with.
   const laidOut = useRef<RankDir>(rankDir);
 
   useEffect(() => {
-    cyRef.current?.style(stylesheet(theme, reducedMotion, laidOut.current, { levelEdgeLabels: level }));
-  }, [cyRef, theme, reducedMotion, level]);
+    cyRef.current?.style(stylesheet(theme, reducedMotion, laidOut.current, { levelEdgeLabels: level, fixedDir }));
+  }, [cyRef, theme, reducedMotion, level, fixedDir]);
 
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy || laidOut.current === rankDir) return;
     laidOut.current = rankDir;
-    cy.style(stylesheet(now.current.theme, now.current.reducedMotion, rankDir, { levelEdgeLabels: now.current.level }));
+    cy.style(stylesheet(now.current.theme, now.current.reducedMotion, rankDir, { levelEdgeLabels: now.current.level, fixedDir: now.current.fixedDir }));
     cy.resize();
     cy.layout(layoutOf(cy, rankDir)).run();
     readableFit(cy);
@@ -134,8 +146,8 @@ export function useGraphLook(cyRef: MutableRefObject<Core | null>, movedRef: Mut
 
   const start = useCallback(() => {
     laidOut.current = now.current.rankDir;
-    const { theme: t, reducedMotion: still, level: flat } = now.current;
-    return { style: stylesheet(t, still, laidOut.current, { levelEdgeLabels: flat }), rankDir: laidOut.current };
+    const { theme: t, reducedMotion: still, level: flat, fixedDir: fixed } = now.current;
+    return { style: stylesheet(t, still, laidOut.current, { levelEdgeLabels: flat, fixedDir: fixed }), rankDir: laidOut.current };
   }, []);
   const relayout = useCallback((cy: Core) => {
     cy.layout(layoutOf(cy, laidOut.current)).run();
@@ -159,9 +171,14 @@ function toolbarInset(cy: Core): number {
   return t.top > b.top + b.height / 2 ? Math.max(0, b.bottom - t.top) : 0;
 }
 
-export function readableFit(cy: Core) {
+/** Fits the graph by the readable rule; with `duration` (ms) the view glides there instead of jumping. */
+export function readableFit(cy: Core, duration = 0) {
   const bb = cy.elements().boundingBox();
-  cy.viewport(readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, cy.width(), cy.height(), PADDING, toolbarInset(cy)));
+  const centre = cy.scratch(CENTRE_FIT) === true;
+  const view = readableViewport({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h }, cy.width(), cy.height(), PADDING, toolbarInset(cy), centre);
+  cy.stop(true);
+  if (duration > 0) cy.animate({ zoom: view.zoom, pan: view.pan }, { duration, easing: "ease-in-out-cubic" });
+  else cy.viewport(view);
 }
 
 function zoomBy(cy: Core, factor: number) {
@@ -215,7 +232,8 @@ export function followView(cy: Core, movedRef: MutableRefObject<boolean>, setOve
       if (!cy.destroyed()) setOverlay(measureOverlay(cy));
     });
   };
-  cy.on("viewport resize layoutstop add remove data", schedule);
+  // `position`: a force layout moves the modules after the first fit (forceLayout.ts).
+  cy.on("viewport resize layoutstop add remove data position", schedule);
   schedule();
   return () => cancelAnimationFrame(frame);
 }

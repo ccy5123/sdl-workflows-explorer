@@ -7,13 +7,19 @@ import type { PlatformFile, PlatformGraph } from "../src/data/types";
 
 type Win = Window & { __cy?: Core };
 
+// The force layout animates for several seconds before it rests, longer while other tests share the machine.
+test.describe.configure({ timeout: 120_000 });
+
 const REF = "#/platform/Aand2024/P1";
 
 async function waitForGraph(page: Page) {
+  // The force layout (src/lib/forceLayout.ts) moves the modules until it comes to rest; measure the graph after that,
+  // and after two frames, so the caption layer has followed the last move.
   await page.waitForFunction(() => {
     const cy = (window as Win).__cy;
-    return !!cy && cy.nodes(".module").length > 0;
-  });
+    return !!cy && cy.nodes(".module").length > 0 && cy.scratch("_forceSettled") === true;
+  }, null, { timeout: 60_000 });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 /**
@@ -184,8 +190,9 @@ test("AC-13: off-platform modules, dashed inferred edges, ? markers and the lege
       return parent.length ? parent.first().id() : null;
     });
   }, p.modules.map((m) => m.module_id));
+  // On-platform modules sit in the dashed platform box; the others in the solid frame around every module.
   p.modules.forEach((m, i) => {
-    expect(parents[i], m.module_id).toBe(m.on_platform ? `boundary:${p.platform_id}` : null);
+    expect(parents[i], m.module_id).toBe(m.on_platform ? `boundary:${p.platform_id}` : `frame:${p.platform_id}`);
   });
 
   const inferred = p.connections.find((c) => !c.stated)!;
@@ -537,13 +544,14 @@ test("UI AC-24: a zoom the reader set is kept when the sheet opens", async ({ pa
   expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBeCloseTo(zoom, 6);
 });
 
-test("UI AC-24: the largest graph keeps the readable zoom of 1 when the sheet opens", async ({ page }) => {
+test("UI AC-24: the largest graph keeps a zoom of at least 0.75 when the sheet opens", async ({ page }) => {
+  // The force-laid-out graph may fit down to 0.75 so its two boxes show whole (src/lib/viewport.ts CLUSTER_READABLE_ZOOM).
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/${LARGE}`);
   await waitForGraph(page);
-  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBe(1);
+  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBeGreaterThanOrEqual(0.75);
   await page.locator('.step[data-step-order="1"]').click();
   await expect(sheet(page)).toBeVisible();
   await expect.poll(() => page.evaluate(() => (window as Win).__cy!.width() === document.querySelector(".graph")!.clientWidth)).toBe(true);
-  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBe(1);
+  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBeGreaterThanOrEqual(0.75);
 });

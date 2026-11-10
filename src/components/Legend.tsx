@@ -52,6 +52,14 @@ export function Legend({ id, hidden }: { id: string; hidden: boolean }) {
         <li>
           <span className="marker">?</span> Uncertain connection or step
         </li>
+        <li>
+          <span className="box dashed" aria-hidden="true" />
+          Dashed box: modules that are part of the platform
+        </li>
+        <li>
+          <span className="box" aria-hidden="true" />
+          Solid box: every module of the loop, including equipment outside the platform
+        </li>
       </ul>
     </section>
   );

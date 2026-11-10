@@ -8,6 +8,9 @@ import type { PlatformFile, PlatformGraph } from "../src/data/types";
 
 type Win = Window & { __cy?: Core };
 
+// The force layout animates for several seconds before it rests, longer while other tests share the machine.
+test.describe.configure({ timeout: 120_000 });
+
 const AAND = "Aand2024/P1";
 const KIM = "Kim2026/P1";
 
@@ -18,10 +21,13 @@ function platform(id: string): PlatformGraph {
 }
 
 async function waitForGraph(page: Page) {
+  // The force layout (src/lib/forceLayout.ts) moves the modules until it comes to rest; measure the graph after that,
+  // and after two frames, so the caption layer has followed the last move.
   await page.waitForFunction(() => {
     const cy = (window as Win).__cy;
-    return !!cy && cy.nodes(".module").length > 0;
-  });
+    return !!cy && cy.nodes(".module").length > 0 && cy.scratch("_forceSettled") === true;
+  }, null, { timeout: 60_000 });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 /** Clicks a graph node where it is drawn (a real mouse click; see e2e/viewer.spec.ts tapElement). */
@@ -153,34 +159,27 @@ const layout = (page: Page) =>
     return { pos, x1: bb.x1, x2: bb.x2, width: cy.width(), box: document.querySelector(".graph")!.clientWidth, zoom: cy.zoom() };
   });
 
-const CHAIN = [`${AAND}/M3`, `${AAND}/M2`, `${AAND}/M4`];
+/** Whether every module label sits under its dot (the force layout keeps one placement at every width). */
+const labelsUnder = (page: Page) =>
+  page.evaluate(() => (window as Win).__cy!.nodes(".module").every((n) => n.style("text-valign") === "bottom"));
 
-test("UI AC-36: at 375 px the graph runs top to bottom and its whole width fits at zoom 1 or more", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto(`/#/platform/${AAND}`);
-  await waitForGraph(page);
-  const l = await layout(page);
-  const ys = CHAIN.map((id) => l.pos[id]!.y);
-  expect(ys[0]).toBeLessThan(ys[1]!);
-  expect(ys[1]).toBeLessThan(ys[2]!);
-  expect(l.zoom).toBeGreaterThanOrEqual(1);
-  expect(l.width).toBe(l.box);
-  expect(l.x1).toBeGreaterThanOrEqual(0);
-  expect(l.x2).toBeLessThanOrEqual(l.width);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
-});
+/** The whole graph, both boxes and the frame's caption included, lies inside the canvas. */
+const wholeInView = (l: Awaited<ReturnType<typeof layout>>) => l.width === l.box && l.x1 >= 0 && l.x2 <= l.width;
 
-test("UI AC-36: at 1440 px the graph runs left to right", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`/#/platform/${AAND}`);
-  await waitForGraph(page);
-  const l = await layout(page);
-  const xs = CHAIN.map((id) => l.pos[id]!.x);
-  expect(xs[0]).toBeLessThan(xs[1]!);
-  expect(xs[1]).toBeLessThan(xs[2]!);
-});
+for (const width of [375, 1440]) {
+  test(`UI AC-36: at ${width} px the whole graph is in view at zoom 0.75 or more, labels under the dots`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width < 800 ? 812 : 900 });
+    await page.goto(`/#/platform/${AAND}`);
+    await waitForGraph(page);
+    const l = await layout(page);
+    expect(wholeInView(l)).toBe(true);
+    expect(l.zoom).toBeGreaterThanOrEqual(0.75);
+    expect(await labelsUnder(page)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  });
+}
 
-test("UI AC-36: narrowing the window from 1440 to 375 px lays the graph out top to bottom and refits it", async ({ page }) => {
+test("UI AC-36: narrowing the window from 1440 to 375 px refits the graph", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/#/platform/${AAND}`);
   await waitForGraph(page);
@@ -188,10 +187,71 @@ test("UI AC-36: narrowing the window from 1440 to 375 px lays the graph out top 
   await expect
     .poll(async () => {
       const l = await layout(page);
-      const ys = CHAIN.map((id) => l.pos[id]!.y);
-      return l.width === l.box && ys[0]! < ys[1]! && ys[1]! < ys[2]! && l.zoom >= 1 && l.x1 >= 0 && l.x2 <= l.width;
-    })
+      return wholeInView(l) && l.zoom >= 0.75;
+    }, { timeout: 60_000 })
     .toBe(true);
+  expect(await labelsUnder(page)).toBe(true);
+});
+
+test("Force layout: the first layout is the start with the fewest edge crossings", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const id of [KIM, AAND]) {
+    await page.goto(`/#/platform/${id}`);
+    await waitForGraph(page);
+    const starts = await page.evaluate(() => (window as Win).__cy!.scratch("_forceStarts") as { chosen: number; crossings: number[] });
+    expect(starts.crossings.length, id).toBe(3);
+    expect(starts.crossings[starts.chosen], id).toBe(Math.min(...starts.crossings));
+  }
+});
+
+test("Force layout: the dashed box holds the platform's modules and the solid frame holds every module", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/#/platform/${KIM}`);
+  await waitForGraph(page);
+  const check = await page.evaluate(() => {
+    const cy = (window as Win).__cy!;
+    type Box = { x1: number; x2: number; y1: number; y2: number };
+    const within = (a: Box, b: Box) => a.x1 >= b.x1 && a.x2 <= b.x2 && a.y1 >= b.y1 && a.y2 <= b.y2;
+    const meet = (a: Box, b: Box) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+    const frame = cy.nodes(".frame").boundingBox({ includeLabels: false, includeOverlays: false });
+    const dashed = cy.nodes(".boundary").boundingBox({ includeLabels: false, includeOverlays: false });
+    const modules = cy.nodes(".module").toArray() as NodeSingular[];
+    const label = (n: NodeSingular) => n.boundingBox({ includeLabels: true, includeOverlays: false });
+    return {
+      outsideFrame: modules.filter((n) => !within(label(n), frame)).map((n) => n.id()),
+      onOutsideDashed: modules.filter((n) => n.parent().is(".boundary") && !within(label(n), dashed)).map((n) => n.id()),
+      offInDashed: modules.filter((n) => !n.parent().is(".boundary") && meet(label(n), dashed)).map((n) => n.id()),
+      caption: String(cy.nodes(".frame").data("label")),
+    };
+  });
+  expect(check.outsideFrame).toEqual([]);
+  expect(check.onOutsideDashed).toEqual([]);
+  expect(check.offInDashed).toEqual([]);
+  expect(check.caption).toMatch(/^Dashed box: the platform\. Modules outside it are equipment/);
+});
+
+test("Force layout: a dragged module follows the pointer and is not selected", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/#/platform/${AAND}`);
+  await waitForGraph(page);
+  const id = `${AAND}/M1`;
+  const at = () =>
+    page.evaluate((i) => {
+      const cy = (window as Win).__cy!;
+      const p = cy.getElementById(i).renderedPosition();
+      const box = cy.container()!.getBoundingClientRect();
+      return { x: box.left + p.x, y: box.top + p.y };
+    }, id);
+  await page.locator(".graph").scrollIntoViewIfNeeded();
+  const start = await at();
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 60, start.y + 40, { steps: 8 });
+  const held = await at();
+  expect(Math.hypot(held.x - (start.x + 60), held.y - (start.y + 40))).toBeLessThan(6);
+  await page.mouse.up();
+  await page.waitForFunction(() => (window as Win).__cy!.scratch("_forceSettled") === true, null, { timeout: 60_000 });
+  await expect(sheet(page)).toHaveCount(0);
 });
 
 const panX = (page: Page) => page.evaluate(() => (window as Win).__cy!.pan().x);
@@ -200,7 +260,9 @@ test("UI AC-37: a graph that does not fit shows a minimap; clicking it pans the 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/#/platform/${KIM}`);
   await waitForGraph(page);
-  expect(await page.evaluate(() => (window as Win).__cy!.zoom())).toBe(1);
+  // The fitted graph is in view whole; zoomed in twice it no longer fits.
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await page.getByRole("button", { name: "Zoom in" }).click();
   const minimap = page.locator(".graph-minimap");
   await expect(minimap).toBeVisible();
   await expect(minimap).toHaveAttribute("aria-hidden", "true");

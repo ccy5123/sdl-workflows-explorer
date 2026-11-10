@@ -2045,6 +2045,21 @@ button {
   border-top-style: dashed;
 }
 
+/* Legend markers of the graph's two boxes: the platform (dashed) and every module (solid). */
+.box {
+  display: inline-block;
+  width: 1.1rem;
+  height: 0.8rem;
+  border: 1.5px solid var(--muted);
+  border-radius: 2px;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.box.dashed {
+  border-style: dashed;
+}
+
 /* Empty state of the evidence sheet: shown under the graph while nothing is selected. */
 .evidence-empty {
   display: flex;

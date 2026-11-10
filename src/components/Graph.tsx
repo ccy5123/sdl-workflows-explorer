@@ -1,10 +1,13 @@
-// Module graph: Cytoscape with the dagre layout, left to right (REQ-006 to REQ-010, REQ-013), full width with a
-// floating toolbar (fit, zoom in and out, legend) and spacing that keeps labels apart (SPEC-UI-001 REQ-018).
-// Below 800 px it runs top to bottom (UI AC-36). An HTML layer over the canvas draws each module's name in the paper
-// as a caption under its bold type label (UI AC-35), and a minimap shows a graph that does not fit (UI AC-37).
+// Module graph (REQ-006 to REQ-010, REQ-013): Cytoscape, full width with a floating toolbar (fit, zoom in and out,
+// legend; SPEC-UI-001 REQ-018). A force simulation (forceLayout.ts) lays the modules out: they drift into place and
+// come to rest in a compact cluster, can be dragged, and keep their labels under the dot at every width. A dashed box
+// holds the platform's modules and a solid frame holds every module, captioned with what the dashed box means. An HTML
+// layer over the canvas draws each module's name in the paper as a caption under its bold type label (UI AC-35), and a
+// minimap shows a graph that does not fit (UI AC-37).
 import type { Core } from "cytoscape";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PlatformGraph } from "../data/types";
+import { startForceLayout, type ForceController } from "../lib/forceLayout";
 import { buildElements } from "../lib/graphElements";
 import { highlightSet, type Selection } from "../lib/steps";
 import {
@@ -13,14 +16,22 @@ import {
   GraphCaptions,
   GraphMinimapFor,
   GraphToolbar,
+  layoutOf,
   NO_OVERLAY,
   PADDING,
   readableFit,
+  REDUCED_MOTION_QUERY,
   useGraphLook,
   useRefitOnResize,
   type Overlay,
 } from "./graphCanvas";
 import { Legend } from "./Legend";
+import { useMedia } from "./useMedia";
+
+/** Duration of the glide to the final fit once the force layout has settled. */
+const SETTLE_FIT_MS = 700;
+/** The graph's look options: labels under the dot at every width, over a backdrop (graphCanvas stylesheet). */
+const LOOK = { fixedDir: "LR" } as const;
 
 /** Graph elements of the selection: the module or connection, or the modules of a step. */
 function selectedElements(cy: Core, platform: PlatformGraph, selection: Selection) {
@@ -55,7 +66,12 @@ export function Graph({ platform, selection, preview = null, onSelect }: Props) 
   const [overlay, setOverlay] = useState<Overlay>(NO_OVERLAY);
   // True once the reader zooms or pans; a fit (on load or from "Fit to view") clears it (SPEC-UI-001 REQ-024).
   const movedRef = useRef(false);
-  const { rankDir, start } = useGraphLook(cyRef, movedRef);
+  // Labels stay under the dot at every width: the force layout has no direction to turn at the phone breakpoint.
+  const { start } = useGraphLook(cyRef, movedRef, LOOK);
+  const reducedMotion = useMedia(REDUCED_MOTION_QUERY);
+  const stillRef = useRef(reducedMotion);
+  stillRef.current = reducedMotion;
+  const forceRef = useRef<ForceController | null>(null);
 
   // Escape closes the open legend; focus inside it goes back to its toolbar button (SPEC-UI-001 UI AC-50).
   useEffect(() => {
@@ -73,10 +89,21 @@ export function Graph({ platform, selection, preview = null, onSelect }: Props) 
   useEffect(() => {
     if (!container.current) return;
     const look = start();
-    const cy = createGraph(container.current, buildElements(platform), look.style, look.rankDir);
+    const cy = createGraph(container.current, buildElements(platform, { frame: true }), look.style, look.rankDir);
     cy.on("tap", "node.module", (e) => onSelectRef.current({ kind: "module", id: e.target.id() }));
     cy.on("tap", "node.boundary", () => onSelectRef.current({ kind: "platform", id: platform.platform_id }));
     cy.on("tap", "edge", (e) => onSelectRef.current({ kind: "connection", id: e.target.id() }));
+    cy.autoungrabify(false);
+    forceRef.current = startForceLayout(cy, {
+      reducedMotion: stillRef.current,
+      width: cy.width(),
+      height: cy.height(),
+      // Once the modules have nearly come to rest the view glides to the final fit, unless the reader has moved it.
+      onSettled: () => {
+        if (!movedRef.current && !cy.destroyed()) readableFit(cy, SETTLE_FIT_MS);
+      },
+      seed: (wide) => cy.layout(layoutOf(cy, wide ? "LR" : "TB")).run(),
+    });
     readableFit(cy);
     movedRef.current = false;
     const stopFollowing = followView(cy, movedRef, setOverlay);
@@ -84,6 +111,8 @@ export function Graph({ platform, selection, preview = null, onSelect }: Props) 
     // Test hook: only the `vite build --mode e2e` bundle exposes the instance (AC-14 checks dist/ has none).
     if (import.meta.env.MODE === "e2e") window.__cy = cy;
     return () => {
+      forceRef.current?.stop();
+      forceRef.current = null;
       stopFollowing();
       if (import.meta.env.MODE === "e2e") delete window.__cy;
       cyRef.current = null;
@@ -96,6 +125,7 @@ export function Graph({ platform, selection, preview = null, onSelect }: Props) 
   // panned into view.
   const afterResize = useRef<(cy: Core, width: number) => void>(() => undefined);
   afterResize.current = (cy: Core, width: number) => {
+    forceRef.current?.setBox(width, cy.height());
     const picked = selectedElements(cy, platform, selection);
     if (picked.nonempty()) {
       const bb = picked.renderedBoundingBox();
@@ -142,7 +172,7 @@ export function Graph({ platform, selection, preview = null, onSelect }: Props) 
       <GraphCaptions
         items={captions}
         overlay={overlay}
-        beside={rankDir === "TB"}
+        beside={false}
         dimmed={(id) => keep !== null && !keep.has(id)}
       />
       <GraphMinimapFor overlay={overlay} cyRef={cyRef} movedRef={movedRef} />
