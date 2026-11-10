@@ -377,15 +377,17 @@ test("Follow-up (SPEC-UI-001 REQ-025): at desktop width the filter bar sits abov
   expect(await hash(page)).toBe("#/browse?view=platforms&field=catalysis");
 });
 
-test("Follow-up (SPEC-UI-001 REQ-025): at phone width the filter bar wraps and the count stays on the first screen", async ({ page }) => {
+test("Follow-up (SPEC-UI-001 REQ-025): at phone width the filters fold into a tray and the count stays on the first screen", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto("/#/browse?field=catalysis&im=mixed");
-  await expect(filterButton(page, "Field tag")).toHaveText("Field tag · 1");
-  await expect(filterButton(page, "Integration mode")).toHaveText("Integration mode · 1");
-  await expect(group(page, "Field tag")).toBeHidden();
+  const tray = page.locator(".filter-panel").getByRole("button", { name: /^Filters/ });
+  await expect(tray).toContainText("2");
+  await expect(group(page, "Field tag")).toHaveCount(0);
   const b = (await countLine(page).boundingBox())!;
   expect(b.y + b.height).toBeLessThanOrEqual(800);
-  await openFilter(page, "Field tag");
+  await tray.click();
+  const sheet = page.getByRole("dialog", { name: "Filters" });
+  await sheet.getByRole("button", { name: /^Field tag · 1/ }).click();
   await expect(group(page, "Field tag")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });

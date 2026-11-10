@@ -3510,3 +3510,1212 @@ section.wf-step {
 .wf-sim-results .table-scroll + .table-scroll {
   margin-top: 1rem;
 }
+
+/* Phone layouts (below 800 px): the filter tray and the sheets, browser rows as cards, 16 px inputs (iOS does not zoom
+   on focus), 44 px tap targets and no text under 13 px. The desktop rules above stay as they are. */
+.card-sort {
+  display: none;
+}
+
+.count-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sheet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(14, 17, 22, 0.42);
+}
+
+.sheet {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  animation: sheet-in-bottom var(--dur) ease-out;
+}
+
+.sheet-full {
+  top: 0;
+  max-height: none;
+  border-radius: 0;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+}
+
+.sheet-head .btn {
+  min-height: 44px;
+}
+
+.sheet-head .btn-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 16px 12px;
+}
+
+.sheet-full .sheet-body {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+}
+
+.sheet-foot {
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+
+.sheet-foot .btn {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.tray-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font-size: 16px;
+  text-align: left;
+}
+
+.tray-row .tray-name {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tray-row .tray-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tray-row[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.tray-years .filter-group.years {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.tray-years .filter-group.years legend {
+  flex: 1;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tray-years .filter-group.years input {
+  width: 92px;
+  height: 44px;
+}
+
+.tray-options {
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tray-options .filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.tray-options .filter-group > legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tray-options .filter-option {
+  min-height: 44px;
+  align-items: center;
+  font-size: 16px;
+}
+
+.tray-options .filter-option input {
+  width: 20px;
+  height: 20px;
+}
+
+.tray-options .filter-group.match {
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.tray-options .filter-group.match > legend {
+  position: static;
+  width: auto;
+  height: auto;
+  clip-path: none;
+  float: left;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tray-options .filter-group.match label {
+  min-height: 44px;
+  align-items: center;
+  font-size: 16px;
+}
+
+.note-fold summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 799.98px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .version-chip,
+  .chip,
+  .stat-note,
+  .hero-chips .chip,
+  .eyebrow,
+  .fp-data-links,
+  .fp-module-name,
+  .fp-legend,
+  .featured-steps-title,
+  .fp-step,
+  .fp-step-n,
+  .featured-evidence,
+  .home-caption,
+  .view-card-preview,
+  .vc-caption,
+  .vc-bar-row,
+  .vc-spark-axis,
+  .vc-flow,
+  .platform-row-id,
+  .platform-chips .chip,
+  .legend .legend-types li,
+  .legend code,
+  .legend .note,
+  .step-order,
+  .filter-option code,
+  .bench-task-code,
+  .taxo-chip,
+  .home pre,
+  .about pre {
+    font-size: 13px;
+  }
+
+  .result-count,
+  .table-note {
+    font-size: 14px;
+  }
+
+  /* Filter bar: search and the tray button share one row. */
+  .filter-panel-phone .filter-bar {
+    flex-wrap: nowrap;
+  }
+
+  .filter-panel-phone .filter.search {
+    max-width: none;
+  }
+
+  .filter-panel-phone .filter.search input {
+    height: 44px;
+  }
+
+  .filter-tray-button {
+    flex: none;
+    min-height: 44px;
+    gap: 6px;
+  }
+
+  .filter-tray-button.active {
+    border-color: var(--accent);
+    background: var(--highlight);
+    color: var(--accent-text);
+  }
+
+  .pill {
+    min-height: 36px;
+    font-size: 14px;
+  }
+
+  .pill-remove {
+    width: 32px;
+    height: 32px;
+  }
+
+  .table-switch button,
+  .segmented label {
+    min-height: 40px;
+    font-size: 15px;
+  }
+
+  .table-switch {
+    display: flex;
+  }
+
+  .table-switch button {
+    flex: 1;
+  }
+
+  /* Browser rows as cards: the first line holds the id (and the Select box) with the year at its end, then the title,
+     a muted line, and the other columns as labelled items. The header row stays for screen readers only. */
+  .card-sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 100%;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .card-sort select {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    color: var(--text);
+  }
+
+  .table-tools .btn-sm,
+  .table-tools .filter-button {
+    min-height: 44px;
+  }
+
+  .table-scroll-sticky:has(.card-table) {
+    max-height: none;
+    overflow: visible;
+    border: 0;
+  }
+
+  .table-frame:has(.card-table)::before,
+  .table-frame:has(.card-table)::after {
+    display: none;
+  }
+
+  table.card-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  table.card-table,
+  table.card-table tbody {
+    display: block;
+  }
+
+  table.card-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    margin: 0 0 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--card);
+  }
+
+  table.card-table tbody tr:hover {
+    background: var(--card);
+  }
+
+  table.card-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+    font-size: 15px;
+  }
+
+  table.card-table td.card-head {
+    order: 1;
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+
+  table.card-table td.card-head:has(input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    align-self: center;
+    margin: -11px -10px -11px -11px;
+  }
+
+  table.card-table td.card-head input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin: 11px;
+  }
+
+  table.card-table td.card-aside {
+    order: 2;
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  table.card-table td.card-title {
+    order: 3;
+    flex: 1 1 100%;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  table.card-table td.card-sub {
+    order: 4;
+    flex: 1 1 100%;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  table.card-table td.card-field {
+    order: 5;
+    font-size: 14px;
+  }
+
+  table.card-table td.card-field::before,
+  table.card-table td.card-sub::before {
+    content: attr(data-label) " ";
+    color: var(--muted);
+  }
+
+  table.card-table td.num {
+    text-align: left;
+  }
+
+  table.card-table .truncate {
+    display: inline;
+    max-width: none;
+    white-space: normal;
+  }
+
+  table.card-table .platform-links a {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .compare-button {
+    min-height: 44px;
+  }
+}
+
+.tray-options .filter-option code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Trends on a phone: "Split by" as one select beside its label, the legend in two columns, the count tables with their
+   first column held in place while the counts scroll, and the turned table's value names allowed to wrap. */
+.split-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.split-select select {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font-weight: 400;
+}
+
+table.count-table-turned thead th {
+  min-width: 3.2rem;
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+@media (max-width: 799.98px) {
+  .trends-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    font-size: 14px;
+  }
+
+  .trends-table-details summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  table.count-table {
+    font-size: 14px;
+  }
+
+  table.count-table th[scope="row"] {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--chart-surface);
+    box-shadow: 1px 0 0 var(--table-border);
+  }
+
+  /* Count links: the whole cell is the target. */
+  table.count-table a {
+    display: block;
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* Benchmark on a phone: tables of short numbers (the split table, the label counts, the model names) stay tables, one
+   line per row, instead of the stacked blocks below 800 px; each count link fills a 44 px row. */
+@media (max-width: 800px) {
+  .bench-table.bench-compact {
+    display: table;
+    width: 100%;
+  }
+
+  .bench-table.bench-compact thead {
+    position: static;
+    display: table-header-group;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  .bench-table.bench-compact tbody {
+    display: table-row-group;
+    width: auto;
+  }
+
+  .bench-table.bench-compact tr {
+    display: table-row;
+    width: auto;
+    padding: 0;
+  }
+
+  .bench-table.bench-compact th,
+  .bench-table.bench-compact td {
+    display: table-cell;
+    width: auto;
+    padding: 0 var(--cell-pad-x) 0 0;
+    border-bottom: 1px solid var(--table-border);
+    vertical-align: middle;
+  }
+
+  .bench-table.bench-compact th {
+    padding-bottom: var(--cell-pad-y);
+    color: var(--muted);
+    font-size: 13px;
+    vertical-align: bottom;
+  }
+
+  .bench-table.bench-compact td::before {
+    content: none;
+  }
+
+  /* Counts right-aligned by the shared .num rule; they do not wrap. */
+  .bench-table.bench-compact td.num {
+    white-space: nowrap;
+  }
+
+  .bench-table.bench-compact td:last-child,
+  .bench-table.bench-compact th:last-child {
+    padding-right: 0;
+  }
+
+  .bench-table.bench-compact td {
+    height: 44px;
+  }
+
+  .bench-table.bench-compact td.num a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .bench-items-fold > summary {
+    margin-bottom: 4px;
+  }
+
+  .bench-search input {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .bench-more {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+  }
+
+  .benchmark .bench-control select {
+    min-height: 44px;
+  }
+
+  /* Column names wrap; the task id under one is the widest word of the split table, so on a phone it is read, not
+     shown. */
+  .bench-table.bench-compact th {
+    white-space: normal;
+  }
+
+  .bench-table.bench-compact th .bench-task-name {
+    display: inline;
+  }
+
+  .bench-table.bench-compact th .bench-task-code {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Workflow builder on a phone: each module, step and transfer is a 44 px summary row that opens its fields, and each
+   part folds under its heading (the button holds the part's name and a count). */
+.wf-row-toggle,
+.wf-part button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+}
+
+.wf-row-toggle b {
+  min-width: 1.6em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-row-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.wf-row-detail,
+.wf-part-summary {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.wf-row-toggle svg,
+.wf-part button svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform var(--dur) ease;
+}
+
+.wf-row-toggle[aria-expanded="true"] svg,
+.wf-part button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.wf-part {
+  margin: 0.75rem 0 0.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.wf-part button span:first-child {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+@media (max-width: 799.98px) {
+  .wf-table td[data-label="Module"]::before {
+    content: none;
+  }
+
+  .wf-table tr.wf-folded {
+    padding: 0.15rem 0;
+  }
+
+  .wf-step-head h4 {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .wf-steps .wf-step.wf-folded {
+    padding: 4px 8px 4px 14px;
+  }
+
+  .wf-steps {
+    gap: 8px;
+  }
+
+  .wf-order .btn-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .wf-start .btn,
+  .wf-add .btn,
+  .wf-table .btn {
+    min-height: 44px;
+  }
+
+  .wf-field input,
+  .wf-field select {
+    min-height: 44px;
+  }
+
+  .wf-start .wf-field,
+  .wf-add .wf-field,
+  .wf-step-fields .wf-field {
+    width: 100%;
+  }
+}
+
+/* About on a phone: 16 px body text over the full width (the section cards drop their frame), and the contents list. */
+.about-contents {
+  margin: 0.75rem 0 0;
+}
+
+.about-contents-title {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.about-contents ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-contents .chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+@media (max-width: 799.98px) {
+  .about p {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .about > .card.panel {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .about > .card.panel h2 {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .about details summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Home: the featured platform's modules run top to bottom, the transfer beside the line between them. */
+  .featured-graph {
+    padding: 14px 14px 4px;
+  }
+
+  .fp-control {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .fp-control .fp-module {
+    width: auto;
+  }
+
+  .fp-data-links {
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0 0 0 22px;
+  }
+
+  .fp-data-links span {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .fp-data-links span::before {
+    height: 22px;
+  }
+
+  .fp-data-links span + span {
+    display: none;
+  }
+
+  .fp-chain-scroll {
+    overflow: visible;
+    padding-bottom: 8px;
+  }
+
+  .fp-chain {
+    flex-direction: column;
+    align-items: stretch;
+    width: auto;
+  }
+
+  .fp-chain-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fp-module {
+    width: auto;
+    padding: 10px 12px;
+  }
+
+  .fp-module-type {
+    font-size: 15px;
+  }
+
+  .fp-module-name {
+    display: block;
+    font-size: 13px;
+    -webkit-line-clamp: unset;
+  }
+
+  .fp-link {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    gap: 10px;
+    padding-left: 22px;
+  }
+
+  .fp-link-line {
+    order: -1;
+    width: 0;
+    height: 26px;
+    border-top: 0;
+    border-left: 2px solid var(--accent);
+  }
+
+  .fp-link-inferred .fp-link-line {
+    border-left-style: dashed;
+  }
+
+  .fp-link-mode {
+    font-size: 13px;
+  }
+
+  .fp-step {
+    font-size: 14px;
+  }
+
+  .featured-foot .btn {
+    min-height: 44px;
+  }
+
+  /* Counts: two to a row. */
+  .stat-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat-tile {
+    padding: 12px 14px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+  }
+
+  /* Ways into the data: one row each (icon, name, line, arrow); the previews stay on wider screens. */
+  .view-card {
+    gap: 6px;
+    padding: 14px 40px 14px 14px;
+  }
+
+  .view-card::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    width: 9px;
+    height: 9px;
+    border-top: 2px solid var(--muted);
+    border-right: 2px solid var(--muted);
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  .view-card-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .view-card-preview {
+    display: none;
+  }
+}
+
+/* Platform viewer on a phone: the focus view of the module graph (FocusGraph.tsx), the full graph on the whole screen,
+   and the module and connection tables as cards. */
+.focus-graph {
+  padding: 14px 14px 12px;
+}
+
+.focus-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.focus-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.focus-head .btn {
+  min-height: 44px;
+  gap: 6px;
+}
+
+.focus-chips {
+  display: flex;
+  gap: 8px;
+  margin: 10px -14px 4px;
+  padding: 2px 14px 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.focus-chips .chip {
+  flex: none;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.focus-chips .chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--highlight);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.focus-chip-id {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.focus-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 4px 0;
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  font-family: var(--font-ui);
+}
+
+.focus-svg [role="button"] {
+  cursor: pointer;
+  outline: none;
+}
+
+.focus-svg [role="button"]:focus-visible circle:first-child,
+.focus-svg .focus-edge:focus-visible line:first-child {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.focus-svg .focus-edge:focus-visible line:first-child {
+  stroke-width: 18;
+  stroke-opacity: 0.25;
+}
+
+.focus-name {
+  fill: var(--text);
+  font-size: 14px;
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.focus-name-centre {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.focus-node .off-platform {
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.focus-node .picked {
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+
+.focus-centre circle:nth-child(2):not(.picked):not(.off-platform) {
+  stroke: var(--card);
+  stroke-width: 3;
+}
+
+.focus-node.dimmed,
+.focus-edge.dimmed {
+  opacity: 0.35;
+}
+
+.focus-edge-label rect {
+  fill: var(--card);
+  stroke: var(--line);
+}
+
+.focus-edge-label text {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.focus-none {
+  color: var(--muted);
+}
+
+.focus-list-title {
+  margin: 10px 0 4px;
+  font-size: 15px;
+}
+
+.focus-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.focus-list button {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+}
+
+.focus-list button[aria-pressed="true"] {
+  background: var(--highlight);
+}
+
+.focus-dir {
+  color: var(--muted);
+}
+
+.focus-other {
+  font-weight: 600;
+}
+
+.focus-mode {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.focus-key {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* The full graph in its sheet fills the space under the sheet's heading. */
+.sheet-full .graph-wrap {
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.sheet-full .graph {
+  height: 100%;
+}
+
+/* The evidence sheet stays above the full graph. */
+body:has(.sheet-layer) .evidence-sheet {
+  z-index: 90;
+}
+
+@media (max-width: 799.98px) {
+  .table-scroll:has(> .card-table) {
+    overflow: visible;
+  }
+
+  table.card-table td.card-name {
+    order: 1;
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  table.card-table td.card-aside code {
+    font-size: 13px;
+  }
+
+  table.card-table td.card-to::before {
+    content: "→ ";
+    font-family: var(--font-ui);
+    color: var(--muted);
+  }
+
+  table.card-table tbody tr[tabindex] {
+    cursor: pointer;
+  }
+
+  table.card-table tbody tr[aria-selected="true"] {
+    border-color: var(--accent);
+    background: var(--highlight);
+  }
+}
+
+.focus-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.focus-modes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.focus-swatch {
+  width: 16px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+@media (max-width: 799.98px) {
+  /* A mono id inside 14 px text stays at 13 px. */
+  .featured-meta .mono {
+    font-size: 13px;
+  }
+}
+
+.card-more {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+}

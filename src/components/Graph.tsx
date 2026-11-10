@@ -25,8 +25,9 @@ import {
   useRefitOnResize,
   type Overlay,
 } from "./graphCanvas";
+import { FocusGraph } from "./FocusGraph";
 import { Legend } from "./Legend";
-import { useMedia } from "./useMedia";
+import { PHONE_QUERY, useMedia } from "./useMedia";
 
 /** Duration of the glide to the final fit once the force layout has settled. */
 const SETTLE_FIT_MS = 700;
@@ -57,7 +58,17 @@ interface Props {
   onSelect: (selection: NonNullable<Selection>) => void;
 }
 
-export function Graph({ platform, selection, preview = null, onSelect }: Props) {
+/**
+ * The module graph: on a phone the focus view (FocusGraph.tsx) with the force graph one tap away on the whole screen;
+ * from 800 px the force graph in the page.
+ */
+export function Graph(props: Props) {
+  const phone = useMedia(PHONE_QUERY);
+  if (!phone) return <ForceGraph {...props} />;
+  return <FocusGraph platform={props.platform} selection={props.selection} onSelect={props.onSelect} whole={<ForceGraph {...props} />} />;
+}
+
+function ForceGraph({ platform, selection, preview = null, onSelect }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const onSelectRef = useRef(onSelect);

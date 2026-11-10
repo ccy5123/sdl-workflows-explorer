@@ -15,6 +15,10 @@ import {
   type RowData,
 } from "@tanstack/react-table";
 import { ColumnChooser } from "./ColumnChooser";
+import { PHONE_QUERY, useMedia } from "./useMedia";
+
+/** Cards a phone shows at first, and how many more each "Show more" adds. */
+const CARD_PAGE = 25;
 
 /** A column of a browser table. */
 export interface Col<T> {
@@ -27,6 +31,12 @@ export interface Col<T> {
   fixed?: boolean;
   /** Numeric cells: right-aligned with tabular figures by the shared `.num` rule (SPEC-SITE-001 REQ-012). */
   num?: boolean;
+  /**
+   * Place of the cell when a phone shows each row as a card: "head" on the card's first line, "aside" at the end of
+   * that line, "title" as the card's main text (not cut), "sub" as a muted line under it, and "field" (the default)
+   * as a labelled item in the flowing list at the bottom.
+   */
+  card?: "head" | "aside" | "title" | "sub" | "field";
 }
 
 const features = tableFeatures({ rowSortingFeature, columnVisibilityFeature, sortedRowModel: createSortedRowModel() });
@@ -114,9 +124,44 @@ export function DataTable<T extends RowData>({
     };
   }, []);
 
+  // On a phone the rows are cards in the page's own scroll, so they come 25 at a time ("Show 25 more"); a new filter
+  // starts again from the first 25.
+  const phone = useMedia(PHONE_QUERY);
+  const [shown, setShown] = useState(CARD_PAGE);
+  useEffect(() => setShown(CARD_PAGE), [rows]);
+  const allRows = table.getRowModel().rows;
+  const visibleRows = phone ? allRows.slice(0, shown) : allRows;
+
+  // On a phone the header row is hidden (each row is a card), so sorting moves to one select (styles.css).
+  const sortable = table.getAllLeafColumns().filter((c) => c.getCanSort() && c.getIsVisible());
+  const sorted = table.getAllLeafColumns().find((c) => c.getIsSorted());
+  const sortValue = sorted ? `${sorted.id}:${sorted.getIsSorted()}` : "";
+  const onSortSelect = (value: string) => {
+    if (!value) return table.setSorting([]);
+    const [id, dir] = value.split(":");
+    table.setSorting([{ id: id!, desc: dir === "desc" }]);
+  };
+
   return (
     <>
       <div className="table-tools">
+        <label className="card-sort">
+          <span>Sort</span>
+          <select value={sortValue} onChange={(e) => onSortSelect(e.target.value)}>
+            <option value="">Release order</option>
+            {sortable.map((c) => {
+              const label = byId.get(c.id)?.header ?? c.id;
+              return [
+                <option key={`${c.id}:asc`} value={`${c.id}:asc`}>
+                  {label}, {byId.get(c.id)?.sort?.kind === "number" ? "low to high" : "A to Z"}
+                </option>,
+                <option key={`${c.id}:desc`} value={`${c.id}:desc`}>
+                  {label}, {byId.get(c.id)?.sort?.kind === "number" ? "high to low" : "Z to A"}
+                </option>,
+              ];
+            })}
+          </select>
+        </label>
         <ColumnChooser
           id={`${name}-columns`}
           legend={chooserLabel}
@@ -138,7 +183,7 @@ export function DataTable<T extends RowData>({
       </div>
       <div className={`table-frame${more.left ? " more-left" : ""}${more.right ? " more-right" : ""}`}>
       <div className="table-scroll table-scroll-sticky" ref={box}>
-        <table className="data" data-table={name}>
+        <table className="data card-table" data-table={name}>
           <thead>
             {table.getHeaderGroups().map((group) => (
               <tr key={group.id}>
@@ -170,19 +215,28 @@ export function DataTable<T extends RowData>({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => (
+            {visibleRows.map((row) => (
               <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className={byId.get(cell.column.id)?.num ? "num" : undefined}>
-                    {byId.get(cell.column.id)?.cell(row.original)}
-                  </td>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const col = byId.get(cell.column.id);
+                  const cls = `card-${col?.card ?? "field"}${col?.num ? " num" : ""}`;
+                  return (
+                    <td key={cell.id} className={cls} data-label={col?.header}>
+                      {col?.cell(row.original)}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       </div>
+      {phone && allRows.length > shown && (
+        <button type="button" className="btn btn-secondary card-more" onClick={() => setShown((n) => n + CARD_PAGE)}>
+          Show {Math.min(CARD_PAGE, allRows.length - shown)} more
+        </button>
+      )}
     </>
   );
 }

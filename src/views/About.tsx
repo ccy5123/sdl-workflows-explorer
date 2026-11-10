@@ -2,14 +2,50 @@
 // the workflow builder's outputs show (SPEC-SIM-001 REQ-021), and what the footer's visitor count keeps (SPEC-VISIT-001
 // REQ-009).
 import { HowItWorks } from "../components/HowItWorks";
+import { PHONE_QUERY, useMedia } from "../components/useMedia";
 import { useReleaseDocs } from "../components/useReleaseDocs";
 import type { IndexJson } from "../data/types";
 import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, PREPRINT, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
 import { VISITOR_ABOUT } from "../lib/visitors";
 
+/**
+ * "On this page" for phones: one button per section that scrolls to its heading. Buttons, not "#" links, because the
+ * site's routes live in the URL hash.
+ */
+function Contents({ items }: { items: { id: string; text: string }[] }) {
+  const go = (id: string) => {
+    const heading = document.getElementById(id);
+    if (!heading) return;
+    heading.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    heading.setAttribute("tabindex", "-1");
+    heading.focus({ preventScroll: true });
+  };
+  return (
+    <nav className="about-contents" aria-label="On this page">
+      <h2 className="about-contents-title">On this page</h2>
+      <ul>
+        {items.map((it) => (
+          <li key={it.id}>
+            <button type="button" className="chip" onClick={() => go(it.id)}>
+              {it.text}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 export function About({ index }: { index: IndexJson }) {
   const { docs, error } = useReleaseDocs();
+  const phone = useMedia(PHONE_QUERY);
   const doiUrl = `https://doi.org/${index.release.doi}`;
+  const contents = [
+    ...ABOUT_SECTIONS.map((s) => ({ id: `about-${s.heading}`, text: s.heading })),
+    { id: "about-full-text", text: "Full text" },
+    { id: "about-workflow", text: WORKFLOW_ABOUT.heading },
+    { id: "about-visitors", text: VISITOR_ABOUT.heading },
+  ];
   return (
     <article className="about">
       <h1>About the data</h1>
@@ -20,6 +56,7 @@ export function About({ index }: { index: IndexJson }) {
       <p>
         {PREPRINT.aboutLead} <a href={`https://doi.org/${PREPRINT.doi}`}>the preprint on ChemRxiv</a>.
       </p>
+      {phone && <Contents items={contents} />}
       {ABOUT_SECTIONS.map((s) => (
         <section key={s.heading} aria-labelledby={`about-${s.heading}`} className="card panel">
           <h2 id={`about-${s.heading}`}>{s.heading}</h2>

@@ -20,8 +20,17 @@ import { ValueName } from "./CountTable";
 import { unnameMarks } from "./plotMarks";
 
 const HEIGHT = 320;
-/** Below this width the x tick labels are rotated so the 13 bin labels fit. */
-const ROTATE_BELOW = 640;
+/**
+ * Below this width the x tick labels are shortened ("2016" to "'16", "before 2015" to "<'15") and, with more than 8
+ * bins, every second one is shown, level, so they read without turning the head. Each bar keeps its full name.
+ */
+const SHORT_BELOW = 640;
+const MANY_BINS = 8;
+
+/** A bin label in its short form: two-digit years with an apostrophe. */
+export function shortBinLabel(label: string): string {
+  return label.replace(/^before /, "<").replace(/\b(19|20)(\d\d)\b/g, "'$2").replace(/–'/g, "–");
+}
 const XLINK = "http://www.w3.org/1999/xlink";
 
 /**
@@ -119,20 +128,22 @@ export function TrendsChart({
     if (width === 0) return;
     const { segments, totals } = chartData(state, split, table, unit, offeredIm);
     const ticks = integerTicks(Math.max(0, ...table.n));
-    const rotate = width < ROTATE_BELOW;
+    const short = width < SHORT_BELOW;
+    const every = short && table.bins.length > MANY_BINS ? 2 : 1;
     const svg = Plot.plot({
       width,
-      height: HEIGHT + (rotate ? 34 : 0),
+      height: HEIGHT,
       marginTop: 28,
-      marginLeft: 44,
-      marginBottom: rotate ? 74 : 40,
-      style: { background: "transparent", color: "var(--chart-ink-secondary)", fontSize: "12px" },
+      marginLeft: short ? 36 : 44,
+      marginRight: short ? 4 : undefined,
+      marginBottom: 40,
+      style: { background: "transparent", color: "var(--chart-ink-secondary)", fontSize: short ? "13px" : "12px" },
       x: {
         domain: table.bins.map((b) => b.label),
-        label: "First public year",
+        label: short && every > 1 ? "First public year (every second labelled)" : "First public year",
         labelAnchor: "center",
         padding: 0.25,
-        tickRotate: rotate ? -45 : 0,
+        tickFormat: short ? (d: string, i: number) => (i % every === 0 ? shortBinLabel(d) : "") : undefined,
         tickSize: 0,
       },
       y: { domain: [0, ticks.at(-1)!], ticks, tickFormat: "d", label: unit === "papers" ? "Papers" : "Platforms", labelArrow: "none", tickSize: 0 },

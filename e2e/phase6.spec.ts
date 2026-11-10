@@ -147,6 +147,8 @@ test("UI AC-48: on Kim2026/P1 the labels of parallel edges stay off the module l
   for (const width of [1440, 375]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/#/platform/Kim2026/P1");
+    // On a phone the full graph opens on the whole screen from the focus view.
+    if (width < 800) await main(page).getByRole("button", { name: "Whole graph", exact: true }).click();
     // Measured once the force layout has come to rest (src/lib/forceLayout.ts).
     await page.waitForFunction(() => (window as Win).__cy?.scratch("_forceSettled") === true, null, { timeout: 60_000 });
     const viewer = await bundleClashes(page, "__cy");
@@ -214,7 +216,7 @@ const lastColumn = (page: Page, table: string) =>
   });
 const pageOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
-test("UI AC-52: Browse tables fit their box at 1440 px; narrower, they scroll inside it with a cue", async ({ page }) => {
+test("UI AC-52: Browse tables fit their box at 1440 px; narrower, they scroll inside it with a cue; phones show cards", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   for (const [hash, table] of [["#/browse", "papers"], ["#/browse?view=platforms", "platforms"]] as const) {
     await page.goto(`/${hash}`);
@@ -224,7 +226,7 @@ test("UI AC-52: Browse tables fit their box at 1440 px; narrower, they scroll in
     await expect(main(page).locator(".table-more")).toHaveCount(0);
   }
 
-  await page.setViewportSize({ width: 375, height: 812 });
+  await page.setViewportSize({ width: 900, height: 812 });
   await page.goto("/#/browse");
   const narrow = await lastColumn(page, "papers");
   expect(narrow.scroll).toBeGreaterThan(narrow.client);
@@ -235,12 +237,36 @@ test("UI AC-52: Browse tables fit their box at 1440 px; narrower, they scroll in
   await main(page).locator(".table-scroll-sticky").evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
   await expect.poll(async () => (await lastColumn(page, "papers")).frame).toContain("more-left");
   expect((await lastColumn(page, "papers")).frame).not.toContain("more-right");
+
+  // At 375 px each row is a card: nothing scrolls sideways, so there is no cue, and sorting is one select.
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#/browse");
+  const phone = await lastColumn(page, "papers");
+  expect(phone.scroll).toBeLessThanOrEqual(phone.client);
+  await expect(main(page).locator(".table-more")).toHaveCount(0);
+  const first = main(page).locator('[data-table="papers"] tbody tr').first();
+  expect(await first.evaluate((tr) => getComputedStyle(tr).display)).toBe("flex");
+  await expect(first.locator("td.card-title")).toContainText("Autonomous closed-loop");
+  await main(page).getByLabel("Sort").selectOption({ label: "Year, high to low" });
+  await expect(main(page).locator('[data-table="papers"] tbody tr').first().locator("td.card-aside")).toHaveText("2026");
+  // The cards come 25 at a time; a filter starts again from the first 25.
+  const cards = main(page).locator('[data-table="papers"] tbody tr');
+  await expect(cards).toHaveCount(25);
+  await main(page).getByRole("button", { name: "Show 25 more", exact: true }).click();
+  await expect(cards).toHaveCount(50);
+  await main(page).getByLabel("Search ids, titles and platform names").fill("flow");
+  await expect.poll(() => cards.count()).toBeLessThanOrEqual(25);
+  expect(await pageOverflow(page)).toBeLessThanOrEqual(0);
 });
 
 test("UI AC-53: at 375 px the builder's module and transfer fields stay inside their box", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/#/workflow");
   await fillFrom(page, "Kim2026/P1");
+  // On a phone each module and transfer is a summary row; open them all to see their fields.
+  for (const t of await main(page).locator('[data-table="wf-modules"] .wf-row-toggle, [data-table="wf-transfers"] .wf-row-toggle').all()) {
+    await t.click();
+  }
   const inside = await page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>('[data-table="wf-modules"], [data-table="wf-transfers"]')].map((t) => {
       const box = t.closest(".table-scroll")!.getBoundingClientRect();
@@ -273,7 +299,8 @@ test("UI AC-54: builder messages sit in the flow after the part they come from a
     const below = await note.boundingBox();
     expect(below === null || below.y + below.height <= 0, `${width} px: message still in view after scrolling`).toBe(true);
 
-    // A refusal shows after the part of the field that caused it.
+    // A refusal shows after the part of the field that caused it (on a phone module 1's row opens first).
+    if (width < 800) await main(page).getByRole("button", { name: /^Module 1: / }).click();
     const devices = main(page).getByLabel("Module 1 devices");
     await devices.fill("51");
     await devices.press("Enter");

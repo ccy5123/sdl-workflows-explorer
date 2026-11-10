@@ -170,6 +170,8 @@ for (const width of [375, 1440]) {
   test(`UI AC-36: at ${width} px the whole graph is in view at zoom 0.75 or more, labels under the dots`, async ({ page }) => {
     await page.setViewportSize({ width, height: width < 800 ? 812 : 900 });
     await page.goto(`/#/platform/${AAND}`);
+    // On a phone the full graph is the "Whole graph" sheet of the focus view.
+    if (width < 800) await page.getByRole("button", { name: "Whole graph", exact: true }).click();
     await waitForGraph(page);
     const l = await layout(page);
     expect(wholeInView(l)).toBe(true);
@@ -179,11 +181,15 @@ for (const width of [375, 1440]) {
   });
 }
 
-test("UI AC-36: narrowing the window from 1440 to 375 px refits the graph", async ({ page }) => {
+test("UI AC-36: narrowing the window from 1440 to 375 px swaps in the focus view; its whole graph fits", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/#/platform/${AAND}`);
   await waitForGraph(page);
   await page.setViewportSize({ width: 375, height: 812 });
+  await expect(page.locator(".focus-graph")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as Win).__cy === undefined)).toBe(true);
+  await page.getByRole("button", { name: "Whole graph", exact: true }).click();
+  await waitForGraph(page);
   await expect
     .poll(async () => {
       const l = await layout(page);

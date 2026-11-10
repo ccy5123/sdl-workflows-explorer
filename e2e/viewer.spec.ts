@@ -324,7 +324,8 @@ test("UI AC-16: the close button closes the sheet and returns focus to the step 
 test("UI AC-16: at 375 px the sheet sits at the bottom of the screen without sideways scroll", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(`/${REF}`);
-  await waitForGraph(page);
+  // A phone shows the focus view of the graph, which needs no layout to settle.
+  await expect(page.locator(".focus-graph")).toBeVisible();
   await page.locator('.step[data-step-order="1"]').click();
   await expect(sheet(page)).toBeVisible();
   const box = (await sheet(page).boundingBox())!;

@@ -1,7 +1,9 @@
 // "Your workflow": steps, modules, transfers and batch inputs of the workflow builder, and the fill from a coded platform
 // (SPEC-SIM-001 REQ-006, REQ-008). Every edit goes through the pure functions of workflowState.ts.
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+// On a phone each module, step and transfer is one summary row that opens its fields in place, and each of the four
+// parts (Modules, Steps, Transfers, Batches) can be folded under its heading.
+import { ArrowDown, ArrowUp, ChevronDown, Trash2 } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { SimulationJson } from "../data/types";
 import { displayLabel } from "../lib/labels";
 import {
@@ -23,7 +25,34 @@ import {
   type EditResult,
   type WorkflowState,
 } from "../lib/workflowState";
+import { PHONE_QUERY, useMedia } from "./useMedia";
 import { MessageSlot } from "./WorkflowMessages";
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/** The summary row of a folded item: its number, what it is, a detail, and the open/closed mark. */
+function RowToggle({ open, onToggle, label, children }: { open: boolean; onToggle: () => void; label: string; children: ReactNode }) {
+  return (
+    <button type="button" className="wf-row-toggle" aria-expanded={open} aria-label={label} onClick={onToggle}>
+      {children}
+      <ChevronDown size={16} aria-hidden="true" />
+    </button>
+  );
+}
+
+/** A part heading; on a phone it is a button that folds the part, with a summary beside the name. */
+function PartHeading({ phone, open, onToggle, title, summary }: { phone: boolean; open: boolean; onToggle: () => void; title: string; summary: string }) {
+  if (!phone) return <h3>{title}</h3>;
+  return (
+    <h3 className="wf-part">
+      <button type="button" aria-expanded={open} onClick={onToggle}>
+        <span>{title}</span>{" "}
+        <span className="wf-part-summary">{summary}</span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </button>
+    </h3>
+  );
+}
 
 /** A text input that applies its value on Enter or when it loses focus; a refused value snaps back. */
 export function CommitField({
@@ -145,9 +174,40 @@ export function WorkflowEditor({
     (same && !same.disabled ? same : button(target.dir === "up" ? "down" : "up"))?.focus();
   }, [state]);
   const move = (i: number, delta: -1 | 1) => {
-    if (apply(moveStep(state, catalog, i, delta))) moveFocus.current = { step: i + delta, dir: delta < 0 ? "up" : "down" };
+    if (!apply(moveStep(state, catalog, i, delta))) return;
+    moveFocus.current = { step: i + delta, dir: delta < 0 ? "up" : "down" };
+    setOpenItems((s) => {
+      const a = s.has(`s${i}`);
+      const b = s.has(`s${i + delta}`);
+      const next = new Set(s);
+      next.delete(`s${i}`);
+      next.delete(`s${i + delta}`);
+      if (a) next.add(`s${i + delta}`);
+      if (b) next.add(`s${i}`);
+      return next;
+    });
   };
   const stepModule = newStepModule !== "new" && Number(newStepModule) <= state.modules.length ? newStepModule : "new";
+
+  // Phone folding: items open one by one (keyed "m3", "s2", "t1"); parts fold by name. On a desktop all is open.
+  const phone = useMedia(PHONE_QUERY);
+  const [openItems, setOpenItems] = useState<ReadonlySet<string>>(new Set());
+  const [foldedParts, setFoldedParts] = useState<ReadonlySet<string>>(new Set());
+  const flip = (set: ReadonlySet<string>, key: string) => {
+    const next = new Set(set);
+    if (!next.delete(key)) next.add(key);
+    return next;
+  };
+  const itemOpen = (key: string) => !phone || openItems.has(key);
+  const toggleItem = (key: string) => setOpenItems((s) => flip(s, key));
+  const partOpen = (key: string) => !phone || !foldedParts.has(key);
+  const togglePart = (key: string) => setFoldedParts((s) => flip(s, key));
+  // A removed module or step shifts the numbers after it, so the open rows are closed rather than moved.
+  const removeAndClose = (result: EditResult) => {
+    if (apply(result)) setOpenItems(new Set());
+  };
+  const boundaries = state.steps.slice(1).filter((_, k) => isTransferBoundary(state, k + 1)).length;
+  const transfersSet = state.steps.slice(1).filter((_, k) => isTransferBoundary(state, k + 1) && transferAt(state, k + 1).mode !== NOT_SPECIFIED).length;
 
   return (
     <section aria-labelledby="wf-input" className="card panel wf-input">
@@ -167,7 +227,10 @@ export function WorkflowEditor({
       </div>
       <MessageSlot at="start" />
 
-      <h3>Modules</h3>
+      <PartHeading phone={phone} open={partOpen("modules")} onToggle={() => togglePart("modules")} title="Modules"
+        summary={plural(state.modules.length, "module")} />
+      {partOpen("modules") && (
+      <>
       <p className="table-note">
         A module performs steps; devices are identical units of that module working in parallel (1 to {LIMITS.devices[1]}).
       </p>
@@ -184,8 +247,21 @@ export function WorkflowEditor({
             </thead>
             <tbody>
               {state.modules.map((m, k) => (
-                <tr key={k}>
-                  <td className="num" data-label="Module">{k + 1}</td>
+                <tr key={k} className={itemOpen(`m${k + 1}`) ? undefined : "wf-folded"}>
+                  <td className="num" data-label="Module">
+                    {phone ? (
+                      <RowToggle open={itemOpen(`m${k + 1}`)} onToggle={() => toggleItem(`m${k + 1}`)}
+                        label={`Module ${k + 1}: ${displayLabel("module_type", m.type)}, ${plural(m.devices, "device")}`}>
+                        <b>{k + 1}</b>
+                        <span className="wf-row-name">{displayLabel("module_type", m.type)}</span>
+                        <span className="wf-row-detail">{plural(m.devices, "device")}</span>
+                      </RowToggle>
+                    ) : (
+                      k + 1
+                    )}
+                  </td>
+                  {itemOpen(`m${k + 1}`) && (
+                  <>
                   <td data-label="Module type">
                     <Select label={`Module ${k + 1} type`} value={m.type} options={typeOptions}
                       onChange={(type) => apply(setModule(state, catalog, k + 1, { type }))} />
@@ -195,10 +271,12 @@ export function WorkflowEditor({
                       onCommit={(devices) => apply(setModule(state, catalog, k + 1, { devices }))} />
                   </td>
                   <td className="wf-remove">
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => apply(removeModule(state, catalog, k + 1))}>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeAndClose(removeModule(state, catalog, k + 1))}>
                       Remove module {k + 1}
                     </button>
                   </td>
+                  </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -211,9 +289,14 @@ export function WorkflowEditor({
           Add module
         </button>
       </div>
+      </>
+      )}
       <MessageSlot at="modules" />
 
-      <h3>Steps</h3>
+      <PartHeading phone={phone} open={partOpen("steps")} onToggle={() => togglePart("steps")} title="Steps"
+        summary={plural(state.steps.length, "step")} />
+      {partOpen("steps") && (
+      <>
       <p className="table-note">
         Steps run in this order for each batch. Samples per run: how many samples one run of the step handles; empty means
         all {all} samples of the batch in one run.
@@ -224,9 +307,20 @@ export function WorkflowEditor({
             const i = k + 1;
             const names = { up: `Move step ${i} up`, down: `Move step ${i} down`, remove: `Remove step ${i}` };
             return (
-              <li key={k} className="card wf-step">
+              <li key={k} className={itemOpen(`s${i}`) ? "card wf-step" : "card wf-step wf-folded"}>
                 <div className="wf-step-head">
-                  <h4>Step {i}</h4>
+                  {phone ? (
+                    <h4>
+                      <RowToggle open={itemOpen(`s${i}`)} onToggle={() => toggleItem(`s${i}`)}
+                        label={`Step ${i}: ${displayLabel("unit_operation", st.uo)}, on module ${st.module}`}>
+                        <b>{i}</b>
+                        <span className="wf-row-name">{displayLabel("unit_operation", st.uo)}</span>
+                        <span className="wf-row-detail">on {st.module}</span>
+                      </RowToggle>
+                    </h4>
+                  ) : (
+                    <h4>Step {i}</h4>
+                  )}
                   <span className="wf-order">
                     <button type="button" className="btn btn-icon" aria-label={names.up} title={names.up} data-move={`${i}-up`}
                       disabled={i === 1} onClick={() => move(i, -1)}>
@@ -237,11 +331,12 @@ export function WorkflowEditor({
                       <ArrowDown size={16} aria-hidden="true" />
                     </button>
                     <button type="button" className="btn btn-icon" aria-label={names.remove} title={names.remove}
-                      onClick={() => apply(removeStep(state, catalog, i))}>
+                      onClick={() => removeAndClose(removeStep(state, catalog, i))}>
                       <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </span>
                 </div>
+                {itemOpen(`s${i}`) && (
                 <div className="wf-step-fields">
                   <Select label={`Step ${i} unit operation`} hideLabel={false} value={st.uo} options={uoOptions}
                     onChange={(uo) => apply(setStep(state, catalog, i, { uo }))} />
@@ -250,6 +345,7 @@ export function WorkflowEditor({
                   <CommitField label={`Step ${i} samples per run`} value={state.perRun[i] === undefined ? "" : String(state.perRun[i])}
                     placeholder={`all (${all})`} onCommit={(text) => apply(setPerRun(state, catalog, i, text))} />
                 </div>
+                )}
               </li>
             );
           })}
@@ -275,9 +371,14 @@ export function WorkflowEditor({
           Add step
         </button>
       </div>
+      </>
+      )}
       <MessageSlot at="steps" />
 
-      <h3>Transfers</h3>
+      <PartHeading phone={phone} open={partOpen("transfers")} onToggle={() => togglePart("transfers")} title="Transfers"
+        summary={boundaries ? `${transfersSet} of ${boundaries} set` : "none needed"} />
+      {partOpen("transfers") && (
+      <>
       <p className="table-note">
         Between consecutive steps on different modules: how material moves and how long one batch takes to move (0 to{" "}
         {LIMITS.transferSeconds.toLocaleString("en")} s). Default: not specified, 0 s.
@@ -304,9 +405,23 @@ export function WorkflowEditor({
                   );
                 }
                 const t = transferAt(state, i);
+                const mode = t.mode === NOT_SPECIFIED ? "not specified" : displayLabel("transfer_mode", t.mode);
                 return (
-                  <tr key={i}>
-                    <td className="wf-between">Steps {i} and {i + 1}</td>
+                  <tr key={i} className={itemOpen(`t${i}`) ? undefined : "wf-folded"}>
+                    <td className="wf-between">
+                      {phone ? (
+                        <RowToggle open={itemOpen(`t${i}`)} onToggle={() => toggleItem(`t${i}`)}
+                          label={`Transfer between steps ${i} and ${i + 1}: ${mode}, ${t.seconds} s`}>
+                          <b>{i}→{i + 1}</b>
+                          <span className="wf-row-name">{mode}</span>
+                          <span className="wf-row-detail">{t.seconds} s</span>
+                        </RowToggle>
+                      ) : (
+                        <>Steps {i} and {i + 1}</>
+                      )}
+                    </td>
+                    {itemOpen(`t${i}`) && (
+                    <>
                     <td data-label="Transfer mode">
                       <Select label={`Transfer mode between steps ${i} and ${i + 1}`} value={t.mode} options={modeOptions}
                         onChange={(mode) => apply(setTransfer(state, catalog, i, { mode }))} />
@@ -315,6 +430,8 @@ export function WorkflowEditor({
                       <CommitField label={`Transfer time between steps ${i} and ${i + 1}, seconds`} hideLabel inputMode="decimal"
                         value={String(t.seconds)} onCommit={(seconds) => apply(setTransfer(state, catalog, i, { seconds }))} />
                     </td>
+                    </>
+                    )}
                   </tr>
                 );
               })}
@@ -322,10 +439,14 @@ export function WorkflowEditor({
           </table>
         </div>
       )}
+      </>
+      )}
 
       <MessageSlot at="transfers" />
 
-      <h3>Batches</h3>
+      <PartHeading phone={phone} open={partOpen("batches")} onToggle={() => togglePart("batches")} title="Batches"
+        summary={`${state.batch} × ${state.samples}, ${state.parallel} parallel`} />
+      {partOpen("batches") && (
       <div className="wf-inputs">
         <CommitField label="Batch size (experiments proposed and run together, 1 to 10,000)" value={String(state.batch)}
           onCommit={(t) => apply(setCount(state, catalog, "batch", t))} />
@@ -334,6 +455,7 @@ export function WorkflowEditor({
         <CommitField label="Parallel units (batches that can be in progress at once, 1 to 50)" value={String(state.parallel)}
           onCommit={(t) => apply(setCount(state, catalog, "parallel", t))} />
       </div>
+      )}
     </section>
   );
 }

@@ -154,7 +154,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
       <section className="card panel" aria-labelledby="modules-heading">
         <h2 id="modules-heading">Modules</h2>
         <div className="table-scroll">
-          <table className="data" data-table="modules">
+          <table className="data card-table" data-table="modules">
             <thead>
               <tr>
                 <th scope="col">Id</th>
@@ -172,14 +172,14 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
                   onClick={() => select({ kind: "module", id: m.module_id })}
                   onKeyDown={(e) => activate(e, () => select({ kind: "module", id: m.module_id }))}
                 >
-                  <td>
+                  <td className="card-aside" data-label="Id">
                     <code>{m.module_id}</code>
                   </td>
-                  <td>
+                  <td className="card-name" data-label="Type">
                     <Label kind="module_type" code={m.module_type} />
                   </td>
-                  <td>{m.name_in_paper ?? "—"}</td>
-                  <td>{yesNo(m.on_platform)}</td>
+                  <td className="card-title" data-label="Name in paper">{m.name_in_paper ?? "—"}</td>
+                  <td className="card-field" data-label="Part of the platform">{yesNo(m.on_platform)}</td>
                 </tr>
               ))}
             </tbody>
@@ -193,7 +193,7 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
       <section className="card panel" aria-labelledby="connections-heading">
         <h2 id="connections-heading">Connections</h2>
         <div className="table-scroll">
-          <table className="data" data-table="connections">
+          <table className="data card-table" data-table="connections">
             <thead>
               <tr>
                 <th scope="col">From</th>
@@ -212,17 +212,17 @@ function Platform({ index, platform }: { index: IndexJson; platform: PlatformGra
                   onClick={() => select({ kind: "connection", id: c.edge_id })}
                   onKeyDown={(e) => activate(e, () => select({ kind: "connection", id: c.edge_id }))}
                 >
-                  <td>
+                  <td className="card-head" data-label="From">
                     <code>{c.from_module}</code>
                   </td>
-                  <td>
+                  <td className="card-head card-to" data-label="To">
                     <code>{c.to_module}</code>
                   </td>
-                  <td>
+                  <td className="card-title" data-label="Transfer mode">
                     <Label kind="transfer_mode" code={c.transfer_mode} />
                   </td>
-                  <td>{yesNo(c.stated)}</td>
-                  <td>{c.uncertain ? "yes ?" : "no"}</td>
+                  <td className="card-field" data-label="Stated">{yesNo(c.stated)}</td>
+                  <td className="card-field" data-label="Uncertain">{c.uncertain ? "yes ?" : "no"}</td>
                 </tr>
               ))}
             </tbody>

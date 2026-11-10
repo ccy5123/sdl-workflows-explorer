@@ -79,19 +79,42 @@ test("UI AC-25: one popover at a time; a click outside closes it; Clear all rese
   await expect(page.getByLabel("Search ids, titles and platform names")).toHaveValue("");
 });
 
-test("UI AC-25: at 375 px the bar wraps without sideways scroll and popovers stay on screen", async ({ page }) => {
+test("UI AC-25: at 375 px the filters fold into a tray that rises from the bottom, without sideways scroll", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/#/browse");
   expect(await overflowX(page)).toBe(0);
+  await expect(popoverButton(page, "Field tag")).toHaveCount(0);
+  const open = bar(page).getByRole("button", { name: "Filters", exact: true });
+  await open.click();
+  const sheet = page.getByRole("dialog", { name: "Filters" });
+  await expect(sheet).toBeVisible();
+  await insideViewport(page, sheet);
+  const box = (await sheet.boundingBox())!;
+  expect(Math.round(box.y + box.height)).toBe(812);
+  await expect(sheet.getByRole("button", { name: "Close filters" })).toBeFocused();
   for (const legend of ["Field tag", "Unit operations", "Transfer modes"]) {
-    const button = popoverButton(page, legend);
-    await button.click();
-    const panel = page.locator(`#${await button.getAttribute("aria-controls")}`);
-    await expect(panel).toBeVisible();
+    const row = sheet.getByRole("button", { name: new RegExp(`^${legend}`) });
+    await row.click();
+    await expect(row).toHaveAttribute("aria-expanded", "true");
+    const panel = page.locator(`#${await row.getAttribute("aria-controls")}`);
+    await expect(panel.getByRole("checkbox").first()).toBeVisible();
     await insideViewport(page, panel);
     expect(await overflowX(page)).toBe(0);
-    await page.keyboard.press("Escape");
   }
+  // Choosing applies at once; the button at the foot names the result and closes the tray.
+  await sheet.getByRole("button", { name: /^Field tag/ }).click();
+  await sheet.getByRole("checkbox", { name: "Catalysis (catalysis)", exact: true }).check();
+  expect(await hash(page)).toBe("#/browse?field=catalysis");
+  await expect(sheet.getByRole("button", { name: /^Field tag · 1/ })).toBeVisible();
+  await sheet.getByRole("button", { name: /^Show \d+ papers$/ }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(bar(page).getByRole("button", { name: /^Filters/ })).toBeFocused();
+  await expect(bar(page).getByRole("button", { name: /^Filters/ })).toContainText("1");
+  await expect(page.getByRole("button", { name: "Remove Field tag: Catalysis", exact: true })).toBeVisible();
+  // Escape closes it too.
+  await bar(page).getByRole("button", { name: /^Filters/ }).click();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
 });
 
 test("UI AC-25: Trends uses the same filter bar and keeps it in its URL", async ({ page }) => {
@@ -165,13 +188,18 @@ for (const width of [1440, 375]) {
   test(`UI AC-28: at ${width} px each popover option shows its name and its whole code once`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/#/browse");
+    // On a phone the groups are rows of the filter tray instead of popovers.
+    const phone = width < 800;
+    if (phone) await bar(page).getByRole("button", { name: "Filters", exact: true }).click();
+    const opener = (legend: string) =>
+      phone ? page.getByRole("dialog", { name: "Filters" }).getByRole("button", { name: new RegExp(`^${legend}`) }) : popoverButton(page, legend);
     for (const legend of ["Field tag", "Module types", "Unit operations"]) {
-      const button = popoverButton(page, legend);
+      const button = opener(legend);
       await button.click();
       const panel = page.locator(`#${await button.getAttribute("aria-controls")}`);
       await insideViewport(page, panel);
       const bad = await panel.locator(".filter-option").evaluateAll((labels) => {
-        const p = labels[0]!.closest(".filter-popover-panel")!.getBoundingClientRect();
+        const p = labels[0]!.closest(".filter-popover-panel, .tray-options")!.getBoundingClientRect();
         return labels
           .map((l) => {
             const code = l.querySelector("code")!;
@@ -184,9 +212,10 @@ for (const width of [1440, 375]) {
           .filter(Boolean);
       });
       expect(bad, legend).toEqual([]);
-      await page.keyboard.press("Escape");
+      if (phone) await button.click();
+      else await page.keyboard.press("Escape");
     }
-    await popoverButton(page, "Field tag").click();
+    await opener("Field tag").click();
     await expect(page.getByRole("checkbox", { name: "Battery and electrochemistry (battery_electrochem)", exact: true })).toHaveCount(1);
   });
 }

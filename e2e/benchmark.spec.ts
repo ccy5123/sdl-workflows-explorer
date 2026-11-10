@@ -311,12 +311,12 @@ test("AC-14: navigation link and lazy chunk", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("AC-15: no horizontal scroll at 375 px; stacked cells carry their column label", async ({ page }) => {
+test("AC-15: no horizontal scroll at 375 px; stacked cells carry their column label; count tables stay tables", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   const noScroll = () =>
     page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
   const stacked = () =>
-    page.locator(".benchmark table tbody td").evaluateAll((tds) =>
+    page.locator(".benchmark table:not(.bench-compact) tbody td").evaluateAll((tds) =>
       tds
         .map((td) => ({
           cell: getComputedStyle(td).display,
@@ -335,6 +335,22 @@ test("AC-15: no horizontal scroll at 375 px; stacked cells carry their column la
   }
   expect(await noScroll()).toBe(true);
   expect(await stacked()).toEqual([]);
+  // The split table, the label counts and the model names keep one row per line, with no label before a cell.
+  const compact = await page.locator(".benchmark table.bench-compact tbody td").evaluateAll((tds) =>
+    tds.filter((td) => getComputedStyle(td).display !== "table-cell" || getComputedStyle(td, "::before").content !== "none").length,
+  );
+  expect(await page.locator(".benchmark table.bench-compact").count()).toBe(4);
+  expect(compact).toBe(0);
+  // Items by platform folds away, with a search and 25 rows at a time.
+  const fold = page.locator("details.bench-items-fold");
+  await expect(fold).not.toHaveAttribute("open");
+  await fold.locator("> summary").click();
+  await expect(fold.locator("tbody tr")).toHaveCount(25);
+  await fold.getByRole("button", { name: "Show 25 more" }).click();
+  await expect(fold.locator("tbody tr")).toHaveCount(50);
+  await fold.getByLabel("Search").fill("Kim2026");
+  await expect(fold.locator("tbody tr")).toHaveCount(1);
+  expect(await noScroll()).toBe(true);
 
   await page.goto(`/#/benchmark/items?task=${TM}`);
   await expect(countLine(page)).toHaveText("981 of 981 items");

@@ -6,6 +6,7 @@ import type { IndexJson, PaperRow, PlatformRow } from "../data/types";
 import { DataTable, Truncated, type Col } from "../components/DataTable";
 import { FilterPanel } from "../components/FilterPanel";
 import { Label } from "../components/Label";
+import { PHONE_QUERY, useMedia } from "../components/useMedia";
 import { show } from "../lib/evidence";
 import { matchingPapers, matchingPlatforms } from "../lib/filterApply";
 import {
@@ -50,12 +51,13 @@ function stateFromLocation(offered: Offered): FilterState | null {
 
 function paperColumns(links: Map<string, PlatformRow[]>, codes: boolean): Col<PaperRow>[] {
   return [
-    { id: "paper", header: "Paper", fixed: true, sort: { kind: "text", value: (p) => p.paper_id }, cell: (p) => p.paper_id },
-    { id: "year", header: "Year", num: true, sort: { kind: "number", value: (p) => p.first_public_year }, cell: (p) => p.first_public_year },
-    { id: "title", header: "Title", sort: { kind: "text", value: (p) => p.title }, cell: (p) => <Truncated text={p.title} /> },
+    { id: "paper", header: "Paper", fixed: true, card: "head", sort: { kind: "text", value: (p) => p.paper_id }, cell: (p) => p.paper_id },
+    { id: "year", header: "Year", num: true, card: "aside", sort: { kind: "number", value: (p) => p.first_public_year }, cell: (p) => p.first_public_year },
+    { id: "title", header: "Title", card: "title", sort: { kind: "text", value: (p) => p.title }, cell: (p) => <Truncated text={p.title} /> },
     {
       id: "venue",
       header: "Venue",
+      card: "sub",
       sort: { kind: "text", value: (p) => p.venue },
       cell: (p) => (p.venue ? <Truncated text={p.venue} /> : show(null)),
     },
@@ -97,6 +99,7 @@ function platformColumns(selected: string[], toggle: (id: string) => void, codes
       id: "select",
       header: "Select",
       fixed: true,
+      card: "head",
       cell: (l) => {
         const checked = selected.includes(l.platform_id);
         return (
@@ -114,17 +117,19 @@ function platformColumns(selected: string[], toggle: (id: string) => void, codes
       id: "platform",
       header: "Platform",
       fixed: true,
+      card: "head",
       sort: { kind: "text", value: (l) => l.platform_id },
       cell: (l) => <a href={platformHash(l.platform_id)}>{l.platform_id}</a>,
     },
     {
       id: "name",
       header: "Name",
+      card: "title",
       sort: { kind: "text", value: (l) => l.platform_name ?? undefined },
       cell: (l) => (l.platform_name ? <Truncated text={l.platform_name} /> : show(null)),
     },
-    { id: "paper", header: "Paper", sort: { kind: "text", value: (l) => l.paper_id }, cell: (l) => l.paper_id },
-    { id: "year", header: "Year", num: true, sort: { kind: "number", value: (l) => l.first_public_year }, cell: (l) => l.first_public_year },
+    { id: "paper", header: "Paper", card: "sub", sort: { kind: "text", value: (l) => l.paper_id }, cell: (l) => l.paper_id },
+    { id: "year", header: "Year", num: true, card: "aside", sort: { kind: "number", value: (l) => l.first_public_year }, cell: (l) => l.first_public_year },
     {
       id: "field",
       header: "Field tags",
@@ -154,6 +159,7 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
   const [years, setYears] = useState(() => yearText(state.years));
   const [selected, setSelected] = useState<string[]>([]);
   const [codes, setCodes] = useState(false);
+  const phone = useMedia(PHONE_QUERY);
 
   // replaceState fires no hashchange, so the router's hash can lag; read the real hash on every navigation (REQ-003).
   useEffect(() => {
@@ -212,6 +218,7 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
         onState={apply}
         onYearText={onYearText}
         onClear={onClear}
+        resultText={state.view === "papers" ? `Show ${papers.length} papers` : `Show ${platforms.length} platforms`}
       />
       <div className="browse-layout">
         <div className="browse-results">
@@ -238,7 +245,14 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
                 rowId={paperId}
                 toolbar={codesToggle}
               />
-              <p className="table-note">{PAPER_TABLE_NOTE}</p>
+              {phone ? (
+                <details className="note-fold">
+                  <summary>What the columns mean</summary>
+                  <p className="table-note">{PAPER_TABLE_NOTE}</p>
+                </details>
+              ) : (
+                <p className="table-note">{PAPER_TABLE_NOTE}</p>
+              )}
             </section>
           ) : (
             <section aria-label="Platforms">

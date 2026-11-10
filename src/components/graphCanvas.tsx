@@ -12,16 +12,16 @@ import { captionBox, centreOn, graphFits, minimapFrame, type CaptionBox, type Po
 import type { Theme } from "../lib/siteTokens";
 import { readableViewport } from "../lib/viewport";
 import { GraphMinimap, MINIMAP_HEIGHT, MINIMAP_INSET, MINIMAP_WIDTH, type MinimapModel } from "./GraphMinimap";
-import { useMedia } from "./useMedia";
+import { PHONE_QUERY, useMedia } from "./useMedia";
 import { useTheme } from "./useTheme";
+
+export { PHONE_QUERY };
 
 cytoscape.use(dagre);
 
 export const PADDING = 24;
 const ZOOM_STEP = 1.25;
 
-/** The phone breakpoint of the site's CSS (styles.css), below which the graphs run top to bottom. */
-export const PHONE_QUERY = "(max-width: 799.98px)";
 export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 export type RankDir = "LR" | "TB";

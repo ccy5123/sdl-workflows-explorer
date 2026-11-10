@@ -7,6 +7,7 @@ import { HowItWorks } from "../components/HowItWorks";
 import { Label } from "../components/Label";
 import { Loading } from "../components/Loading";
 import { loadJsonOnce } from "../components/useJson";
+import { PHONE_QUERY, useMedia } from "../components/useMedia";
 import { SPLITS, type BenchmarkItemsJson, type BenchmarkJson, type IndexJson, type Split } from "../data/types";
 import {
   BACK_LINK_TEXT,
@@ -142,7 +143,7 @@ function SplitTable({ data }: { data: BenchmarkJson }) {
   const taskIds = data.tasks.map((t) => t.task_id);
   const heads = data.tasks.map((t) => taskItemsHead(t.target));
   return (
-    <table className="bench-table" aria-label="Split">
+    <table className="bench-table bench-compact" aria-label="Split">
       <thead>
         <tr>
           <th scope="col">Split</th>
@@ -193,7 +194,7 @@ function TaskSection({ data, index }: { data: BenchmarkJson; index: number }) {
         <dt>Inputs</dt>
         <dd>{task.inputs}</dd>
       </dl>
-      <table className="bench-table">
+      <table className="bench-table bench-compact">
         <thead>
           <tr>
             <th scope="col">Label</th>
@@ -259,7 +260,7 @@ function ReferenceResults({ data }: { data: BenchmarkJson }) {
       </table>
       <p className="note">{DIFFERENCE_NOTE}</p>
       <p className="note">{TEST_PAPERS_NOTE}</p>
-      <table className="bench-table">
+      <table className="bench-table bench-compact">
         <thead>
           <tr>
             {MODEL_HEADS.map((h) => (
@@ -314,16 +315,32 @@ function Evaluation({ data, doi }: { data: BenchmarkJson; doi: string }) {
   );
 }
 
+/** Rows of "Items by platform" a phone shows at first, and how many more each "Show more" adds. */
+const ITEMS_PAGE = 25;
+
 function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJson }) {
   const [split, setSplit] = useState<Split | null>(null);
+  const [query, setQuery] = useState("");
+  const [shown, setShown] = useState(ITEMS_PAGE);
+  const phone = useMedia(PHONE_QUERY);
   const names = useMemo(() => new Map(index.platforms.map((p) => [p.platform_id, p.platform_name])), [index]);
-  const rows = platformRows(data, split);
+  const all = platformRows(data, split);
+  // On a phone the 279 rows fold away, with a search and 25 rows at a time (the desktop table is unchanged).
+  const q = query.trim().toLowerCase();
+  const matched = phone && q ? all.filter((r) => `${r.platform_id} ${names.get(r.platform_id) ?? ""}`.toLowerCase().includes(q)) : all;
+  const rows = phone ? matched.slice(0, shown) : matched;
   const taskIds = data.tasks.map((t) => t.task_id);
-  return (
-    <Section title={SECTION_HEADINGS.platforms}>
+  const controls = (
+    <>
       <label className="bench-control">
         Split{" "}
-        <select value={split ?? ""} onChange={(e) => setSplit((e.target.value || null) as Split | null)}>
+        <select
+          value={split ?? ""}
+          onChange={(e) => {
+            setSplit((e.target.value || null) as Split | null);
+            setShown(ITEMS_PAGE);
+          }}
+        >
           <option value="">All</option>
           {SPLITS.map((s) => (
             <option key={s} value={s}>
@@ -332,39 +349,79 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
           ))}
         </select>
       </label>
+      {phone && (
+        <label className="bench-control bench-search">
+          Search{" "}
+          <input
+            type="search"
+            value={query}
+            placeholder="Platform id or name"
+            autoComplete="off"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setShown(ITEMS_PAGE);
+            }}
+          />
+        </label>
+      )}
       <p className="result-count" aria-live="polite">
-        {platformsCountLine(rows.length, data.platforms.length, split)}
+        {platformsCountLine(matched.length, data.platforms.length, split)}
       </p>
-      <table className="bench-table">
-        <thead>
-          <tr>
-            <th scope="col">Platform</th>
-            <th scope="col">Name</th>
-            <th scope="col">Split</th>
-            {data.tasks.map((t) => (
-              <th scope="col" key={t.task_id}>
-                <ItemsHead task={t} />
-              </th>
+    </>
+  );
+  const tableEl = (
+    <table className="bench-table">
+      <thead>
+        <tr>
+          <th scope="col">Platform</th>
+          <th scope="col">Name</th>
+          <th scope="col">Split</th>
+          {data.tasks.map((t) => (
+            <th scope="col" key={t.task_id}>
+              <ItemsHead task={t} />
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.platform_id}>
+            <td data-label="Platform">
+              <a href={r.href}>
+                <Breakable text={r.platform_id} />
+              </a>
+            </td>
+            <td data-label="Name">{names.get(r.platform_id) ?? DASH}</td>
+            <td data-label="Split">{r.split}</td>
+            {r.cells.map((c, i) => (
+              <Count key={taskIds[i]} cell={c} label={taskItemsHead(data.tasks[i]!.target)} />
             ))}
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.platform_id}>
-              <td data-label="Platform">
-                <a href={r.href}>
-                  <Breakable text={r.platform_id} />
-                </a>
-              </td>
-              <td data-label="Name">{names.get(r.platform_id) ?? DASH}</td>
-              <td data-label="Split">{r.split}</td>
-              {r.cells.map((c, i) => (
-                <Count key={taskIds[i]} cell={c} label={taskItemsHead(data.tasks[i]!.target)} />
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        ))}
+      </tbody>
+    </table>
+  );
+  return (
+    <Section title={SECTION_HEADINGS.platforms}>
+      {phone ? (
+        <details className="note-fold bench-items-fold">
+          <summary>
+            Show the {data.platforms.length} platforms
+          </summary>
+          {controls}
+          {tableEl}
+          {matched.length > shown && (
+            <button type="button" className="btn btn-secondary bench-more" onClick={() => setShown((n) => n + ITEMS_PAGE)}>
+              Show {Math.min(ITEMS_PAGE, matched.length - shown)} more
+            </button>
+          )}
+        </details>
+      ) : (
+        <>
+          {controls}
+          {tableEl}
+        </>
+      )}
     </Section>
   );
 }
