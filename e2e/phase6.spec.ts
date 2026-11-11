@@ -8,7 +8,7 @@ const main = (page: Page) => page.locator("main");
 
 test("UI AC-42: platform tables name module types and transfer modes, the code in title", async ({ page }) => {
   await page.goto("/#/platform/Aand2024/P1");
-  const type = main(page).locator('[data-table="modules"] tbody tr td:nth-child(2) .label').first();
+  const type = main(page).locator('[data-table="modules"] tbody tr td:nth-child(1) .label').first();
   await expect(type).toHaveAttribute("title", /^[a-z_]+$/);
   expect(await type.evaluate((el) => (el.firstChild?.textContent ?? "").includes("_"))).toBe(false);
   const mode = main(page).locator('[data-table="connections"] tbody tr td:nth-child(3) .label').first();

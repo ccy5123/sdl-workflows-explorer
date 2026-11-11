@@ -1,5 +1,6 @@
 // SPEC-TAXO-001 AC-11 to AC-13, AC-15 and AC-16: the taxonomy overview and class pages in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
+import { NAV_TAB_LINKS, openDataPage } from "./routes";
 import { PINNED_VERSION } from "../tests/pinned-release";
 
 function trackErrors(page: Page): string[] {
@@ -91,8 +92,8 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   const errors = trackErrors(page);
   await page.goto("/");
   const nav = page.getByRole("navigation");
-  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy", "Benchmark", "Workflow", "About"]);
-  await nav.getByRole("link", { name: "Taxonomy", exact: true }).click();
+  await expect(nav.getByRole("link")).toHaveText(NAV_TAB_LINKS);
+  await openDataPage(page, "Taxonomy");
   expect(await hash(page)).toBe("#/taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
   await expect(page.getByText(CAPTION, { exact: true })).toBeVisible();
@@ -351,13 +352,13 @@ test("AC-15: lazy chunk and a single taxonomy.json request", async ({ page }) =>
   // Home shows counts from taxonomy.json (SPEC-UI-001 REQ-011); the taxonomy view reuses that one request.
   expect(taxonomyJson()).toHaveLength(1);
 
-  await page.getByRole("navigation").getByRole("link", { name: "Taxonomy", exact: true }).click();
+  await openDataPage(page, "Taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
   expect(chunks()).toHaveLength(1);
   expect(taxonomyJson()).toHaveLength(1);
   await link(page, "Flow reactor").click();
   await expect(h1(page, "Flow reactor")).toBeVisible();
-  await page.getByRole("navigation").getByRole("link", { name: "Taxonomy", exact: true }).click();
+  await openDataPage(page, "Taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
   expect(taxonomyJson()).toHaveLength(1);
   expect(errors).toEqual([]);
@@ -465,7 +466,6 @@ for (const width of [800, 375]) {
 test("AC-16: keyboard reaches and opens the taxonomy links", async ({ page }) => {
   await page.goto("/#/taxonomy");
   await expect(h1(page, "Taxonomy")).toBeVisible();
-  await tabToLink(page, "Taxonomy", "#/taxonomy");
   await tabToLink(page, "Field tags", undefined, 400, "BUTTON");
   await tabToLink(page, "Flow reactor");
   await tabToLink(page, "doi:10.1126/science.abc2986");

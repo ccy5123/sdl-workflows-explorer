@@ -44,7 +44,8 @@ test("AC-5: the footer shows both numbers on every view, checks in by POST witho
   await expect(counter(page)).toHaveText(visitorText(COUNTS));
   expect(visitorText(COUNTS)).toBe("3 online · 1,204 visitors since 10 Nov 2026");
 
-  await page.getByRole("link", { name: "About", exact: true }).first().click();
+  await page.locator(".nav-group-button").click();
+  await page.locator(".nav-group-panel").getByRole("link", { name: "About the data", exact: true }).click();
   await expect(page.locator("h1")).toHaveText("About the data");
   await expect(counter(page)).toHaveText(visitorText(COUNTS));
 

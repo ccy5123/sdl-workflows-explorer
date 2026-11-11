@@ -161,6 +161,8 @@ export function navCurrent(route: Route): string | null {
       return "Benchmark";
     case "workflow":
       return "Workflow";
+    case "guide":
+      return "Getting started";
     default:
       return null;
   }

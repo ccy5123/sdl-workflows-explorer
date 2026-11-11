@@ -72,6 +72,14 @@ export const INTEGRATION_MODE_TEXT =
   "Integration mode is how material moves between the modules of a paper's platforms: the one material transfer mode " +
   "used (which may be unmapped), mixed when several are used, none when no material connection is coded.";
 
+/** An autonomy level with its scale, "2 of 3", and the sentence that says what the level means. */
+export function autonomyText(kind: "sw" | "hw", level: number): { short: string; long: string } {
+  const labels = kind === "sw" ? SW_LABELS : HW_LABELS;
+  const top = Math.max(...Object.keys(labels).map(Number));
+  const name = kind === "sw" ? "Software" : "Hardware";
+  return { short: `${level} of ${top}`, long: `${name} autonomy level ${level} of ${top}: ${labels[level] ?? "not described"}` };
+}
+
 const levels = (labels: Record<number, string>) =>
   Object.entries(labels)
     .map(([level, text]) => `${level}, ${text}`)

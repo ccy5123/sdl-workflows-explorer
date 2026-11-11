@@ -109,7 +109,7 @@ export function Compare({ index, ids }: { index: IndexJson; ids: string[] }) {
         <h1>Cannot compare these platforms</h1>
         <p>{status.message}</p>
         <p>
-          <a href="#/browse">Browse</a> · <a href="#/">Home</a>
+          <a href="#/browse?view=platforms">Browse</a> · <a href="#/">Home</a>
         </p>
       </section>
     );

@@ -23,7 +23,8 @@ for (const route of ROUTES) {
     const current = page.locator('nav [aria-current="page"]');
     if (route.current) {
       await expect(current).toHaveCount(1);
-      await expect(current).toHaveText(route.current);
+      // A page under the closed "Data" tab marks that tab, which names the page (components/NavGroup.tsx).
+      await expect(current).toContainText(route.current);
     } else {
       await expect(current).toHaveCount(0);
     }

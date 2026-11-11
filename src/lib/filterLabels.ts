@@ -26,6 +26,18 @@ export const FILTER_GROUPS: readonly FilterGroup[] = [
   { key: "uo", legend: "Unit operations", kind: "unit_operation", match: "uoMatch" },
 ];
 
+/**
+ * The groups the bar shows before "More filters": the ones a first-time reader reaches for. The rest fold away until
+ * asked for or until they hold a chosen value.
+ */
+export const PRIMARY_GROUPS: readonly ListKey[] = ["field", "mt", "uo"];
+
+/** The groups in the order the bar and the phone tray show them: the primary ones first, then the rest. */
+export const DISPLAY_GROUPS: readonly FilterGroup[] = [
+  ...PRIMARY_GROUPS.map((k) => FILTER_GROUPS.find((g) => g.key === k)!),
+  ...FILTER_GROUPS.filter((g) => !PRIMARY_GROUPS.includes(g.key)),
+];
+
 const groupOf = (key: ListKey) => FILTER_GROUPS.find((g) => g.key === key)!;
 
 /** Name shown for an option, and its code (null for the autonomy levels, which have no code). */

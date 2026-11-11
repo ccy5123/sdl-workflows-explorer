@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { DATA_LINKS, openDataPage } from "./routes";
 import { PINNED_DOI, PINNED_RELEASE_DIR, PINNED_VERSION, pinnedExclusionReason } from "../tests/pinned-release";
 
 function trackErrors(page: Page): string[] {
@@ -301,10 +302,8 @@ test("AC-14: navigation link and lazy chunk", async ({ page }) => {
   await page.goto("/#/browse");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect(chunks()).toEqual([]);
-  const nav = page.getByRole("navigation");
-  const names = await nav.getByRole("link").allTextContents();
-  expect(names.indexOf("Benchmark")).toBe(names.indexOf("Taxonomy") + 1);
-  await nav.getByRole("link", { name: "Benchmark", exact: true }).click();
+  expect(DATA_LINKS.indexOf("Benchmark")).toBe(DATA_LINKS.indexOf("Taxonomy") + 1);
+  await openDataPage(page, "Benchmark");
   expect(await hash(page)).toBe("#/benchmark");
   await expect(h1(page, "Benchmark chrono2023")).toBeVisible();
   expect(chunks()).toHaveLength(1);

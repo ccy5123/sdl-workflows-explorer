@@ -8,10 +8,24 @@ import { useEffect, useRef, useState } from "react";
 export interface NavItem {
   href: string;
   text: string;
+  /** The view's nav key (route.ts navCurrent) when it differs from the text. */
+  current?: string;
 }
 
-interface Props {
+/** A labelled group of links: one tab with a list in the top bar, a heading with its links in this menu. */
+export interface NavGroupEntry {
+  text: string;
   items: readonly NavItem[];
+}
+
+export type NavEntry = NavItem | NavGroupEntry;
+
+export const isGroup = (entry: NavEntry): entry is NavGroupEntry => "items" in entry;
+
+const keyOf = (item: NavItem) => item.current ?? item.text;
+
+interface Props {
+  items: readonly NavEntry[];
   /** Text of the current view's item, or null. */
   current: string | null;
   /** The location hash; the panel closes when it changes. */
@@ -51,6 +65,14 @@ export function SiteMenu({ items, current, hash }: Props) {
     };
   }, [open]);
 
+  const link = (item: NavItem) => (
+    <li key={item.href}>
+      <a href={item.href} aria-current={current === keyOf(item) ? "page" : undefined} onClick={() => close(true)}>
+        {item.text}
+      </a>
+    </li>
+  );
+
   return (
     <>
       <button
@@ -76,17 +98,18 @@ export function SiteMenu({ items, current, hash }: Props) {
           }}
         >
           <ul>
-            {items.map((item) => (
-              <li key={item.href}>
-                <a
-                  href={item.href}
-                  aria-current={current === item.text ? "page" : undefined}
-                  onClick={() => close(true)}
-                >
-                  {item.text}
-                </a>
-              </li>
-            ))}
+            {items.map((entry) =>
+              isGroup(entry) ? (
+                <li key={entry.text} className="site-menu-group">
+                  <span className="site-menu-heading">{entry.text}</span>
+                  <ul>
+                    {entry.items.map((item) => link(item))}
+                  </ul>
+                </li>
+              ) : (
+                link(entry)
+              ),
+            )}
           </ul>
         </nav>
       )}

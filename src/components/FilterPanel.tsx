@@ -7,7 +7,7 @@
 // screen with the year range and one folding row per checkbox group (the same checkboxes as the popovers).
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { FILTER_GROUPS, filterPills, optionLabel, type FilterGroup } from "../lib/filterLabels";
+import { DISPLAY_GROUPS, PRIMARY_GROUPS, filterPills, optionLabel, type FilterGroup } from "../lib/filterLabels";
 import type { FilterState, Match, Offered } from "../lib/filterState";
 import { Popover } from "./Popover";
 import { Sheet } from "./Sheet";
@@ -199,7 +199,7 @@ function PhoneFilters(props: Props) {
           <div className="tray-row tray-years">
             <YearRange {...props} />
           </div>
-          {FILTER_GROUPS.map((group) => {
+          {DISPLAY_GROUPS.map((group) => {
             const open = openKey === group.key;
             const panelId = `${trayId}-${group.key}`;
             return (
@@ -237,14 +237,19 @@ export function FilterPanel(props: Props) {
 function DesktopFilters(props: Props) {
   const { idPrefix, state, offered, inverted, onState } = props;
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const [more, setMore] = useState(false);
   const close = useRef(() => setOpenKey(null)).current;
+  const chosen = (g: FilterGroup) => (state[g.key] as unknown[]).length > 0;
+  // Primary groups always show; the others when "More filters" is on or when they hold a chosen value.
+  const folded = DISPLAY_GROUPS.filter((g) => !PRIMARY_GROUPS.includes(g.key) && !chosen(g));
+  const shown = DISPLAY_GROUPS.filter((g) => more || !folded.includes(g));
 
   return (
     <section className="filter-panel" aria-label="Filters">
       <div className="filter-bar">
         <SearchBox {...props} />
         <YearRange {...props} />
-        {FILTER_GROUPS.map((group) => (
+        {shown.map((group) => (
           <Popover
             key={group.key}
             id={`${idPrefix}-${group.key}`}
@@ -257,6 +262,11 @@ function DesktopFilters(props: Props) {
             <GroupFields group={group} offered={offered} state={state} onState={onState} />
           </Popover>
         ))}
+        {folded.length > 0 && (
+          <button type="button" className="btn btn-ghost more-filters" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+            {more ? "Fewer filters" : `More filters · ${folded.length}`}
+          </button>
+        )}
       </div>
       {inverted && (
         <p className="year-error" role="status">

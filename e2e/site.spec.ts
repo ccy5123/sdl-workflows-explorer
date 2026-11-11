@@ -1,5 +1,6 @@
 // SPEC-SITE-001 AC-6, AC-7 and SPEC-UI-001 AC-8 to AC-10: the home and about pages in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
+import { openDataPage } from "./routes";
 import type { IndexJson, ReleaseDocs, TaxonomyJson } from "../src/data/types";
 import { formatCitation } from "../src/lib/citation";
 import { FEATURED_PLATFORM, SEARCH_EXAMPLES } from "../src/lib/home";
@@ -36,11 +37,15 @@ test("AC-8: home order, links, citation and featured platform", async ({ page })
   await expect(main.locator("h1")).toHaveText(heroTitle(index.counts.platforms));
   await expect(main.locator(".hero-lead")).toHaveText(heroLead(index.counts.papers));
   await expect(main.locator(".hero-chips")).toContainText(`Release ${index.release.version}`);
+  const tasks = main.locator(".hero-tasks a");
+  await expect(tasks.locator("strong")).toHaveText(["Explore platforms", "See how one is built", "Sketch your workflow", "Download data"]);
+  await expect(tasks.nth(1)).toHaveAttribute("href", `#/platform/${FEATURED_PLATFORM}`);
+  await expect(tasks.nth(2)).toHaveAttribute("href", "#/workflow");
   await expect(main.locator(".hero-chips")).toContainText("CC BY 4.0");
   const search = main.getByRole("searchbox", { name: SEARCH_LABEL });
   await expect(search).toHaveAttribute("placeholder", searchPlaceholder(index.counts.platforms));
-  await expect(main.getByRole("link", { name: "Explore platforms" })).toHaveAttribute("href", "#/browse?view=platforms");
-  const download = main.getByRole("link", { name: "Download data", exact: true });
+  await expect(main.getByRole("link", { name: /^Explore platforms/ })).toHaveAttribute("href", "#/browse?view=platforms");
+  const download = main.getByRole("link", { name: /^Download data/ });
   await expect(download).toHaveAttribute("href", `https://doi.org/${index.release.doi}`);
 
   const featured = main.locator(".featured");
@@ -63,7 +68,7 @@ test("AC-8: home order, links, citation and featured platform", async ({ page })
   const cards = main.locator(".view-card");
   await expect(cards).toHaveCount(6);
   await expect(cards.locator(".view-card-name")).toHaveText(VIEWS.map((v) => v.name));
-  for (const [i, href] of [`#/platform/${FEATURED_PLATFORM}`, "#/browse", "#/trends", "#/taxonomy", "#/benchmark", "#/workflow"].entries()) {
+  for (const [i, href] of [`#/platform/${FEATURED_PLATFORM}`, "#/browse?view=platforms", "#/trends", "#/taxonomy", "#/benchmark", "#/workflow"].entries()) {
     await expect(cards.nth(i).locator("a.view-card-link")).toHaveAttribute("href", href);
   }
   await expect(main.getByRole("link", { name: "Trends", exact: true })).toHaveAccessibleDescription(VIEWS[2]!.description);
@@ -76,9 +81,9 @@ test("AC-8: home order, links, citation and featured platform", async ({ page })
   expect(await cff.locator("pre").textContent()).toBe(docs.citation_cff);
   await expect(main.getByRole("link", { name: "Read the data card" })).toHaveAttribute("href", "#/about");
 
-  // Document order: hero heading, search, buttons, featured card, stat tiles, view cards, list, citation, sample card.
+  // Document order: hero heading, search, task links, featured card, view cards, list, stat tiles, citation, sample card.
   const tops = await Promise.all(
-    [main.locator("h1"), search, download, featured, tiles.first(), cards.first(), main.locator('[data-list="platforms"]'),
+    [main.locator("h1"), search, download, featured, cards.first(), main.locator('[data-list="platforms"]'), tiles.first(),
       main.locator("#cite-title")].map((l) => l.evaluate((e) => e.getBoundingClientRect().top + window.scrollY)),
   );
   // The sample card sits beside the citation card at this width, after it in reading order.
@@ -156,7 +161,7 @@ test("screen check: at 375 px the hero stacks above the featured card and the ca
   await page.goto("/#/");
   await expect(page.locator(".fp-step").first()).toBeVisible();
   const [lead, featured, card] = await Promise.all(
-    [".hero-actions", ".featured", ".view-card"].map((s) => page.locator(s).first().boundingBox()),
+    [".hero-tasks", ".featured", ".view-card"].map((s) => page.locator(s).first().boundingBox()),
   );
   expect(featured!.y).toBeGreaterThan(lead!.y + lead!.height - 1);
   for (const box of [featured!, card!]) {
@@ -168,9 +173,8 @@ test("screen check: at 375 px the hero stacks above the featured card and the ca
 test("AC-7: about page summary, limits and full data card", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/");
-  const nav = page.getByRole("navigation");
-  await expect(nav.getByRole("link", { name: "About", exact: true })).toHaveAttribute("href", "#/about");
-  await nav.getByRole("link", { name: "About", exact: true }).click();
+  await openDataPage(page, "About the data");
+  expect(await page.evaluate(() => window.location.hash)).toBe("#/about");
   const docs = await fetchJson<ReleaseDocs>(page, "data/release-docs.json");
   const index = await fetchJson<IndexJson>(page, "data/index.json");
   const main = page.locator("main");

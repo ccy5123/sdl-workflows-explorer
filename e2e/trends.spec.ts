@@ -1,5 +1,6 @@
 // SPEC-TRENDS-001 AC-3 (inverted inputs) and AC-9 to AC-16: the trends dashboard in Chromium against the e2e build.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { NAV_TAB_LINKS } from "./routes";
 import { PINNED_DOI } from "../tests/pinned-release";
 
 function trackErrors(page: Page): string[] {
@@ -45,7 +46,7 @@ test("AC-9: route, navigation and split control", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/");
   const nav = page.getByRole("navigation");
-  await expect(nav.getByRole("link")).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy", "Benchmark", "Workflow", "About"]);
+  await expect(nav.getByRole("link")).toHaveText(NAV_TAB_LINKS);
   await nav.getByRole("link", { name: "Trends", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Trends", level: 1 })).toBeVisible();
   await expect(splitRadio(page, "Integration mode")).toBeChecked();

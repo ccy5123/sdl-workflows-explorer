@@ -11,6 +11,7 @@ import { show } from "../lib/evidence";
 import { matchingPapers, matchingPlatforms } from "../lib/filterApply";
 import {
   PAPER_TABLE_NOTE,
+  autonomyText,
   clearFilters,
   offeredValues,
   yearsFromInputs,
@@ -25,6 +26,17 @@ import { trendsHash } from "../lib/trends";
 const paperId = (p: PaperRow) => p.paper_id;
 const platformId = (l: PlatformRow) => l.platform_id;
 const joined = (xs: readonly string[]) => xs.join(", ");
+
+/** An autonomy level with its scale; hovering it, or the note under the table, says what the level means. */
+function autonomyCell(kind: "sw" | "hw", level: number) {
+  const { short, long } = autonomyText(kind, level);
+  return (
+    <span className="autonomy" title={long}>
+      {short}
+    </span>
+  );
+}
+
 /** Vocabulary codes of a cell: readable names (code in each title), or the codes themselves when asked for. */
 function codeCell(kind: string, xs: readonly string[], codes: boolean) {
   if (!xs.length) return show(null);
@@ -73,8 +85,8 @@ function paperColumns(links: Map<string, PlatformRow[]>, codes: boolean): Col<Pa
       sort: { kind: "text", value: (p) => p.integration_mode },
       cell: (p) => codeCell("transfer_mode", [p.integration_mode], codes),
     },
-    { id: "sw", header: "Software autonomy", num: true, sort: { kind: "number", value: (p) => p.sw_autonomy }, cell: (p) => p.sw_autonomy },
-    { id: "hw", header: "Hardware autonomy", num: true, sort: { kind: "number", value: (p) => p.hw_autonomy }, cell: (p) => p.hw_autonomy },
+    { id: "sw", header: "Software autonomy", num: true, sort: { kind: "number", value: (p) => p.sw_autonomy }, cell: (p) => autonomyCell("sw", p.sw_autonomy) },
+    { id: "hw", header: "Hardware autonomy", num: true, sort: { kind: "number", value: (p) => p.hw_autonomy }, cell: (p) => autonomyCell("hw", p.hw_autonomy) },
     {
       id: "platforms",
       header: "Platforms",
@@ -223,7 +235,7 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
       <div className="browse-layout">
         <div className="browse-results">
           <div className="table-switch" role="group" aria-label="Table shown">
-            {(["papers", "platforms"] as const).map((view) => (
+            {(["platforms", "papers"] as const).map((view) => (
               <button key={view} type="button" aria-pressed={state.view === view} onClick={() => apply({ ...state, view })}>
                 {view === "papers" ? "Papers" : "Platforms"}
               </button>

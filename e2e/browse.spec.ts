@@ -24,6 +24,8 @@ const filterButton = (page: Page, legend: string) =>
 /** Opens a filter group's popover if it is closed. */
 async function openFilter(page: Page, legend: string) {
   const b = filterButton(page, legend);
+  // Groups other than field tag, module types and unit operations fold under "More filters" until they hold a value.
+  if ((await b.count()) === 0) await page.locator(".filter-panel").getByRole("button", { name: /^More filters/ }).click();
   if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
 }
 
@@ -91,7 +93,7 @@ test("AC-9: a filtered URL opens the browser", async ({ page }) => {
 
   const nav = page.getByRole("navigation");
   await expect(nav.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("href", "#/");
-  await expect(nav.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute("href", "#/browse");
+  await expect(nav.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute("href", "#/browse?view=platforms");
   await nav.getByRole("link", { name: "Home", exact: true }).click();
   await expect(page.locator(".stat-tiles")).toBeVisible(); // Home (SPEC-UI-001: stat tiles and a 20-row list)
   await expect(page.locator("[data-list=platforms] > li")).toHaveCount(20);
@@ -101,7 +103,8 @@ test("AC-9: a filtered URL opens the browser", async ({ page }) => {
 test("AC-10: filters write the URL without adding history entries", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("navigation").getByRole("link", { name: "Browse", exact: true }).click();
-  await expect(countLine(page)).toHaveText("237 of 237 papers");
+  // The Browse tab opens the platform table.
+  await expect(countLine(page)).toHaveText("279 of 279 platforms");
   const length = await page.evaluate(() => history.length);
   await tableSwitch(page, "Platforms").click();
   await search(page).pressSequentially("chemspeed");
@@ -118,14 +121,15 @@ test("AC-10: the Browse link resets a filtered browser", async ({ page }) => {
   await expect(countLine(page)).toHaveText("3 of 279 platforms");
   await page.getByRole("navigation").getByRole("link", { name: "Browse", exact: true }).click();
   await expect(search(page)).toHaveValue("");
-  await expect(tableSwitch(page, "Papers")).toHaveAttribute("aria-pressed", "true");
-  await expect(countLine(page)).toHaveText("237 of 237 papers");
-  expect(await hash(page)).toBe("#/browse");
+  await expect(tableSwitch(page, "Platforms")).toHaveAttribute("aria-pressed", "true");
+  await expect(countLine(page)).toHaveText("279 of 279 platforms");
+  expect(await hash(page)).toBe("#/browse?view=platforms");
 });
 
 test("REQ-003: Back from a platform opened in a filtered browser restores the filters", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("navigation").getByRole("link", { name: "Browse", exact: true }).click();
+  await tableSwitch(page, "Papers").click();
   await search(page).pressSequentially("Bedard2018");
   expect(await hash(page)).toBe("#/browse?q=Bedard2018");
   await rows(page, "papers").locator("td").last().getByRole("link", { name: "P2", exact: true }).click();
@@ -304,7 +308,7 @@ test("AC-14: the comparison page", async ({ page }) => {
 async function expectCompareError(page: Page, texts: string[]) {
   const alert = page.getByRole("alert");
   for (const t of texts) await expect(alert).toContainText(t);
-  await expect(alert.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute("href", "#/browse");
+  await expect(alert.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute("href", "#/browse?view=platforms");
   await expect(alert.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("href", "#/");
 }
 
@@ -412,9 +416,10 @@ test("Follow-up: Compare shows the comparison page at once, before the hashchang
 test("SPEC-TAXO-001 AC-14: the unit-operation filter", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/browse?view=platforms");
-  // The group follows Transfer modes in the bar, and its popover holds the options then the match control.
+  // The group follows Module types in the bar (both shown before "More filters"), and its popover holds the options
+  // then the match control.
   const buttons = await page.locator(".filter-panel .filter-button").allTextContents();
-  expect(buttons.indexOf("Unit operations")).toBe(buttons.indexOf("Transfer modes") + 1);
+  expect(buttons.indexOf("Unit operations")).toBe(buttons.indexOf("Module types") + 1);
   await openFilter(page, "Unit operations");
   await expect(group(page, "Unit operations").getByRole("checkbox")).toHaveCount(31);
   expect(await page.locator(".filter-popover-panel legend").allTextContents()).toEqual(["Unit operations", "Unit operations match"]);

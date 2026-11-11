@@ -249,7 +249,7 @@ test("Follow-up: the graph stays readable after Fit to view and the platform id 
 test("plain language: the module table's Part of the platform column and its note", async ({ page }) => {
   await page.goto("/#/platform/Aand2024/P1");
   const table = page.locator('[data-table="modules"]');
-  await expect(table.locator("thead th")).toHaveText(["Id", "Type", "Name in paper", "Part of the platform"]);
+  await expect(table.locator("thead th")).toHaveText(["Type", "Name in paper", "Part of the platform", "Id"]);
   await expect(page.locator('[aria-labelledby="modules-heading"] .table-note')).toHaveText(
     "Part of the platform: yes for modules of the platform, no for equipment outside it that the loop uses.",
   );
@@ -261,7 +261,7 @@ test("screen check: module and connection ids stay on one line at 375 px", async
   await page.goto("/#/platform/Aand2024/P1");
   await expect(page.locator('[data-table="modules"] tbody tr')).toHaveCount(5);
   for (const name of ["modules", "connections"]) {
-    const lines = await page.locator(`[data-table="${name}"] tbody td > code`).evaluateAll((codes) =>
+    const lines = await page.locator(`[data-table="${name}"] tbody td code`).evaluateAll((codes) =>
       codes.map((c) => new Set([...c.getClientRects()].map((r) => Math.round(r.top))).size),
     );
     expect(lines.length, name).toBeGreaterThan(0);

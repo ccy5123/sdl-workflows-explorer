@@ -1,6 +1,6 @@
 // SPEC-UI-001 AC-25: filter groups, option labels and active-filter pills of the filter bar (REQ-025).
 import { describe, expect, it } from "vitest";
-import { FILTER_GROUPS, filterPills, optionLabel } from "../src/lib/filterLabels";
+import { DISPLAY_GROUPS, FILTER_GROUPS, filterPills, optionLabel } from "../src/lib/filterLabels";
 import { DEFAULT_STATE } from "../src/lib/filterState";
 
 describe("FILTER_GROUPS", () => {
@@ -68,5 +68,11 @@ describe("filterPills", () => {
     expect(years!.remove(state)).toEqual({ ...state, years: { from: null, to: null } });
     expect(catalysis!.remove(state)).toEqual({ ...state, field: ["biology_biochem"] });
     expect(q!.remove(state)).toEqual({ ...state, q: "" });
+  });
+});
+
+describe("DISPLAY_GROUPS", () => {
+  it("puts field tag, module types and unit operations first, then the other groups in bar order", () => {
+    expect(DISPLAY_GROUPS.map((g) => g.key)).toEqual(["field", "mt", "uo", "im", "sw", "hw", "tm"]);
   });
 });

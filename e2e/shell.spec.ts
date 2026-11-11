@@ -3,7 +3,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { IndexJson } from "../src/data/types";
 import { SITE_TOKENS } from "../src/lib/siteTokens";
-import { READY, ROUTES } from "./routes";
+import { DATA_LINKS, MENU_LINKS, NAV_TAB_LINKS, READY, ROUTES } from "./routes";
 
 const rgb = (hex: string) =>
   `rgb(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)})`;
@@ -16,13 +16,35 @@ for (const route of ROUTES) {
     await page.goto(`/${route.hash}`);
     await expect(page.locator(READY)).toBeVisible();
     const nav = page.getByRole("navigation", { name: "Main" });
-    await expect(nav.getByRole("link")).toHaveText([
-      "SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy", "Benchmark", "Workflow", "About",
-    ]);
+    await expect(nav.getByRole("link")).toHaveText(NAV_TAB_LINKS);
+    await expect(nav.locator(".nav-group-button")).toHaveText(/^Data/);
     await page.mouse.wheel(0, 1500);
     await expect.poll(() => page.evaluate(() => Math.round(document.querySelector(".topbar")!.getBoundingClientRect().top))).toBe(0);
   });
 }
+
+test("Data tab: lists the pages about the data, closes on Escape, and marks the tab on those pages", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.goto("/#/");
+  await expect(page.locator(READY)).toBeVisible();
+  const tab = page.locator(".nav-group-button");
+  await expect(tab).toHaveAttribute("aria-expanded", "false");
+  await expect(tab).not.toHaveAttribute("aria-current", /.*/);
+  await tab.click();
+  const panel = page.locator(".nav-group-panel");
+  await expect(panel.getByRole("link")).toHaveText(DATA_LINKS);
+  await expect(panel.getByRole("link").first()).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(tab).toBeFocused();
+
+  await tab.click();
+  await panel.getByRole("link", { name: "Taxonomy", exact: true }).click();
+  await expect(page).toHaveURL(/#\/taxonomy$/);
+  await expect(panel).toBeHidden();
+  await expect(tab).toHaveAttribute("aria-current", "page");
+  await expect(tab).toHaveText(/^Data, Taxonomy/);
+});
 
 test("AC-6: the version chip links to the release DOI", async ({ page }) => {
   await page.goto("/#/");
@@ -33,7 +55,7 @@ test("AC-6: the version chip links to the release DOI", async ({ page }) => {
 });
 
 // SPEC-UI-001 AC-14: below 800 px the tabs collapse into a menu (REQ-016).
-const VIEW_LINKS = ["Home", "Browse", "Trends", "Taxonomy", "Benchmark", "Workflow", "About"];
+const VIEW_LINKS = MENU_LINKS;
 
 const pageOverflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

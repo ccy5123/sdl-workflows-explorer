@@ -1,5 +1,6 @@
 // SPEC-SIM-001 AC-5 to AC-8 and the outputs of AC-9 to AC-16 in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
+import { NAV_TAB_LINKS } from "./routes";
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -21,7 +22,7 @@ test("AC-5, AC-6: empty builder, title and nav; build, edit and refuse values", 
   await expect(main(page).locator("h1")).toHaveText("Workflow builder");
   await expect(page).toHaveTitle("Workflow builder · SDL Workflows Explorer");
   const nav = page.locator("nav.site-nav a");
-  await expect(nav).toHaveText(["SDL Workflows Explorer", "Home", "Browse", "Trends", "Taxonomy", "Benchmark", "Workflow", "About"]);
+  await expect(nav).toHaveText(NAV_TAB_LINKS);
   await expect(page.locator('nav.site-nav a[aria-current="page"]')).toHaveText("Workflow");
   await expect(main(page)).toContainText("Add at least one step to see the three outputs.");
 

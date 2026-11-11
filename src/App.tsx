@@ -7,7 +7,8 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IssueLink } from "./components/IssueLink";
 import { Loading } from "./components/Loading";
-import { SiteMenu, type NavItem } from "./components/SiteMenu";
+import { NavGroup } from "./components/NavGroup";
+import { SiteMenu, isGroup, type NavEntry } from "./components/SiteMenu";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { VisitorCount } from "./components/VisitorCount";
 import type { IndexJson } from "./data/types";
@@ -31,15 +32,24 @@ const Benchmark = lazy(() => import("./views/Benchmark").then((m) => ({ default:
 // The workflow builder and its outputs load in their own chunk and fetch data/simulation.json themselves.
 const Workflow = lazy(() => import("./views/Workflow").then((m) => ({ default: m.Workflow })));
 
-/** The view links: tabs from 800 px up, the menu panel below (SPEC-UI-001 REQ-004, REQ-016). */
-const NAV_ITEMS: readonly NavItem[] = [
+/**
+ * The view links: tabs from 800 px up, the menu panel below (SPEC-UI-001 REQ-004, REQ-016). The four views a reader
+ * starts from are tabs; the pages about the data sit under one "Data" tab. Browse opens on its platform table.
+ */
+const NAV_ITEMS: readonly NavEntry[] = [
   { href: "#/", text: "Home" },
-  { href: "#/browse", text: "Browse" },
+  { href: "#/browse?view=platforms", text: "Browse" },
   { href: "#/trends", text: "Trends" },
-  { href: "#/taxonomy", text: "Taxonomy" },
-  { href: "#/benchmark", text: "Benchmark" },
   { href: "#/workflow", text: "Workflow" },
-  { href: "#/about", text: "About" },
+  {
+    text: "Data",
+    items: [
+      { href: "#/about", text: "About the data", current: "About" },
+      { href: "#/guide", text: "Getting started" },
+      { href: "#/taxonomy", text: "Taxonomy" },
+      { href: "#/benchmark", text: "Benchmark" },
+    ],
+  },
 ];
 
 /** Current hash, and a navigate function that shows the new view in the same render as the click. */
@@ -121,9 +131,15 @@ export function App() {
               </span>
             </a>
             <ul className="nav-tabs">
-              {NAV_ITEMS.map((item) => (
-                <li key={item.href}>{navLink(item.href, item.text)}</li>
-              ))}
+              {NAV_ITEMS.map((entry) =>
+                isGroup(entry) ? (
+                  <li key={entry.text}>
+                    <NavGroup text={entry.text} items={entry.items} current={current} hash={hash} />
+                  </li>
+                ) : (
+                  <li key={entry.href}>{navLink(entry.href, entry.text)}</li>
+                ),
+              )}
             </ul>
           </nav>
           <div className="topbar-actions">

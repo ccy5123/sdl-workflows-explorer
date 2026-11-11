@@ -17,9 +17,18 @@ async function insideViewport(page: Page, locator: Locator) {
 test("UI AC-25: Browse shows a filter bar of popover buttons instead of checkbox columns", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/#/browse");
-  for (const legend of ["Field tag", "Integration mode", "Software autonomy", "Hardware autonomy", "Module types", "Transfer modes", "Unit operations"]) {
+  // Three groups show at first; the other four fold under "More filters".
+  for (const legend of ["Field tag", "Module types", "Unit operations"]) {
     await expect(popoverButton(page, legend)).toHaveAttribute("aria-expanded", "false");
   }
+  await expect(popoverButton(page, "Integration mode")).toHaveCount(0);
+  const more = bar(page).getByRole("button", { name: "More filters · 4", exact: true });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await more.click();
+  for (const legend of ["Integration mode", "Software autonomy", "Hardware autonomy", "Transfer modes"]) {
+    await expect(popoverButton(page, legend)).toHaveAttribute("aria-expanded", "false");
+  }
+  await expect(bar(page).getByRole("button", { name: "Fewer filters", exact: true })).toHaveAttribute("aria-expanded", "true");
   await expect(bar(page).locator('input[type="checkbox"]:visible')).toHaveCount(0);
   await expect(page.getByLabel("Search ids, titles and platform names")).toBeVisible();
   await expect(page.getByLabel("From", { exact: true })).toBeVisible();
@@ -66,6 +75,7 @@ test("UI AC-25: one popover at a time; a click outside closes it; Clear all rese
 
   await popoverButton(page, "Module types").click();
   await expect(page.getByRole("group", { name: "Module types match" }).getByRole("radio", { name: "all", exact: true })).toBeChecked();
+  await bar(page).getByRole("button", { name: /^More filters/ }).click();
   await popoverButton(page, "Transfer modes").click();
   await expect(popoverButton(page, "Module types")).toHaveAttribute("aria-expanded", "false");
   await expect(popoverButton(page, "Transfer modes")).toHaveAttribute("aria-expanded", "true");

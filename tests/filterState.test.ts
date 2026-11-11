@@ -1,6 +1,6 @@
 // Number of active filters shown on the filter toggle (follow-up to SPEC-BROWSE-001).
 import { describe, expect, it } from "vitest";
-import { activeFilterCount, clearFilters, DEFAULT_STATE } from "../src/lib/filterState";
+import { activeFilterCount, autonomyText, clearFilters, DEFAULT_STATE } from "../src/lib/filterState";
 
 describe("activeFilterCount", () => {
   it("is 0 for the default state, whatever table is shown or match mode is set", () => {
@@ -47,5 +47,15 @@ describe("unit-operation filter state (SPEC-TAXO-001 AC-7)", () => {
       ...DEFAULT_STATE,
       view: "platforms",
     });
+  });
+});
+
+describe("autonomyText", () => {
+  it("gives the level with its scale and what the level means", () => {
+    expect(autonomyText("sw", 2)).toEqual({
+      short: "2 of 3",
+      long: "Software autonomy level 2 of 3: closed-loop iteration in which results choose the next experiment",
+    });
+    expect(autonomyText("hw", 1).long).toBe("Hardware autonomy level 1 of 3: a device doing one kind of task");
   });
 });

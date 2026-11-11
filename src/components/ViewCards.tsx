@@ -21,7 +21,7 @@ const ICONS: Record<ViewKey, LucideIcon> = {
 
 const HREFS: Record<ViewKey, string> = {
   platform: platformHash(FEATURED_PLATFORM),
-  browse: "#/browse",
+  browse: "#/browse?view=platforms",
   trends: "#/trends",
   taxonomy: "#/taxonomy",
   benchmark: "#/benchmark",
