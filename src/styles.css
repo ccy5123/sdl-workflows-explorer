@@ -1134,7 +1134,14 @@ h3 {
 
 .guide-task {
   margin-top: var(--section-gap);
+  padding: 22px 26px 24px;
   scroll-margin-top: 80px;
+}
+
+@media (max-width: 799.98px) {
+  .guide-task {
+    padding: 18px 18px 20px;
+  }
 }
 
 .guide-task h2 {

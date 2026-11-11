@@ -11,7 +11,8 @@ import { Skeleton } from "../components/Loading";
 import { ViewCards } from "../components/ViewCards";
 import { useJson } from "../components/useJson";
 import { useReleaseDocs } from "../components/useReleaseDocs";
-import type { BenchmarkJson, IndexJson, PlatformFile, SearchJson, TaxonomyJson } from "../data/types";
+import { useSearchIndex } from "../components/useSearchIndex";
+import type { BenchmarkJson, IndexJson, PlatformFile, TaxonomyJson } from "../data/types";
 import { formatCitation, licenseLabel } from "../lib/citation";
 import { PAPER_LINK_TEXT, paperUrl } from "../lib/contribute";
 import { show } from "../lib/evidence";
@@ -54,14 +55,7 @@ export function Home({ index }: { index: IndexJson }) {
   const taxonomy = useJson<TaxonomyJson>("data/taxonomy.json");
   const benchmark = useJson<BenchmarkJson>("data/benchmark.json");
   // Module names for the search (search.json); until they load the search reads names, ids, module types and steps.
-  const search = useJson<SearchJson>("data/search.json");
-  const searchable = useMemo(
-    () =>
-      search.data
-        ? index.platforms.map((p) => ({ ...p, module_names: search.data!.module_names[p.platform_id] ?? [] }))
-        : index.platforms,
-    [index, search.data],
-  );
+  const searchable = useSearchIndex(index).platforms;
   const featured = featuredFile.data?.platforms.find((p) => p.platform_id === FEATURED_PLATFORM) ?? null;
   const featuredPaper = index.papers.find((p) => p.paper_id === featured?.paper_id);
 

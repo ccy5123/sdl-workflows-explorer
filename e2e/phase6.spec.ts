@@ -254,7 +254,7 @@ test("UI AC-52: Browse tables fit their box at 1440 px; narrower, they scroll in
   await expect(cards).toHaveCount(25);
   await main(page).getByRole("button", { name: "Show 25 more", exact: true }).click();
   await expect(cards).toHaveCount(50);
-  await main(page).getByLabel("Search ids, titles and platform names").fill("flow");
+  await main(page).getByLabel("Search ids, titles, platform names and instruments").fill("flow");
   await expect.poll(() => cards.count()).toBeLessThanOrEqual(25);
   expect(await pageOverflow(page)).toBeLessThanOrEqual(0);
 });

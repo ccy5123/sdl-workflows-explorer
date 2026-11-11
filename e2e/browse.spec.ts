@@ -14,7 +14,7 @@ const box = (page: Page, groupName: string, name: string | RegExp) =>
   group(page, groupName).getByRole("checkbox", { name, exact: typeof name === "string" });
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 const tableSwitch = (page: Page, name: string) => group(page, "Table shown").getByRole("button", { name, exact: true });
-const search = (page: Page) => page.getByLabel("Search ids, titles and platform names");
+const search = (page: Page) => page.getByLabel("Search ids, titles, platform names and instruments");
 const selectBox = (page: Page, id: string) => page.getByRole("checkbox", { name: `Select ${id} for comparison`, exact: true });
 const rows = (page: Page, table: string) => page.locator(`.browse [data-table="${table}"] tbody tr`);
 /** Popover button of a filter group in the filter bar ("Field tag" or "Field tag · 2"; SPEC-UI-001 REQ-025). */
@@ -108,7 +108,7 @@ test("AC-10: filters write the URL without adding history entries", async ({ pag
   const length = await page.evaluate(() => history.length);
   await tableSwitch(page, "Platforms").click();
   await search(page).pressSequentially("chemspeed");
-  await expect(countLine(page)).toHaveText("3 of 279 platforms");
+  await expect(countLine(page)).toHaveText("9 of 279 platforms");
   expect(await hash(page)).toBe("#/browse?view=platforms&q=chemspeed");
   expect(await page.evaluate(() => history.length)).toBe(length);
 
@@ -118,7 +118,7 @@ test("AC-10: filters write the URL without adding history entries", async ({ pag
 
 test("AC-10: the Browse link resets a filtered browser", async ({ page }) => {
   await page.goto("/#/browse?view=platforms&q=chemspeed");
-  await expect(countLine(page)).toHaveText("3 of 279 platforms");
+  await expect(countLine(page)).toHaveText("9 of 279 platforms");
   await page.getByRole("navigation").getByRole("link", { name: "Browse", exact: true }).click();
   await expect(search(page)).toHaveValue("");
   await expect(tableSwitch(page, "Platforms")).toHaveAttribute("aria-pressed", "true");

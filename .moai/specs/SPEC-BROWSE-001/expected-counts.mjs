@@ -57,16 +57,19 @@ const fieldOk = (tags, s) => s.field.length === 0 || s.field.some((f) => tags.in
 const paperLevel = (p, s) => (s.im.length === 0 || s.im.includes(p.integration_mode)) && (s.sw.length === 0 || s.sw.includes(p.sw_autonomy)) && (s.hw.length === 0 || s.hw.includes(p.hw_autonomy));
 const platLevel = (l, s) => setMatch(l.module_types, s.mt, s.mtMatch) && setMatch(l.material_transfer_modes, s.tm, s.tmMatch);
 const has = (t, q) => t != null && t.toLowerCase().includes(q);
+// Module names as the papers state them (public/data/search.json, 2026-11-11): the text search matches them too.
+const NAMES = JSON.parse(readFileSync("public/data/search.json", "utf8")).module_names;
+const moduleHit = (platformId, q) => (NAMES[platformId] ?? []).some((n) => has(n, q));
 const paperOk = (p, s) => {
   const q = s.q.trim().toLowerCase();
   return yearOk(p.first_public_year, s) && fieldOk(p.field_tags, s) && paperLevel(p, s) &&
     (s.mt.length === 0 && s.tm.length === 0 ? true : L.some((l) => l.paper_id === p.paper_id && platLevel(l, s))) &&
-    (!q || has(p.paper_id, q) || has(p.title, q));
+    (!q || has(p.paper_id, q) || has(p.title, q) || L.some((l) => l.paper_id === p.paper_id && moduleHit(l.platform_id, q)));
 };
 const platOk = (l, s) => {
   const q = s.q.trim().toLowerCase();
   return yearOk(l.first_public_year, s) && fieldOk(l.field_tags, s) && paperLevel(byId[l.paper_id], s) && platLevel(l, s) &&
-    (!q || has(l.platform_id, q) || has(l.platform_name, q));
+    (!q || has(l.platform_id, q) || has(l.platform_name, q) || moduleHit(l.platform_id, q));
 };
 const cases = {
   "empty": {},

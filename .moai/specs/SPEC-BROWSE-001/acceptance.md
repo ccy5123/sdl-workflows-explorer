@@ -83,13 +83,15 @@ with platform `Alpha2020/P1` (name "Flow rig", mt [flow_reactor, software], tm [
 | tm fixed_tubing, robot_arm_gantry, match all | 21 | 24 |
 | tm fixed_tubing, robot_arm_gantry, match any | 214 | 254 |
 | mt flow_reactor and tm robot_arm_gantry | 9 | 9 |
-| q chemspeed | 0 | 3 |
+| q chemspeed | 7 | 9 |
 | years 2018–2024, field catalysis, mt flow_reactor | 6 | 6 |
 
 - Under "mt flow_reactor, liquid_handler, match all" and under "mt flow_reactor and tm robot_arm_gantry", paper
   `Zhang2025b` is not among the matching papers (flow_reactor only on `Zhang2025b/P2`; liquid_handler and
   robot_arm_gantry only on `Zhang2025b/P1`); under "match any" it is.
-- q chemspeed matches exactly `Christensen2021/P1`, `Moosavi2019/P1`, `StriethKalthoff2024/P2`.
+- q chemspeed matches exactly `Christensen2021/P1`, `Moosavi2019/P1`, `Ramirez2024/P1`, `Sim2024/P1`,
+  `StriethKalthoff2024/P1`, `StriethKalthoff2024/P2`, `StriethKalthoff2024/P3`, `Vescovi2023/P2`, `Wu2025c/P1`
+  (three by name, six by a module name; amended 2026-11-11).
 
 ### AC-6 Comparison assembly (REQ-014, REQ-009)
 - Fixture: steps given out of order come back sorted by `step_order`; a null performer stays null (shown as "—");

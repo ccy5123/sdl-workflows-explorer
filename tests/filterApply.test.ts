@@ -1,6 +1,8 @@
 // AC-4 and AC-5: row predicates over paper and platform rows (REQ-005, REQ-006, REQ-007).
 import { describe, expect, it } from "vitest";
-import type { PaperRow, PlatformRow } from "../src/data/types";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import type { PaperRow, PlatformRow, SearchJson } from "../src/data/types";
 import { matchingPapers, matchingPlatforms } from "../src/lib/filterApply";
 import { DEFAULT_STATE, type FilterState } from "../src/lib/filterState";
 import { dataAvailable, readIndex, warnIfMissing } from "./viewer-data";
@@ -116,6 +118,18 @@ describe("filter rules on the fixture (AC-4)", () => {
     expect(run({ q: "null" }).platforms).toEqual([]);
   });
 
+  it("also searches the module names stated in the paper, for the platform and for its paper", () => {
+    const named = [
+      { ...PLATFORMS[0]!, module_names: ["HPLC pumps", "Chemspeed SWING"] },
+      PLATFORMS[1]!,
+      { ...PLATFORMS[2]!, module_names: ["syringe pump"] },
+    ];
+    expect(run({ q: "chemspeed" }, PAPERS, named)).toEqual({ papers: ["Alpha2020"], platforms: ["Alpha2020/P1"] });
+    expect(run({ q: " PUMP" }, PAPERS, named)).toEqual({ papers: ["Alpha2020", "Beta2015"], platforms: ["Alpha2020/P1", "Beta2015/P2"] });
+    // Rows without module names (search.json not loaded) are searched by ids, titles and names only.
+    expect(run({ q: "pump" })).toEqual({ papers: [], platforms: [] });
+  });
+
   it("fails paper-level filters for a platform whose paper row is missing", () => {
     const orphan = platform(paper({ ...alpha, paper_id: "Gone1999" }), "P1", "x", [], []);
     expect(run({ im: ["fixed_tubing"] }, PAPERS, [...PLATFORMS, orphan]).platforms).toEqual(["Alpha2020/P1"]);
@@ -176,7 +190,12 @@ describe.skipIf(!dataAvailable)("unit-operation filter counts on the real index 
 });
 
 describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => {
-  const index = dataAvailable ? readIndex() : { papers: [], platforms: [] };
+  // The index as Browse searches it: each platform with its module names from search.json.
+  const names: SearchJson["module_names"] = dataAvailable
+    ? JSON.parse(readFileSync(join(import.meta.dirname, "..", "public", "data", "search.json"), "utf8")).module_names
+    : {};
+  const raw = dataAvailable ? readIndex() : { papers: [], platforms: [] };
+  const index = { papers: raw.papers, platforms: raw.platforms.map((p) => ({ ...p, module_names: names[p.platform_id] ?? [] })) };
   const count = (patch: Partial<FilterState>) => {
     const r = run(patch, index.papers, index.platforms);
     return [r.papers.length, r.platforms.length];
@@ -198,7 +217,7 @@ describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => 
     ["tm fixed_tubing, robot_arm_gantry, all", { tm: ["fixed_tubing", "robot_arm_gantry"] }, 21, 24],
     ["tm fixed_tubing, robot_arm_gantry, any", { tm: ["fixed_tubing", "robot_arm_gantry"], tmMatch: "any" }, 213, 253],
     ["mt flow_reactor and tm robot_arm_gantry", { mt: ["flow_reactor"], tm: ["robot_arm_gantry"] }, 9, 9],
-    ["q chemspeed", { q: "chemspeed" }, 0, 3],
+    ["q chemspeed", { q: "chemspeed" }, 7, 9],
     ["years 2018-2024, field catalysis, mt flow_reactor", { years: { from: 2018, to: 2024 }, field: ["catalysis"], mt: ["flow_reactor"] }, 6, 6],
   ])("%s → %i papers, %i platforms", (_name, patch, papers, platforms) => {
     expect(count(patch)).toEqual([papers, platforms]);
@@ -213,11 +232,19 @@ describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => 
     expect(any).toContain("Zhang2025b");
   });
 
-  it("matches exactly three platforms for 'chemspeed'", () => {
+  it("matches nine platforms for 'chemspeed': three by name, six by a Chemspeed module", () => {
     expect(run({ q: "chemspeed" }, index.papers, index.platforms).platforms).toEqual([
       "Christensen2021/P1",
       "Moosavi2019/P1",
+      "Ramirez2024/P1",
+      "Sim2024/P1",
+      "StriethKalthoff2024/P1",
       "StriethKalthoff2024/P2",
+      "StriethKalthoff2024/P3",
+      "Vescovi2023/P2",
+      "Wu2025c/P1",
     ]);
+    // Without the module names (search.json not loaded) only the three named ones match.
+    expect(run({ q: "chemspeed" }, raw.papers, raw.platforms).platforms).toHaveLength(3);
   });
 });

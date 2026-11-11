@@ -30,7 +30,7 @@ test("UI AC-25: Browse shows a filter bar of popover buttons instead of checkbox
   }
   await expect(bar(page).getByRole("button", { name: "Fewer filters", exact: true })).toHaveAttribute("aria-expanded", "true");
   await expect(bar(page).locator('input[type="checkbox"]:visible')).toHaveCount(0);
-  await expect(page.getByLabel("Search ids, titles and platform names")).toBeVisible();
+  await expect(page.getByLabel("Search ids, titles, platform names and instruments")).toBeVisible();
   await expect(page.getByLabel("From", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Clear all" })).toHaveCount(0);
   // The bar is one band above the results.
@@ -86,7 +86,7 @@ test("UI AC-25: one popover at a time; a click outside closes it; Clear all rese
   expect(await hash(page)).toBe("#/browse?view=platforms");
   await expect(page.locator(".filter-pills .pill")).toHaveCount(0);
   await expect(page.getByLabel("From", { exact: true })).toHaveValue("");
-  await expect(page.getByLabel("Search ids, titles and platform names")).toHaveValue("");
+  await expect(page.getByLabel("Search ids, titles, platform names and instruments")).toHaveValue("");
 });
 
 test("UI AC-25: at 375 px the filters fold into a tray that rises from the bottom, without sideways scroll", async ({ page }) => {

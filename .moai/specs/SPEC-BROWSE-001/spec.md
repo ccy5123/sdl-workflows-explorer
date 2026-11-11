@@ -27,6 +27,9 @@ depends_on: [SPEC-DATA-001, SPEC-VIEW-001]
   platform and an aborted request; the count script now prints the comparison rows. Also: totals taken from
   `index.json`, check order of comparison errors, match controls as radio groups, numeric order of per-platform
   links, unchecking and history behaviour of the comparison selection, more route, option, label and 375 px checks.
+- 2026-11-11 amended: the text search also matches the module names the papers state (`public/data/search.json`), so
+  a reader can search by instrument (Browse and Trends; the Home search already did). `q chemspeed` now counts 7
+  papers and 9 platforms (was 0 and 3); `expected-counts.mjs` applies the same rule.
 
 ## 1. Why
 
@@ -90,8 +93,10 @@ Year range, field tag and text search apply to each row's own values.
   no selected value, an empty year input or an empty search does not restrict. Within one checkbox group, a row
   passes when it has any of the selected values (OR), except for the two groups governed by REQ-006. The year range
   is inclusive on both ends and applies to the row's `first_public_year`. The field-tag filter applies to the row's
-  own `field_tags`. The text search trims the input and matches, case-insensitively as a substring, the paper id or
-  the title on a paper row, and the platform id or the platform name (a null name never matches) on a platform row.
+  own `field_tags`. The text search trims the input and matches, case-insensitively as a substring, the paper id,
+  the title, or a module name (as the paper states it) of one of the paper's platforms on a paper row, and the
+  platform id, the platform name (a null name never matches) or one of its module names on a platform row. Module
+  names come from `public/data/search.json`; until it loads, rows are searched without them.
 - **REQ-006** (ubiquitous) For module types and for transfer modes, each with its own switch, match mode "all" shall
   pass a platform whose `module_types` (or `material_transfer_modes`) contains every selected value, and match mode
   "any" shall pass a platform that contains at least one selected value.

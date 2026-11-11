@@ -1,7 +1,7 @@
 // Trends dashboard rules (SPEC-TRENDS-001 REQ-002, REQ-006 to REQ-009, REQ-013, REQ-014): the trends URL, year bins,
 // offered split values, link states, count tables and the caption texts. Pure: no UI code, no chart library.
-import type { PaperRow, PlatformRow } from "../data/types";
-import { matchingPapers, matchingPlatforms } from "./filterApply";
+import type { PaperRow } from "../data/types";
+import { matchingPapers, matchingPlatforms, type SearchablePlatform } from "./filterApply";
 import { HW_LABELS, INTEGRATION_MODE_TEXT, SW_LABELS, offeredValues, sortedText, type FilterState, type Offered, type View, type YearRange } from "./filterState";
 import { decodeFilters, encodeFilters } from "./filterUrl";
 import { displayLabel } from "./labels";
@@ -112,7 +112,7 @@ export function linkState(state: FilterState, bin: Bin, split: Split, value?: Sp
 
 interface IndexRows {
   papers: readonly PaperRow[];
-  platforms: readonly PlatformRow[];
+  platforms: readonly SearchablePlatform[];
 }
 
 /** Rows of the state's unit that the browser shows for it. */

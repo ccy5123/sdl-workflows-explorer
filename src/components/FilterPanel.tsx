@@ -83,11 +83,11 @@ function SearchBox({ state, onState }: Pick<Props, "state" | "onState">) {
   return (
     <label className="filter search">
       <Search size={15} className="search-icon" aria-hidden="true" />
-      <span className="visually-hidden">Search ids, titles and platform names</span>
+      <span className="visually-hidden">Search ids, titles, platform names and instruments</span>
       <input
         type="search"
         value={state.q}
-        placeholder="Search ids, titles, names"
+        placeholder="Search ids, titles, names, instruments"
         autoComplete="off"
         onChange={(e) => onState({ ...state, q: e.target.value })}
       />

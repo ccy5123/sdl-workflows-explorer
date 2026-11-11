@@ -7,6 +7,7 @@ import { DataTable, Truncated, type Col } from "../components/DataTable";
 import { FilterPanel } from "../components/FilterPanel";
 import { Label } from "../components/Label";
 import { PHONE_QUERY, useMedia } from "../components/useMedia";
+import { useSearchIndex } from "../components/useSearchIndex";
 import { show } from "../lib/evidence";
 import { matchingPapers, matchingPlatforms } from "../lib/filterApply";
 import {
@@ -204,8 +205,12 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
     for (const list of m.values()) list.sort((a, b) => suffixNumber(a.platform_id) - suffixNumber(b.platform_id));
     return m;
   }, [index]);
-  const papers = useMemo(() => matchingPapers(state, index.papers, index.platforms), [state, index]);
-  const platforms = useMemo(() => matchingPlatforms(state, index.papers, index.platforms), [state, index]);
+  // Module names from search.json, so the search box also finds instruments.
+  // Only a search reads them; without one the plain index keeps the tables from redrawing when search.json arrives.
+  const searchIndex = useSearchIndex(index);
+  const rowsFrom = state.q.trim() ? searchIndex : index;
+  const papers = useMemo(() => matchingPapers(state, rowsFrom.papers, rowsFrom.platforms), [state, rowsFrom]);
+  const platforms = useMemo(() => matchingPlatforms(state, rowsFrom.papers, rowsFrom.platforms), [state, rowsFrom]);
   const paperCols = useMemo(() => paperColumns(links, codes), [links, codes]);
   const platformCols = useMemo(
     () => platformColumns(selected, (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])), codes),

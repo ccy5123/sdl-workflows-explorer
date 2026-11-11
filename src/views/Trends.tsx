@@ -3,6 +3,7 @@
 // chart and "Split by" is a segmented control over the same radio buttons (SPEC-UI-001 REQ-025, REQ-026).
 import { useEffect, useMemo, useState } from "react";
 import { CountTable } from "../components/CountTable";
+import { useSearchIndex } from "../components/useSearchIndex";
 import { FilterPanel } from "../components/FilterPanel";
 import { ChartLegend, TrendsChart } from "../components/TrendsChart";
 import { PHONE_QUERY, useMedia } from "../components/useMedia";
@@ -81,7 +82,12 @@ export function Trends({ index }: { index: IndexJson }) {
     apply(clearFilters(state));
   };
 
-  const table = useMemo(() => countTable(state, split, index), [state, split, index]);
+  // Module names from search.json, so the search box counts the same rows as in Browse.
+  const searchIndex = useSearchIndex(index);
+  // Only a search reads the module names; without one the counts are the same, and keeping the plain index keeps the
+  // chart (and the keyboard focus in it) from redrawing when search.json arrives.
+  const counted = state.q.trim() ? searchIndex : index;
+  const table = useMemo(() => countTable(state, split, counted), [state, split, counted]);
   const unit = state.view;
   const all = unit === "papers" ? index.papers.length : index.platforms.length;
   const empty = table.total === 0;
