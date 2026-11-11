@@ -32,6 +32,7 @@ import type {
   PlatformRow,
   ReleaseDocs,
   ReleaseInfo,
+  SearchJson,
   SimulationJson,
   Step,
   TaxonomyExample,
@@ -52,6 +53,7 @@ export interface Derived {
   benchmarkItems: BenchmarkItemsJson;
   releaseDocs: ReleaseDocs;
   simulation: SimulationJson;
+  search: SearchJson;
 }
 
 // ---- CSV access -------------------------------------------------------------------------------
@@ -251,6 +253,15 @@ function readPlatformRows(
     };
   });
   return { rows: out, campaigns };
+}
+
+/** search.json: per platform, the distinct module names as the paper states them, in module order. */
+function buildSearch(graphs: GraphCore[]): SearchJson {
+  return {
+    module_names: Object.fromEntries(
+      graphs.map((g) => [g.platform_id, [...new Set(g.modules.flatMap((m) => (m.name_in_paper ? [m.name_in_paper] : [])))]]),
+    ),
+  };
 }
 
 function readGraphs(dir: string): GraphCore[] {
@@ -918,6 +929,7 @@ export function deriveAll(releaseDir: string): Derived {
     benchmarkItems: items,
     releaseDocs,
     simulation,
+    search: buildSearch(graphs),
   };
 }
 
@@ -930,5 +942,6 @@ export function writeDerived(derived: Derived, outDir: string): void {
   write("benchmark-items.json", derived.benchmarkItems);
   write("release-docs.json", derived.releaseDocs);
   write("simulation.json", derived.simulation);
+  write("search.json", derived.search);
   for (const [paperId, file] of Object.entries(derived.platformFiles)) write(`platforms/${paperId}.json`, file);
 }

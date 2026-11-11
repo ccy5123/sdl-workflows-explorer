@@ -907,6 +907,20 @@ h3 {
   background: var(--panel);
 }
 
+.suggestion-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.suggestion-reason {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
 .suggestion-name {
   min-width: 0;
   overflow: hidden;
@@ -946,6 +960,78 @@ h3 {
   flex-wrap: wrap;
   gap: 10px;
   padding-top: 4px;
+}
+
+.hero-guide {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Getting started (views/Guide.tsx). */
+.guide-lead,
+.guide-outcome,
+.guide-steps p {
+  max-width: 48rem;
+}
+
+.guide-contents ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-task {
+  margin-top: var(--section-gap);
+  scroll-margin-top: 80px;
+}
+
+.guide-task h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  scroll-margin-top: 80px;
+}
+
+.guide-task-number {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.9375rem;
+}
+
+.guide-outcome {
+  color: var(--muted);
+}
+
+.guide-steps {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.guide-steps li + li {
+  margin-top: 0.9rem;
+}
+
+.guide-steps p {
+  margin: 0;
+}
+
+.guide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  color: var(--accent-text);
+  font-weight: 600;
 }
 
 /* Featured platform card. */
@@ -1873,6 +1959,23 @@ button {
 .graph-wrap {
   position: relative;
   overflow: hidden;
+}
+
+/* Shown briefly when a plain wheel over the graph scrolls the page instead of zooming (graphCanvas.tsx). */
+.graph-wrap[data-wheel-hint]::after {
+  content: attr(data-wheel-hint);
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 3;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--card);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .graph {

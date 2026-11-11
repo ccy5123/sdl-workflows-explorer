@@ -3,7 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { BenchmarkJson, IndexJson, PlatformFile, PlatformGraph, TaxonomyJson } from "../src/data/types";
+import type { BenchmarkJson, IndexJson, PlatformFile, PlatformGraph, SearchJson, TaxonomyJson } from "../src/data/types";
 import {
   FEATURED_PLATFORM,
   SEARCH_EXAMPLES,
@@ -17,6 +17,7 @@ import {
   statTiles,
   taxonomyCounts,
 } from "../src/lib/home";
+import { searchPlatforms } from "../src/lib/platformFilter";
 
 const ev = { doc: "main", page: 1, locator: null };
 const mod = (id: string, type: string) => ({
@@ -164,10 +165,9 @@ describe.skipIf(!built)("Home on the pinned release (AC-5)", () => {
 
   it("offers example searches that each match a platform (AC-4)", () => {
     for (const q of SEARCH_EXAMPLES) {
-      const hit = index.platforms.some((p) =>
-        [p.platform_id, p.paper_id, p.platform_name ?? ""].some((s) => s.toLowerCase().includes(q.toLowerCase())),
-      );
-      expect(hit, q).toBe(true);
+      const search = JSON.parse(readFileSync(join(DATA, "search.json"), "utf8")) as SearchJson;
+      const rows = index.platforms.map((p) => ({ ...p, module_names: search.module_names[p.platform_id] ?? [] }));
+      expect(searchPlatforms(rows, q).length, q).toBeGreaterThan(0);
     }
   });
 

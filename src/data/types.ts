@@ -51,6 +51,15 @@ export interface PlatformRow {
   unit_operations: string[];
 }
 
+/**
+ * public/data/search.json: what the Home search reads beyond index.json, kept out of index.json so that file stays at
+ * its release baseline. `module_names`: per platform id, the distinct module names as the paper states them, in module
+ * order.
+ */
+export interface SearchJson {
+  module_names: Record<string, string[]>;
+}
+
 /** One author of the release's CITATION.cff (SPEC-SITE-001 REQ-001). */
 export interface CitationAuthor {
   family: string;

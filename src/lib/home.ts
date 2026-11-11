@@ -6,7 +6,8 @@ import type { IndexJson, Module, PaperRow, PlatformGraph, PlatformRow, TaxonomyJ
 export const FEATURED_PLATFORM = "Aand2024/P1";
 
 /** Example queries under the hero search; tests/home.test.ts checks that each matches a platform. */
-export const SEARCH_EXAMPLES = ["A-Lab GPSS", "RAINBOT", "flow reactor", "Aand2024"] as const;
+/** Example searches under the hero search: three instruments and one platform name, each matching a platform. */
+export const SEARCH_EXAMPLES = ["FT-IR", "XRD", "spin coater", "RAINBOT"] as const;
 
 /** Papers before this year share one bar in the papers-per-year preview. */
 export const FIRST_YEAR_BAR = 2015;

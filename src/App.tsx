@@ -17,6 +17,7 @@ import { AUTHOR, PREPRINT } from "./lib/siteText";
 import { About } from "./views/About";
 import { Browse } from "./views/Browse";
 import { Compare } from "./views/Compare";
+import { Guide } from "./views/Guide";
 import { Home } from "./views/Home";
 import { NotFound } from "./views/NotFound";
 import { PlatformView } from "./views/PlatformView";
@@ -145,6 +146,7 @@ export function App() {
         {!index && !error && <Loading />}
         {index && route.kind === "home" && <Home index={index} />}
         {index && route.kind === "about" && <About index={index} />}
+        {index && route.kind === "guide" && <Guide />}
         {index && route.kind === "platform" && (
           <PlatformView key={route.platformId} index={index} paperId={route.paperId} platformId={route.platformId} hash={hash} />
         )}
@@ -186,6 +188,7 @@ export function App() {
               <a href={AUTHOR.url}>{AUTHOR.name}</a>
               <a href={`https://doi.org/${PREPRINT.doi}`}>{PREPRINT.linkText}</a>
               <IssueLink href={paperUrl()}>{PAPER_LINK_TEXT}</IssueLink>
+              <a href="#/guide">Getting started</a>
             </span>
           </div>
         </footer>

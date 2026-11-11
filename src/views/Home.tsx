@@ -11,14 +11,14 @@ import { Skeleton } from "../components/Loading";
 import { ViewCards } from "../components/ViewCards";
 import { useJson } from "../components/useJson";
 import { useReleaseDocs } from "../components/useReleaseDocs";
-import type { BenchmarkJson, IndexJson, PlatformFile, TaxonomyJson } from "../data/types";
+import type { BenchmarkJson, IndexJson, PlatformFile, SearchJson, TaxonomyJson } from "../data/types";
 import { formatCitation, licenseLabel } from "../lib/citation";
 import { PAPER_LINK_TEXT, paperUrl } from "../lib/contribute";
 import { show } from "../lib/evidence";
 import { FEATURED_PLATFORM, SEARCH_EXAMPLES, latestYear, licenceChips, newestFirst, statTiles } from "../lib/home";
-import { filterPlatforms } from "../lib/platformFilter";
+import { filterPlatforms, searchPlatforms } from "../lib/platformFilter";
 import { platformHash } from "../lib/route";
-import { PREPRINT, STATS_CAPTION, heroLead, heroTitle, sampleText, searchPlaceholder } from "../lib/siteText";
+import { FILTER_LABEL, PREPRINT, SEARCH_LABEL, STATS_CAPTION, heroLead, heroTitle, sampleText, searchPlaceholder } from "../lib/siteText";
 
 /** Rows of the platform list before "Show all". */
 const LIST_SIZE = 20;
@@ -37,6 +37,15 @@ export function Home({ index }: { index: IndexJson }) {
   const featuredFile = useJson<PlatformFile>(`data/platforms/${FEATURED_PLATFORM.split("/")[0]}.json`);
   const taxonomy = useJson<TaxonomyJson>("data/taxonomy.json");
   const benchmark = useJson<BenchmarkJson>("data/benchmark.json");
+  // Module names for the search (search.json); until they load the search reads names, ids, module types and steps.
+  const search = useJson<SearchJson>("data/search.json");
+  const searchable = useMemo(
+    () =>
+      search.data
+        ? index.platforms.map((p) => ({ ...p, module_names: search.data!.module_names[p.platform_id] ?? [] }))
+        : index.platforms,
+    [index, search.data],
+  );
   const featured = featuredFile.data?.platforms.find((p) => p.platform_id === FEATURED_PLATFORM) ?? null;
   const featuredPaper = index.papers.find((p) => p.paper_id === featured?.paper_id);
 
@@ -46,7 +55,7 @@ export function Home({ index }: { index: IndexJson }) {
   // Hero search (REQ-012).
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
-  const matches = useMemo(() => (query.trim() ? filterPlatforms(index.platforms, query) : []), [index, query]);
+  const matches = useMemo(() => (query.trim() ? searchPlatforms(searchable, query) : []), [searchable, query]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || typingIn(e.target)) return;
@@ -58,14 +67,14 @@ export function Home({ index }: { index: IndexJson }) {
   }, []);
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (matches[0]) window.location.hash = platformHash(matches[0].platform_id);
+    if (matches[0]) window.location.hash = platformHash(matches[0].row.platform_id);
   };
 
   // Platform list.
   const [listQuery, setListQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
   const listRef = useRef<HTMLInputElement>(null);
-  const sorted = useMemo(() => newestFirst(index.platforms), [index]);
+  const sorted = useMemo(() => newestFirst(searchable), [searchable]);
   const listRows = useMemo(() => filterPlatforms(sorted, listQuery), [sorted, listQuery]);
   const visible = showAll || listQuery.trim() ? listRows : listRows.slice(0, LIST_SIZE);
   const latest = latestYear(index.platforms);
@@ -90,7 +99,7 @@ export function Home({ index }: { index: IndexJson }) {
 
           <form role="search" className="hero-search" onSubmit={submit}>
             <label className="search-field search-field-lg">
-              <span className="visually-hidden">Search platforms by name, paper or id</span>
+              <span className="visually-hidden">{SEARCH_LABEL}</span>
               <Search className="search-icon" size={19} aria-hidden="true" />
               <input
                 ref={searchRef}
@@ -109,10 +118,13 @@ export function Home({ index }: { index: IndexJson }) {
               </p>
               {matches.length > 0 && (
                 <ul className="search-suggestions">
-                  {matches.slice(0, SUGGESTIONS).map((p) => (
+                  {matches.slice(0, SUGGESTIONS).map(({ row: p, reason }) => (
                     <li key={p.platform_id}>
                       <a href={platformHash(p.platform_id)}>
-                        <span className="suggestion-name">{show(p.platform_name)}</span>
+                        <span className="suggestion-text">
+                          <span className="suggestion-name">{show(p.platform_name)}</span>
+                          {reason && <span className="suggestion-reason">{reason}</span>}
+                        </span>
                         <span className="mono suggestion-id">{p.platform_id}</span>
                       </a>
                     </li>
@@ -142,6 +154,10 @@ export function Home({ index }: { index: IndexJson }) {
               ))}
             </div>
           </form>
+
+          <p className="hero-guide">
+            New here? <a href="#/guide">Getting started</a> walks through four tasks, step by step.
+          </p>
 
           <div className="hero-actions">
             <a className="btn btn-primary btn-lg" href="#/browse?view=platforms">
@@ -199,7 +215,7 @@ export function Home({ index }: { index: IndexJson }) {
           </div>
           <div className="list-controls">
             <label className="search-field">
-              <span className="visually-hidden">Filter platforms by name, paper or id</span>
+              <span className="visually-hidden">{FILTER_LABEL}</span>
               <Search className="search-icon" size={16} aria-hidden="true" />
               <input
                 ref={listRef}

@@ -107,7 +107,42 @@ export function createGraph(container: HTMLElement, elements: ElementDefinition[
     autoungrabify: true,
   });
   cy.layout(layoutOf(cy, rankDir)).run();
+  zoomOnlyWithModifier(cy, container);
   return cy;
+}
+
+/** The modifier a reader holds to zoom with the wheel, as the hint over the graph names it. */
+const ZOOM_HINT =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ + scroll to zoom" : "Ctrl + scroll to zoom";
+/** How long the hint stays after the last plain scroll over the graph. */
+const HINT_MS = 1500;
+
+// @MX:NOTE: [AUTO] plain wheel over a graph scrolls the page (it used to be swallowed by Cytoscape's wheel zoom, so a
+// graph that fills the first screen trapped the reader); Ctrl/⌘ + wheel and trackpad pinch (a wheel with ctrlKey) zoom
+/**
+ * Lets a plain wheel over the graph scroll the page and shows a short hint naming the zoom modifier; a wheel with Ctrl
+ * or ⌘ (a trackpad pinch sends ctrlKey) goes on to Cytoscape's own wheel zoom. Cytoscape listens on the container in
+ * the capture phase, so the guard listens one level up, also in the capture phase, and stops a plain wheel there
+ * without preventing its default. Touch pinch is not a wheel and is untouched. The hint is the parent's
+ * `data-wheel-hint` attribute (styles.css draws it).
+ */
+function zoomOnlyWithModifier(cy: Core, container: HTMLElement) {
+  const host = container.parentElement;
+  if (!host) return;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const onWheel = (e: WheelEvent) => {
+    if (!container.contains(e.target as Node) || e.ctrlKey || e.metaKey) return;
+    e.stopPropagation();
+    host.dataset.wheelHint = ZOOM_HINT;
+    clearTimeout(timer);
+    timer = setTimeout(() => delete host.dataset.wheelHint, HINT_MS);
+  };
+  host.addEventListener("wheel", onWheel, { capture: true });
+  cy.one("destroy", () => {
+    host.removeEventListener("wheel", onWheel, { capture: true });
+    clearTimeout(timer);
+    delete host.dataset.wheelHint;
+  });
 }
 
 /**

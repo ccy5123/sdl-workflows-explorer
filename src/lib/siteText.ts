@@ -12,7 +12,10 @@ export const heroLead = (papers: number): string =>
   "Modules, cycle steps and material transfers of closed-loop self-driving laboratories (SDLs), coded from " +
   `${fmt(papers)} papers. Every item links to the page in the paper it was read from.`;
 
-export const searchPlaceholder = (platforms: number): string => `Search ${fmt(platforms)} platforms by name, paper or id`;
+export const searchPlaceholder = (platforms: number): string => `Search ${fmt(platforms)} platforms by name, instrument or step`;
+/** Accessible names of the Home search and of the Home platform-list filter. */
+export const SEARCH_LABEL = "Search platforms by name, instrument or step";
+export const FILTER_LABEL = "Filter platforms by name, instrument or step";
 
 /** Caption under the stat tiles. */
 export const STATS_CAPTION = "Papers that passed the screening in the data card, not the whole field.";

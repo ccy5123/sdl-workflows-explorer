@@ -9,6 +9,7 @@ export interface SiteRoute {
 export const ROUTES: readonly SiteRoute[] = [
   { hash: "#/", title: "Home", current: "Home" },
   { hash: "#/about", title: "About", current: "About" },
+  { hash: "#/guide", title: "Getting started", current: null },
   { hash: "#/platform/Aand2024/P1", title: "Platform Aand2024/P1", current: null },
   { hash: "#/browse", title: "Browse", current: "Browse" },
   { hash: "#/browse?view=platforms", title: "Browse", current: "Browse" },

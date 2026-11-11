@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { IndexJson, ReleaseDocs, TaxonomyJson } from "../src/data/types";
 import { formatCitation } from "../src/lib/citation";
 import { FEATURED_PLATFORM, SEARCH_EXAMPLES } from "../src/lib/home";
-import { ABOUT_AUTHOR_LEAD, AUTHOR, PREPRINT, VIEWS, heroLead, heroTitle, searchPlaceholder } from "../src/lib/siteText";
+import { ABOUT_AUTHOR_LEAD, AUTHOR, FILTER_LABEL, PREPRINT, SEARCH_LABEL, VIEWS, heroLead, heroTitle, searchPlaceholder } from "../src/lib/siteText";
 
 const fetchJson = <T>(page: Page, path: string) =>
   page.evaluate((p) => fetch(p).then((r) => r.json()), path) as Promise<T>;
@@ -37,7 +37,7 @@ test("AC-8: home order, links, citation and featured platform", async ({ page })
   await expect(main.locator(".hero-lead")).toHaveText(heroLead(index.counts.papers));
   await expect(main.locator(".hero-chips")).toContainText(`Release ${index.release.version}`);
   await expect(main.locator(".hero-chips")).toContainText("CC BY 4.0");
-  const search = main.getByRole("searchbox", { name: "Search platforms by name, paper or id" });
+  const search = main.getByRole("searchbox", { name: SEARCH_LABEL });
   await expect(search).toHaveAttribute("placeholder", searchPlaceholder(index.counts.platforms));
   await expect(main.getByRole("link", { name: "Explore platforms" })).toHaveAttribute("href", "#/browse?view=platforms");
   const download = main.getByRole("link", { name: "Download data", exact: true });
@@ -102,14 +102,14 @@ test("AC-9: hero search suggests platforms, Enter opens the first, and the list 
   await expect(main.locator("h1")).toBeVisible();
   await page.locator("h1").click();
   await page.keyboard.press("/");
-  const search = main.getByRole("searchbox", { name: "Search platforms by name, paper or id" });
+  const search = main.getByRole("searchbox", { name: SEARCH_LABEL });
   await expect(search).toBeFocused();
   await page.keyboard.type("Aand2024");
   await expect(main.locator(".search-count")).toHaveText("1 of 279 platforms match");
   await expect(main.locator(".search-suggestions a")).toHaveAttribute("href", "#/platform/Aand2024/P1");
 
   await main.getByRole("button", { name: "Show the match in the list" }).click();
-  const filter = main.getByRole("searchbox", { name: "Filter platforms by name, paper or id" });
+  const filter = main.getByRole("searchbox", { name: FILTER_LABEL });
   await expect(filter).toBeFocused();
   await expect(filter).toHaveValue("Aand2024");
   await expect(main.locator('[data-list="platforms"] > li')).toHaveCount(1);
@@ -124,7 +124,7 @@ test("AC-9: the try chips fill the search; the list shows 20 rows, then all", as
   const main = page.locator("main");
   for (const q of SEARCH_EXAMPLES) {
     await main.locator(".search-examples").getByRole("button", { name: q, exact: true }).click();
-    await expect(main.getByRole("searchbox", { name: "Search platforms by name, paper or id" })).toHaveValue(q);
+    await expect(main.getByRole("searchbox", { name: SEARCH_LABEL })).toHaveValue(q);
     await expect(main.locator(".search-suggestions a").first()).toBeVisible();
   }
   const rows = main.locator('[data-list="platforms"] > li');

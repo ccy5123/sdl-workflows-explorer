@@ -100,6 +100,14 @@ describe("deriveAll on the fixture release", () => {
     });
   });
 
+  it("gives the search file each platform's distinct module names stated in the paper, in module order", () => {
+    expect(d.search.module_names).toEqual({
+      "PaperA2024/P1": ["controller", "pumps"],
+      "PaperA2024/P2": ["syringe pump", "arm"],
+      "PaperB2025/P1": ["PC", "pump"],
+    });
+  });
+
   it("builds one platform file per paper with graphs, evidence, campaigns and shared_with", () => {
     expect(Object.keys(d.platformFiles).sort()).toEqual(["PaperA2024", "PaperB2025"]);
     const a = d.platformFiles.PaperA2024!;
@@ -299,7 +307,7 @@ describe("writeDerived", () => {
     const out = join(tempDir(), "data");
     writeDerived(deriveAll(MINI), out);
     expect(readdirSync(out).sort()).toEqual([
-      "benchmark-items.json", "benchmark.json", "index.json", "platforms", "release-docs.json", "simulation.json",
+      "benchmark-items.json", "benchmark.json", "index.json", "platforms", "release-docs.json", "search.json", "simulation.json",
       "taxonomy.json",
     ]);
     expect(readdirSync(join(out, "platforms")).sort()).toEqual(["PaperA2024.json", "PaperB2025.json"]);

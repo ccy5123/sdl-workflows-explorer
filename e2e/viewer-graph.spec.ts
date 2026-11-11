@@ -330,3 +330,36 @@ test("UI AC-38: hovering or focusing a step previews its modules; a click keeps 
   await expect.poll(() => highlighted(page)).toEqual([]);
   expect(await dimmedCount(page)).toBe(0);
 });
+
+test("Wheel: scrolling over the platform graph scrolls the page; Ctrl and scroll zooms the graph", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`/#/platform/${AAND}`);
+  await waitForGraph(page);
+  const zoom = () => page.evaluate(() => (window as Win).__cy!.zoom());
+  const scrollY = () => page.evaluate(() => window.scrollY);
+  const graphCentre = async () => {
+    const box = (await page.locator(".graph").boundingBox())!;
+    return { x: box.x + box.width / 2, y: box.y + Math.min(box.height / 2, 200) };
+  };
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const z0 = await zoom();
+  let at = await graphCentre();
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.wheel(0, 400);
+  await expect.poll(scrollY).toBeGreaterThan(0);
+  expect(await zoom()).toBeCloseTo(z0, 6);
+  await expect(page.locator(".graph-wrap").first()).toHaveAttribute("data-wheel-hint", /scroll to zoom/);
+
+  await page.locator(".graph").scrollIntoViewIfNeeded();
+  // Cytoscape ignores wheel zoom for 250 ms after the page scrolls.
+  await page.waitForTimeout(400);
+  const y0 = await scrollY();
+  at = await graphCentre();
+  await page.mouse.move(at.x, at.y);
+  await page.keyboard.down("Control");
+  await page.mouse.wheel(0, -300);
+  await page.keyboard.up("Control");
+  await expect.poll(zoom).toBeGreaterThan(z0);
+  expect(await scrollY()).toBe(y0);
+});

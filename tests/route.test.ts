@@ -184,6 +184,7 @@ describe("routeTitle and navCurrent (SPEC-SITE-001)", () => {
   it.each([
     ["#/", "Home", "Home"],
     ["#/about", "About", "About"],
+    ["#/guide", "Getting started", null],
     ["#/platform/Aand2024/P1", "Platform Aand2024/P1", null],
     ["#/browse?view=platforms", "Browse", "Browse"],
     ["#/compare/Aand2024/P1,Li2020/P1", "Compare", null],
