@@ -83,3 +83,104 @@ export const ASK_CAUTION =
 export const ASK_TROUBLE =
   "On Windows, npx can fail when the name of your user folder contains an ampersand; run the same command through " +
   "WSL instead.";
+
+// ---- Example exchanges, shown as a chat ------------------------------------------------------------------------------
+
+/** One record an answer cites: the record id, what the answer says of it, the paper's DOI and where it was read. */
+export interface ChatCite {
+  /** Platform id the record belongs to. */
+  platform: string;
+  /** Module or step id. */
+  id: string;
+  /** What the answer says of the record; a quoted module name is a substring of its name_in_paper. */
+  text: string;
+  /** Exactly the record's evidence location as the tools give it ("SI1 · p. 10 · §2.2.4 ¶1"). */
+  evidence: string;
+  /** For a module: its name in the paper (or a part of it), checked against the record. */
+  name?: string;
+}
+
+export interface ChatExchange {
+  question: string;
+  /** The server tools the answer rests on, shown as the app shows a tool call. */
+  tools: readonly string[];
+  intro: string;
+  cites: readonly ChatCite[];
+  outro?: string;
+}
+
+export const CHAT_HEADING = "What an answer looks like";
+export const CHAT_NOTE =
+  "Example exchanges written from the server's results for this release. Your app words its answers its own way; " +
+  "the record ids and pages come from the data.";
+
+/**
+ * The example exchanges. tests/ask.test.ts checks every id, name and evidence location against the release, and the
+ * counts the answers state against the search, so a new release that changes them fails the test instead of leaving
+ * a stale example.
+ */
+export const CHAT_EXCHANGES: readonly ChatExchange[] = [
+  {
+    question: "Which self-driving labs use an in-line FT-IR?",
+    tools: ["search_platforms"],
+    intro: "Searching the module names the papers state for “FT-IR” finds 8 platforms. Three of them:",
+    cites: [
+      {
+        platform: "Aand2024/P1",
+        id: "Aand2024/P1/M4",
+        name: "in-line FT-IR (Mettler-Toledo ReactIR 15 with flow cell)",
+        text: "in-line FT-IR (Mettler-Toledo ReactIR 15 with flow cell)",
+        evidence: "SI1 · p. 10 · §2.2.4 ¶1",
+      },
+      {
+        platform: "Ahn2023/P1",
+        id: "Ahn2023/P1/M4",
+        name: "in-line FT-IR spectrometer (Jasco FT/IR-4600 with flow cell)",
+        text: "in-line FT-IR spectrometer (Jasco FT/IR-4600 with flow cell)",
+        evidence: "main · p. 2 · Fig. 1a",
+      },
+      {
+        platform: "Granda2018/P1",
+        id: "Granda2018/P1/M3",
+        name: "Thermo Scientific Nicolet iS5 FT-IR with ZnSe Golden Gate ATR-IR flow cell",
+        text: "Nicolet iS5 FT-IR with an ATR-IR flow cell",
+        evidence: "main · p. 5 · §Online attenuated total-reflectance infrared spectroscopy ¶1",
+      },
+    ],
+    outro: "Papers also write FTIR, ReactIR or FlowIR; searching those spellings finds more platforms.",
+  },
+  {
+    question: "Walk me through one cycle of Aand2024/P1 and say where each step is described.",
+    tools: ["get_platform"],
+    intro: "Aand2024/P1, the auto-optimization platform (AOP), runs these steps in one cycle:",
+    cites: [
+      { platform: "Aand2024/P1", id: "Aand2024/P1/S1", text: "Dispense liquid, by the HPLC pumps", evidence: "SI1 · p. 15 · §S2.4 ¶1" },
+      { platform: "Aand2024/P1", id: "Aand2024/P1/S2", text: "Photo/electro reaction, in the photo-flow reactor", evidence: "SI1 · p. 15 · §S2.4 ¶1" },
+      { platform: "Aand2024/P1", id: "Aand2024/P1/S3", text: "Optical measurement, by the in-line FT-IR", evidence: "SI1 · p. 15 · §S2.4 ¶1" },
+      {
+        platform: "Aand2024/P1",
+        id: "Aand2024/P1/S4",
+        text: "Handle sample, at the auto-collector; the record marks this step uncertain",
+        evidence: "SI1 · p. 15 · §S2.4 ¶1",
+      },
+      { platform: "Aand2024/P1", id: "Aand2024/P1/S5", text: "Analyze data, in software", evidence: "SI1 · p. 11 · §2.2.5 ¶1" },
+      { platform: "Aand2024/P1", id: "Aand2024/P1/S6", text: "Plan next experiment, by Bayesian optimization", evidence: "SI1 · p. 14 · §S2.3 ¶1" },
+    ],
+  },
+  {
+    question: "Is there a self-driving lab with a cryo-EM in the database?",
+    tools: ["search_platforms"],
+    intro:
+      "No platform in this release records a cryo-EM: searching platform and module names for “cryo-EM” and " +
+      "“cryo” finds none. The closest record is an electron microscope that is not a cryo-EM:",
+    cites: [
+      {
+        platform: "Wu2026a/P1",
+        id: "Wu2026a/P1/M1",
+        name: "Nion UltraSTEM100 aberration-corrected scanning transmission electron microscope",
+        text: "Nion UltraSTEM100 aberration-corrected scanning transmission electron microscope",
+        evidence: "main · p. 16 · §STEM imaging ¶1",
+      },
+    ],
+  },
+];

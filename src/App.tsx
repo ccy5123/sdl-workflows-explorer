@@ -165,7 +165,7 @@ export function App() {
         {index && route.kind === "home" && <Home index={index} />}
         {index && route.kind === "about" && <About index={index} />}
         {index && route.kind === "guide" && <Guide />}
-        {index && route.kind === "ask" && <Ask />}
+        {index && route.kind === "ask" && <Ask index={index} />}
         {index && route.kind === "platform" && (
           <PlatformView key={route.platformId} index={index} paperId={route.paperId} platformId={route.platformId} hash={hash} />
         )}

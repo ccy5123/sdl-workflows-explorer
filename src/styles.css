@@ -5042,3 +5042,104 @@ body:has(.sheet-layer) .evidence-sheet {
     flex-direction: column;
   }
 }
+
+/* The example exchanges on #/ask, drawn as a chat window. */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.chat-exchange {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-exchange + .chat-exchange {
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+
+.chat-msg {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  line-height: 1.5;
+}
+
+.chat-msg p {
+  margin: 4px 0;
+}
+
+.chat-user {
+  align-self: flex-end;
+  border: 1px solid var(--accent);
+  border-bottom-right-radius: 4px;
+  background: var(--highlight);
+}
+
+.chat-ai {
+  align-self: flex-start;
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+  background: var(--card);
+}
+
+.chat-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chat-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chat-cites {
+  margin: 6px 0;
+  padding-left: 18px;
+}
+
+.chat-cites li + li {
+  margin-top: 4px;
+}
+
+.chat-cites code {
+  font-size: 12px;
+}
+
+.chat-ev,
+.chat-source {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ask .chat-msg .chat-source {
+  margin-top: 8px;
+}
+
+@media (max-width: 799.98px) {
+  .chat {
+    padding: 10px;
+  }
+
+  .chat-msg {
+    max-width: 100%;
+  }
+}
