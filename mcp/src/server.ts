@@ -25,7 +25,8 @@ export const INSTRUCTIONS = `This server answers questions about the sdl-workflo
 Rules for answers:
 - Answer only from tool results, not from memory. If a tool returns nothing or a field is null, say it is not recorded in the database.
 - Name every platform by its platform_id (e.g. Aand2024/P1) and paper key with DOI; for a module, step or connection, give its id and evidence location (evidence.text, e.g. "SI1 · p. 13 · §2.2.8 ¶1").
-- Map the user's words to codes with list_vocabulary before filtering; search_platforms text takes 1–3 keywords such as an instrument name.
+- Map the user's words to codes with list_vocabulary before filtering; search_platforms text takes 1–3 keywords such as an instrument name. Papers spell instruments differently (FT-IR, FTIR, ReactIR; XRD, diffractometer): search each spelling before saying a platform is absent.
+- Do not add properties the record does not state (an instrument's temperature, the kind of sample, why a choice was made); if the user asks for one, say it is not recorded.
 - Cycle-time results are simulated from durations recorded on other platforms; say so and name the duration rows used.
 - Give the explorer_url so the user can check the record, and end with the cite_as line.`;
 
@@ -48,7 +49,12 @@ const filters = z
 
 const workflow = z
   .object({
-    modules: z.array(z.object({ type: z.string().describe("module_type code"), devices: z.number().int().optional() })),
+    modules: z.array(
+      z.object({
+        type: z.string().describe("module_type code"),
+        devices: z.number().int().optional().describe("Identical units of this module (default 1); batches queue when fewer than parallel"),
+      }),
+    ),
     steps: z.array(z.object({ unit_operation: z.string(), module: z.number().int().describe("1-based index into modules") })),
     transfers: z
       .array(z.object({ after_step: z.number().int(), mode: z.string().optional(), seconds: z.number().optional() }))
@@ -65,7 +71,11 @@ const workflowSource = {
 const simulationOptions = {
   batch: z.number().int().optional().describe("Samples per batch (default 1)"),
   samples: z.number().int().optional().describe("Samples per experiment (default 1)"),
-  parallel: z.number().int().optional().describe("Batches in progress at once (default 1)"),
+  parallel: z
+    .number()
+    .int()
+    .optional()
+    .describe("Batches released at once (default 1). They run side by side only on modules with at least as many devices; otherwise they queue"),
   n: z.number().int().optional().describe("Batches to simulate (default 10)"),
   runs: z.number().int().optional().describe("Simulation runs (default 20)"),
   seed: z.number().int().optional(),
@@ -76,7 +86,8 @@ const simulationOptions = {
   bounds: z.boolean().optional().describe("Include durations recorded only as lower or upper bounds"),
   rule: z.enum(["fifo", "released"]).optional(),
   draw: z.enum(["sample", "median"]).optional(),
-  include_events: z.boolean().optional(),
+  include_events: z.boolean().optional().describe("Add the event list of the first simulation run (at most 500 events)"),
+  include_durations: z.boolean().optional().describe("List every recorded duration row used, not only the lowest, median and highest"),
 };
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
@@ -99,7 +110,7 @@ export function createServer(ds: Dataset): McpServer {
     {
       title: "List vocabulary codes",
       description:
-        "Codes, readable labels, definitions and usage counts of one coded vocabulary (module types, unit operations, transfer modes, field tags, integration modes). Use it to turn the user's words into the codes the other tools take.",
+        "Codes, readable labels, definitions and usage counts of one coded vocabulary (module types, unit operations, transfer modes, field tags, integration modes). Use it to turn the user's words into the codes the other tools take. For module types, the query also searches the module names the papers state (module_name_hits), so a technique name such as diffraction leads to its code.",
       inputSchema: { kind: z.enum(VOCABULARY_KINDS), query: z.string().optional().describe("Optional words to narrow the list") },
       annotations: READ_ONLY,
     },
@@ -111,7 +122,7 @@ export function createServer(ds: Dataset): McpServer {
     {
       title: "Search platforms",
       description:
-        "Platforms matching coded filters and/or a short text (instrument or module name as the paper states it, platform name, unit operation). Returns ids, paper keys, DOIs, module types, unit operations, why each matched, and explorer links.",
+        "Platforms matching coded filters and/or a short text (instrument or module name as the paper states it, platform name, unit operation). Returns ids, paper keys, DOIs, module types, unit operations, why each matched, the matching modules with their ids and evidence locations, and explorer links. A word written in capitals (IR, STEM, UPLC) matches only where the field also writes it in capitals and not inside a longer capital run, so IR finds ReactIR but not stirrer, and SEM does not find TSEMO; another word of up to 3 letters matches whole words only. Instrument spellings vary between papers: search each (FT-IR, FTIR, ReactIR).",
       inputSchema: {
         text: z.string().optional().describe("1–3 keywords; every word must match"),
         filters,

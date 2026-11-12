@@ -2,17 +2,17 @@
 // result goes through `envelope`, which adds the release and its citation; every row names its record id, paper key
 // and DOI, and every item read from a paper carries its evidence location. The logic is the explorer's (src/lib/); this
 // file only selects, joins and trims.
-import type { Evidence, PlatformGraph, TaxonomyClass } from "../../src/data/types";
+import type { DurationRow, Evidence, PlatformGraph, TaxonomyClass } from "../../src/data/types";
 import { formatCitation } from "../../src/lib/citation";
 import { assembleComparison, checkCompareIds } from "../../src/lib/compare";
 import { cycleRange, jointOffers, stepSources } from "../../src/lib/cycleRange";
 import { MAX_STEP_RUNS, simulate, simUnits, stepRunCount } from "../../src/lib/des";
-import { matchingPlatforms } from "../../src/lib/filterApply";
+import { matchingPlatforms, type SearchablePlatform } from "../../src/lib/filterApply";
 import { autonomyText, DEFAULT_STATE as DEFAULT_FILTERS, INTEGRATION_MODE_TEXT, type FilterState, type Match } from "../../src/lib/filterState";
 import { browseHash } from "../../src/lib/filterUrl";
 import { evidenceText } from "../../src/lib/home";
 import { displayLabel } from "../../src/lib/labels";
-import { searchPlatforms } from "../../src/lib/platformFilter";
+import { searchPlatforms, type PlatformMatch } from "../../src/lib/platformFilter";
 import { compareHash, platformHash, workflowHash } from "../../src/lib/route";
 import { editDistance, rankPlatforms, workflowSets, type LayoutSets } from "../../src/lib/similarity";
 import { sortSteps } from "../../src/lib/steps";
@@ -123,20 +123,40 @@ export function listVocabulary(ds: Dataset, input: VocabularyInput) {
     }));
     return envelope(ds, { kind: input.kind, meaning: INTEGRATION_MODE_TEXT, classes: rows.filter((r) => !q || `${r.code} ${r.label}`.toLowerCase().includes(q)) });
   }
+  // For module types, the query is also looked up in the module names the papers state, so a technique the class
+  // definition does not spell out ("diffraction" under "XRD, XPS or NMR instrument") still leads to its code.
+  const nameHits = new Map<string, { module_id: string; name_in_paper: string }[]>();
+  if (q && input.kind === "module_type") {
+    const toks = tokens(input.query!.trim());
+    for (const g of ds.graphs.values()) {
+      for (const m of g.modules) {
+        if (!m.name_in_paper || !toks.every((t) => hit(t, m.name_in_paper!))) continue;
+        nameHits.set(m.module_type, [...(nameHits.get(m.module_type) ?? []), { module_id: m.module_id, name_in_paper: m.name_in_paper }]);
+      }
+    }
+  }
   const classes = ds.derived.taxonomy.classes
     .filter((c) => c.class_kind === input.kind)
-    .map((c: TaxonomyClass) => ({
-      code: c.class,
-      label: displayLabel(c.class_kind, c.class),
-      family: c.family,
-      definition: c.definition,
-      n_items: c.n_items,
-      n_platforms: c.n_platforms,
-      n_papers: c.n_papers,
-      example_platform_ids: c.examples.slice(0, 5).map((e) => e.platform_id),
-    }))
-    .filter((c) => !q || `${c.code} ${c.label} ${c.definition}`.toLowerCase().includes(q));
-  return envelope(ds, { kind: input.kind, classes });
+    .map((c: TaxonomyClass) => {
+      const hits = nameHits.get(c.class);
+      return {
+        code: c.class,
+        label: displayLabel(c.class_kind, c.class),
+        family: c.family,
+        definition: c.definition,
+        n_items: c.n_items,
+        n_platforms: c.n_platforms,
+        n_papers: c.n_papers,
+        example_platform_ids: c.examples.slice(0, 5).map((e) => e.platform_id),
+        module_name_hits: hits ? { n: hits.length, examples: hits.slice(0, 3) } : undefined,
+      };
+    })
+    .filter((c) => !q || c.module_name_hits || `${c.code} ${c.label} ${c.definition}`.toLowerCase().includes(q));
+  const notes =
+    q && input.kind === "module_type"
+      ? ["The query matches codes, labels and definitions, and the module names the papers state; module_name_hits counts the modules of each type whose name contains it."]
+      : [];
+  return envelope(ds, { kind: input.kind, classes }, notes);
 }
 
 // ---- Filters and search -------------------------------------------------------------------------------------------
@@ -173,9 +193,93 @@ function filterState(ds: Dataset, f: Filters = {}, view: FilterState["view"] = "
   };
 }
 
-function platformRow(ds: Dataset, platformId: string, reason: string | null = null) {
+/** Words of at most this many letters or digits are matched as whole words (see textSearch). */
+export const SHORT_WORD = 3;
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const wholeWord = (word: string, text: string) => new RegExp(`(^|[^a-z0-9])${escapeRe(word)}([^a-z0-9]|$)`).test(text.toLowerCase());
+
+/**
+ * A search word and how it matches: "case" for a word written in capitals ("IR", "STEM", "UPLC"), which must appear in
+ * capitals in the field, not run into other capitals (so "IR" finds "ReactIR" and "FT-IR" but not "stirrer", "STEM"
+ * finds "UltraSTEM100" but not "system", "SEM" does not find "TSEMO"); "word" for another word of at most SHORT_WORD letters or digits ("ir"), which must be a whole word; "any"
+ * for the rest, the site's rule (anywhere, any case).
+ */
+interface Token {
+  w: string;
+  raw: string;
+  mode: "case" | "word" | "any";
+}
+
+function tokens(text: string): Token[] {
+  return text
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((raw) => {
+      const w = raw.toLowerCase();
+      const alnum = /^[A-Za-z0-9]+$/.test(raw);
+      const capitals = alnum && raw.length >= 2 && /[A-Z]/.test(raw) && raw === raw.toUpperCase();
+      return { w, raw, mode: capitals ? "case" : alnum && w.length <= SHORT_WORD ? "word" : "any" } as Token;
+    });
+}
+const strict = (t: Token) => t.mode !== "any";
+/** The capitals not run into other capitals: "IR" in "ReactIR" or "FT-IR", "STEM" in "UltraSTEM100", but "SEM" not in "TSEMO". */
+const inCapitals = (raw: string, text: string) => new RegExp(`(?<![A-Z])${escapeRe(raw)}(?![A-Z])`).test(text);
+const hit = (t: Token, text: string) =>
+  t.mode === "case" ? inCapitals(t.raw, text) : t.mode === "word" ? wholeWord(t.w, text) : text.toLowerCase().includes(t.w);
+
+/** The texts the site's search reads for a platform, each with the reason text it shows: module names, types, steps. */
+function detailFields(p: SearchablePlatform): { text: string; reason: string }[] {
+  return [
+    ...(p.module_names ?? []).map((n) => ({ text: n, reason: `Module: ${n}` })),
+    ...p.module_types.map((c) => ({ text: `${displayLabel("module_type", c)} ${c}`, reason: `Module type: ${displayLabel("module_type", c)}` })),
+    ...p.unit_operations.map((c) => ({ text: `${displayLabel("unit_operation", c)} ${c}`, reason: `Step: ${displayLabel("unit_operation", c)}` })),
+  ];
+}
+const headText = (p: SearchablePlatform) => [p.platform_id, p.paper_id, p.platform_name ?? ""].join(" ");
+
+/** Why a platform matched under the token rules, in the site's form ("Module: …", at most two); null for a name hit. */
+function reasonOf(p: SearchablePlatform, toks: readonly Token[]): string | null {
+  const head = headText(p);
+  const fields = detailFields(p);
+  const reasons: string[] = [];
+  for (const t of toks) {
+    if (hit(t, head)) continue;
+    const f = fields.find((x) => hit(t, x.text));
+    if (f && !reasons.includes(f.reason)) reasons.push(f.reason);
+  }
+  return reasons.length > 0 ? reasons.slice(0, 2).join(" · ") : null;
+}
+
+/**
+ * The site's search (every word must match, anywhere in a field), except that whole-word tokens must match as whole
+ * words; their reasons are recomputed under the same rule, so a reason never names a word that only contains them.
+ */
+function textSearch(rows: readonly SearchablePlatform[], text: string): { matches: PlatformMatch<SearchablePlatform>[]; anywhere: number } {
+  const site = searchPlatforms(rows, text);
+  const toks = tokens(text);
+  if (!toks.some(strict)) return { matches: site, anywhere: site.length };
+  const matches = site
+    .filter((m) => toks.every((t) => hit(t, headText(m.row)) || detailFields(m.row).some((f) => hit(t, f.text))))
+    .map((m) => ({ row: m.row, reason: reasonOf(m.row, toks) }));
+  return { matches, anywhere: site.length };
+}
+
+/** Modules of a platform whose name in the paper contains a word of the text, with their evidence locations. */
+function matchedModules(ds: Dataset, platformId: string, text: string) {
+  const toks = tokens(text);
+  if (toks.length === 0) return undefined;
+  const hits = ds.graphs
+    .get(platformId)!
+    .modules.filter((m) => m.name_in_paper && toks.some((t) => hit(t, m.name_in_paper!)))
+    .map((m) => ({ module_id: m.module_id, module_type: m.module_type, name_in_paper: m.name_in_paper, evidence: evidenceText(m.evidence) }));
+  return hits;
+}
+
+function platformRow(ds: Dataset, platformId: string, reason: string | null = null, text = "") {
   const p = ds.platforms.get(platformId)!;
   const paper = ds.papers.get(p.paper_id);
+  if (reason === null && text) reason = `Platform name, id or paper: ${p.platform_name ?? p.platform_id}`;
   return {
     platform_id: p.platform_id,
     paper_id: p.paper_id,
@@ -190,6 +294,7 @@ function platformRow(ds: Dataset, platformId: string, reason: string | null = nu
     n_modules: p.n_modules,
     n_steps: p.n_steps,
     match_reason: reason,
+    matched_modules: matchedModules(ds, platformId, text),
     explorer_url: url(platformHash(p.platform_id)),
   };
 }
@@ -205,28 +310,45 @@ export function searchPlatformsTool(ds: Dataset, input: SearchInput) {
   const state = filterState(ds, input.filters);
   const filtered = matchingPlatforms(state, ds.derived.index.papers, ds.searchable);
   const text = input.text?.trim() ?? "";
-  const matches = searchPlatforms(filtered, text);
+  const { matches, anywhere } = textSearch(filtered, text);
   const limit = Math.min(Math.max(input.limit ?? 20, 1), 100);
   const offset = Math.max(input.offset ?? 0, 0);
   const notes: string[] = [];
   let per_word: { word: string; platforms: number }[] | undefined;
   if (text && matches.length === 0) {
-    per_word = text
-      .toLowerCase()
-      .split(/\s+/)
-      .map((word) => ({ word, platforms: searchPlatforms(filtered, word).length }));
+    per_word = tokens(text).map((t) => ({ word: t.raw, platforms: textSearch(filtered, t.raw).matches.length }));
     notes.push(
       "No platform matches every word of the text. per_word gives the platforms each word matches on its own; drop the " +
         "words that match nothing, or use the coded filters (list_vocabulary) instead of descriptive words.",
     );
   }
-  if (text) notes.push("The text matches platform ids, names, paper keys, module names as the papers state them, module types and unit operations; every word must match.");
+  if (text) {
+    notes.push(
+      "The text matches platform ids, names, paper keys, module names as the papers state them, module types and unit " +
+        "operations; every word must match. Papers spell instruments differently (FT-IR, FTIR, ReactIR, FlowIR; XRD, " +
+        "diffractometer): search each spelling, or filter by module type, before saying a platform is absent. " +
+        "matched_modules gives the module ids and evidence locations of module-name hits.",
+    );
+  }
+  const caps = tokens(text).filter((t) => t.mode === "case").map((t) => t.raw);
+  const short = tokens(text).filter((t) => t.mode === "word").map((t) => t.raw);
+  if (caps.length + short.length > 0) {
+    const rules = [
+      caps.length > 0 ? `words in capitals (${caps.join(", ")}) must appear in capitals` : "",
+      short.length > 0 ? `short words (${short.join(", ")}) must be whole words` : "",
+    ].filter(Boolean);
+    notes.push(
+      `${rules.join("; ")}: ${matches.length} platforms, against ${anywhere} when they may match inside longer words in ` +
+        "any case, as the explorer's search box does.",
+    );
+  }
+  if (!text) notes.push("match_reason is null for filter-only searches: every row meets all the filters.");
   return envelope(
     ds,
     {
       total: matches.length,
       offset,
-      platforms: matches.slice(offset, offset + limit).map((m) => platformRow(ds, m.row.platform_id, m.reason)),
+      platforms: matches.slice(offset, offset + limit).map((m) => platformRow(ds, m.row.platform_id, m.reason, text)),
       per_word,
       browse_url_filters_only: url(browseHash(state)),
     },
@@ -446,9 +568,12 @@ function applyOptions(ds: Dataset, s: WorkflowState, o: WorkflowOptions, notes: 
   for (const e of o.entered ?? []) s = apply(setEntered(s, c, e.step, String(e.seconds)), notes);
   for (const j of o.joints ?? []) s = apply(chooseJoint(s, c, j.first_step, j.duration_step_id), notes);
   for (const a of o.agents ?? []) s = apply(setAgents(s, c, a.mode, String(a.count)), notes);
-  if (o.bounds !== undefined || o.rule !== undefined || o.draw !== undefined) {
-    s = apply(setOption(s, c, { bounds: o.bounds, rule: o.rule, draw: o.draw }), notes);
-  }
+  // Only the options given: setOption spreads its argument over the state, so an undefined key would erase a default.
+  const change: Parameters<typeof setOption>[2] = {};
+  if (o.bounds !== undefined) change.bounds = o.bounds;
+  if (o.rule !== undefined) change.rule = o.rule;
+  if (o.draw !== undefined) change.draw = o.draw;
+  if (Object.keys(change).length > 0) s = apply(setOption(s, c, change), notes);
   return s;
 }
 
@@ -500,6 +625,32 @@ export function similarPlatforms(ds: Dataset, input: SimilarInput) {
 
 export interface SimulateInput extends WorkflowSource, WorkflowOptions {
   include_events?: boolean;
+  /** Every recorded duration row used, instead of the lowest, median and highest ones. */
+  include_durations?: boolean;
+}
+
+const durationRow = (d: DurationRow) => ({
+  step_id: d.step_id,
+  platform_id: d.platform_id,
+  paper_id: d.paper_id,
+  doi: d.doi,
+  seconds: d.seconds,
+  bound: d.bound,
+  approximate: d.approximate,
+  evidence: evidenceText(d.evidence),
+});
+
+/** The rows a step's range is built from: lowest, median (two rows for an even count) and highest, or all of them. */
+function durationsUsed(rows: readonly DurationRow[], all: boolean) {
+  if (rows.length === 0) return null;
+  const mid = rows.length % 2 === 1 ? [rows[(rows.length - 1) / 2]!] : [rows[rows.length / 2 - 1]!, rows[rows.length / 2]!];
+  return {
+    n: rows.length,
+    lowest: durationRow(rows[0]!),
+    median: mid.map(durationRow),
+    highest: durationRow(rows.at(-1)!),
+    all: all ? rows.map(durationRow) : undefined,
+  };
 }
 
 export function simulateCycleTime(ds: Dataset, input: SimulateInput) {
@@ -508,26 +659,35 @@ export function simulateCycleTime(ds: Dataset, input: SimulateInput) {
   if (state.steps.length === 0) throw new ToolError("The workflow has no steps.");
   const sources = stepSources(state, ds.catalog, ds.groups, ds.jointRows);
   const range = cycleRange(state, sources);
-  const used = (step: number) =>
-    sources[step - 1]!.used.map((d) => ({
-      step_id: d.step_id,
-      platform_id: d.platform_id,
-      paper_id: d.paper_id,
-      doi: d.doi,
-      seconds: d.seconds,
-      bound: d.bound,
-      approximate: d.approximate,
-      evidence: evidenceText(d.evidence),
-    }));
   const steps = range.steps.map((r) => ({
     step: r.step,
     unit_operation: r.uo,
     source: r.kind,
     runs_per_batch: r.runs,
     seconds_per_batch: r.range,
-    durations_used: r.kind === "recorded" ? used(r.step) : [],
+    durations_used: r.kind === "recorded" ? durationsUsed(sources[r.step - 1]!.used, input.include_durations === true) : null,
     joint: r.joint,
   }));
+  const short = [...new Set(state.steps.map((st) => st.module))]
+    .filter((m) => state.modules[m - 1]!.devices < state.parallel)
+    .map((m) => `module ${m} (${state.modules[m - 1]!.type}, ${state.modules[m - 1]!.devices} device${state.modules[m - 1]!.devices === 1 ? "" : "s"})`);
+  if (short.length > 0) {
+    const one = short.length === 1;
+    notes.push(
+      `parallel is ${state.parallel}, but ${short.join(", ")} ${one ? "has" : "have"} fewer devices, so batches queue for ` +
+        `${one ? "it" : "them"}. cycle_range assumes the parallel batches never wait for a device; the simulation models the ` +
+        "queue, so its experiments per day are lower. Set devices on the module (workflow.modules[].devices) if the user has that many.",
+    );
+  }
+  for (const r of range.steps) {
+    const used = sources[r.step - 1]!.used;
+    if (r.kind === "recorded" && used.length === 1) {
+      notes.push(
+        `Step ${r.step} (${r.uo}) has only one recorded duration (${used[0]!.step_id}, ${used[0]!.seconds} s), so its range ` +
+          "is that single value. Ask the user for a duration (entered), or offer a joint duration from joint_duration_offers if one covers this step.",
+      );
+    }
+  }
   const offers = [...jointOffers(state, ds.derived.simulation.durations)].map(([first, rows]) => ({
     first_step: first,
     durations: rows.map((d) => ({ duration_step_id: d.step_id, platform_id: d.platform_id, paper_id: d.paper_id, seconds: d.seconds, covers: d.joint!.unit_operations })),
@@ -547,6 +707,12 @@ export function simulateCycleTime(ds: Dataset, input: SimulateInput) {
       );
     }
     const summary = simulate(state, units);
+    if (state.draw === "median" && summary.makespan.low === summary.makespan.high) {
+      notes.push(
+        "With draw = median every run uses the same durations, so the simulation's low, mid and high are equal; use " +
+          "draw = sample (the default) for a spread over the recorded durations.",
+      );
+    }
     simulation = {
       batches: state.n,
       simulation_runs: state.runs,
@@ -560,8 +726,10 @@ export function simulateCycleTime(ds: Dataset, input: SimulateInput) {
     };
   }
   notes.push(
-    "Step durations are durations recorded on other platforms for the same unit operation (durations_used names each one); " +
-      "the cycle range uses their lowest, median and highest values, the simulation draws from them. These are simulated figures, not measurements of any platform.",
+    "Step durations are durations recorded on other platforms for the same unit operation (durations_used names the " +
+      "lowest, median and highest rows and the number used; include_durations lists them all). The cycle range uses their " +
+      `lowest, median and highest values; the simulation ${state.draw === "median" ? "uses their median" : "draws from them at random"} ` +
+      "and models queues for devices and transfer agents. These are simulated figures, not measurements of any platform.",
   );
   return envelope(
     ds,
@@ -588,12 +756,28 @@ export function comparePlatforms(ds: Dataset, input: { platform_ids: string[] })
   const graphs = input.platform_ids.map((id) => ds.graphs.get(id)!);
   const c = assembleComparison(graphs);
   return envelope(ds, {
-    platforms: c.columns.map((col) => ({ ...col, doi: ds.papers.get(col.paperId)?.doi ?? null, explorer_url: url(platformHash(col.platformId)) })),
+    platforms: c.columns.map((col) => ({
+      platform_id: col.platformId,
+      name: col.name,
+      paper_id: col.paperId,
+      doi: ds.papers.get(col.paperId)?.doi ?? null,
+      year: col.year,
+      explorer_url: url(platformHash(col.platformId)),
+    })),
     module_types: c.moduleRows.map((r) => ({ module_type: r.key, label: displayLabel("module_type", r.key), counts: r.counts })),
     material_transfer_modes: c.transferRows.map((r) => ({ transfer_mode: r.key, label: displayLabel("transfer_mode", r.key), counts: r.counts })),
-    steps: c.steps,
+    // Steps with their ids and evidence (assembleComparison keeps only order, unit operation and performer).
+    steps: graphs.map((g) =>
+      sortSteps(g.steps).map((s) => ({
+        step_id: s.step_id,
+        order: s.step_order,
+        unit_operation: s.unit_operation,
+        performed_by: s.performed_by,
+        evidence: evidenceText(s.evidence),
+      })),
+    ),
     compare_url: url(compareHash(input.platform_ids)),
-  }, ["counts are in the order of platforms; null means the platform has none."]);
+  }, ["counts and steps are in the order of platforms; a null count means the platform has none."]);
 }
 
 export const SPLIT_VALUES = ["im", "field", "sw", "hw", "mt", "tm"] as const;
