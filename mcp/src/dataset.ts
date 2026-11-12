@@ -14,7 +14,7 @@ import { offeredValues, type Offered } from "../../src/lib/filterState";
 import { platformSets, type PlatformSets } from "../../src/lib/similarity";
 import { catalogOf, type Catalog } from "../../src/lib/workflowState";
 
-export const PACKAGE_VERSION = "0.1.0";
+export const PACKAGE_VERSION = "0.1.1";
 export const USER_AGENT = `sdl-workflows-mcp/${PACKAGE_VERSION} (+https://github.com/ccy5123/sdl-workflows-explorer)`;
 
 /** The release this package version serves, copied from the explorer's release.config.json at build time. */

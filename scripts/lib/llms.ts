@@ -18,7 +18,8 @@ export const MCP_PACKAGE = "sdl-workflows-mcp";
 
 /** The rule every answer built on these files should follow; the MCP server's instructions say the same. */
 export const CITATION_RULE =
-  "The records were extracted from the papers with an LLM and checked by the author. Answer from these files, not " +
+  "The records were coded from the papers by a language model; the release contains no human coding (see the data " +
+  "card). Answer from these files, not " +
   "from memory: name every platform by its platform_id (e.g. Aand2024/P1) and paper key with DOI, give the evidence " +
   "location (document · page · locator) for every module, step or connection you describe, say \"not recorded\" " +
   "for a null field, and cite the release.";

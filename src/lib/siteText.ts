@@ -204,6 +204,28 @@ export const WORKFLOW_ABOUT = {
   ],
 } as const;
 
+/**
+ * About section on asking the data with one's own language model (LLM-access plan, 2026-11-12): the site runs no model;
+ * the local MCP server and llms.txt let a visitor's own app read the records. The package name matches mcp/package.json
+ * (tests/siteText.test.ts).
+ */
+export const LLM_ABOUT = {
+  heading: "Asking with your own language model",
+  lead:
+    "This site runs no language model. To ask about the data in plain language, use the model you already have: an " +
+    "app that starts local MCP servers can run the server below, and a model that reads web pages can read llms.txt.",
+  mcpPackage: "sdl-workflows-mcp",
+  mcp:
+    "The local MCP server downloads this release from Zenodo, checks its checksums and answers with the same search, " +
+    "workflow and trends code as this site. It sends nothing anywhere else. Each answer carries the record ids, paper " +
+    "keys, DOIs and the page each item was read from. Add it to the app's MCP settings with the command",
+  webBefore: "For a model that reads web pages,",
+  webAfter: "lists the data files and a plain-text page for each paper.",
+  caution:
+    "The records were coded from the papers by a language model and the release contains no human coding, so check a " +
+    "claim against the page it cites before relying on it.",
+} as const;
+
 /** Whole number tokens of a text: maximal runs of digits with "." or "," between digits. */
 export const numbersIn = (text: string): string[] => text.match(/\d+(?:[.,]\d+)*/g) ?? [];
 

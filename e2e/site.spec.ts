@@ -212,6 +212,7 @@ test("release 1.1.0: About sections in order, timing and human-intervention text
     "Limits",
     "Full text",
     "Workflow builder",
+    "Asking with your own language model", // LLM-access plan, 2026-11-12
     "Visitor count", // SPEC-VISIT-001 REQ-009
   ]);
   const text = await ownText(page);
@@ -233,6 +234,15 @@ test("release 1.1.0: About sections in order, timing and human-intervention text
   const sample = page.locator("main .home-card", { hasText: "About the sample" });
   await expect(sample).toContainText("batch sizes");
   await expect(sample).toContainText("human intervention");
+});
+
+test("About: asking with your own language model links llms.txt and the npm package", async ({ page }) => {
+  await page.goto("/#/about");
+  const section = page.getByRole("region", { name: "Asking with your own language model" });
+  await expect(section).toContainText("npx -y sdl-workflows-mcp");
+  await expect(section).toContainText("the release contains no human coding");
+  await expect(section.getByRole("link", { name: "llms.txt" })).toHaveAttribute("href", "llms.txt");
+  await expect(section.getByRole("link", { name: "sdl-workflows-mcp on npm" })).toHaveAttribute("href", "https://www.npmjs.com/package/sdl-workflows-mcp");
 });
 
 test("AC-7: home and about text draw no conclusion about the field", async ({ page }) => {

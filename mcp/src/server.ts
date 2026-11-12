@@ -20,7 +20,7 @@ import {
   VOCABULARY_KINDS,
 } from "./tools";
 
-export const INSTRUCTIONS = `This server answers questions about the sdl-workflows database: published self-driving laboratories coded step by step (modules, steps, material connections, step durations), release ${PIN.version} (DOI ${PIN.doi}). The records were extracted from the papers with an LLM and checked by the author, so every answer must point back to the records.
+export const INSTRUCTIONS = `This server answers questions about the sdl-workflows database: published self-driving laboratories coded step by step (modules, steps, material connections, step durations), release ${PIN.version} (DOI ${PIN.doi}). The records were coded from the papers by a language model and the release contains no human coding (see the data card resource), so every answer must point back to the records and the pages they cite.
 
 Rules for answers:
 - Answer only from tool results, not from memory. If a tool returns nothing or a field is null, say it is not recorded in the database.

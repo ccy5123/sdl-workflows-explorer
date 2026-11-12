@@ -1,6 +1,6 @@
 {
   "name": "sdl-workflows-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read-only MCP server for the sdl-workflows database of self-driving laboratories: search, platform records with evidence locations, similar platforms, cycle-time simulation and trends, from the pinned Zenodo release.",
   "keywords": ["mcp", "model-context-protocol", "self-driving laboratory", "laboratory automation", "dataset"],
   "type": "module",

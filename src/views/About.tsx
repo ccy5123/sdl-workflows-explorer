@@ -5,7 +5,7 @@ import { HowItWorks } from "../components/HowItWorks";
 import { PHONE_QUERY, useMedia } from "../components/useMedia";
 import { useReleaseDocs } from "../components/useReleaseDocs";
 import type { IndexJson } from "../data/types";
-import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, PREPRINT, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
+import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, LLM_ABOUT, PREPRINT, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
 import { VISITOR_ABOUT } from "../lib/visitors";
 
 /**
@@ -44,6 +44,7 @@ export function About({ index }: { index: IndexJson }) {
     ...ABOUT_SECTIONS.map((s) => ({ id: `about-${s.heading}`, text: s.heading })),
     { id: "about-full-text", text: "Full text" },
     { id: "about-workflow", text: WORKFLOW_ABOUT.heading },
+    { id: "about-llm", text: LLM_ABOUT.heading },
     { id: "about-visitors", text: VISITOR_ABOUT.heading },
   ];
   return (
@@ -87,6 +88,18 @@ export function About({ index }: { index: IndexJson }) {
         <p>
           <a href="#/workflow">Open the workflow builder</a>.
         </p>
+      </section>
+      <section aria-labelledby="about-llm" className="card panel">
+        <h2 id="about-llm">{LLM_ABOUT.heading}</h2>
+        <p>{LLM_ABOUT.lead}</p>
+        <p>
+          {LLM_ABOUT.mcp} <code>npx -y {LLM_ABOUT.mcpPackage}</code> (
+          <a href={`https://www.npmjs.com/package/${LLM_ABOUT.mcpPackage}`}>{LLM_ABOUT.mcpPackage} on npm</a>).
+        </p>
+        <p>
+          {LLM_ABOUT.webBefore} <a href="llms.txt">llms.txt</a> {LLM_ABOUT.webAfter}
+        </p>
+        <p>{LLM_ABOUT.caution}</p>
       </section>
       <section aria-labelledby="about-visitors" className="card panel">
         <h2 id="about-visitors">{VISITOR_ABOUT.heading}</h2>

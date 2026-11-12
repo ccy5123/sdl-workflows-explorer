@@ -51,8 +51,9 @@ Resources: the release's `DATA_CARD.md`, `CITATION.cff`, `data_dictionary.csv` a
 
 Every result carries the record ids, paper keys, DOIs, evidence locations (document · page · locator), a link to the
 record in the [explorer](https://ccy5123.github.io/sdl-workflows-explorer/) and the release citation. The server
-asks the model to answer only from these results and to cite them; the records were extracted with an LLM and
-checked by the author, so check a claim against its evidence location before relying on it.
+asks the model to answer only from these results and to cite them. The records were coded from the papers by a
+language model and the release contains no human coding, so check a claim against its evidence location before
+relying on it.
 
 ## Settings
 
