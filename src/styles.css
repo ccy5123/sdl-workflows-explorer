@@ -1070,6 +1070,16 @@ h3 {
   border-color: var(--accent);
 }
 
+/* Asking with one's own AI spans the row under the other tasks. */
+.hero-tasks .hero-task-row {
+  grid-column: 1 / -1;
+}
+
+.hero-task-wide {
+  border-color: var(--accent);
+  background: var(--highlight);
+}
+
 .hero-task-icon {
   flex-shrink: 0;
   margin-top: 2px;
@@ -4976,4 +4986,59 @@ body:has(.sheet-layer) .evidence-sheet {
   width: 100%;
   min-height: 44px;
   margin-top: 4px;
+}
+
+/* Ask with your own AI (#/ask). */
+.ask-lead {
+  max-width: 72ch;
+}
+
+.ask .card + .card {
+  margin-top: 16px;
+}
+
+.ask-setup + .ask-setup {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.ask-setup h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.ask-code {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.ask-code pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ask-after {
+  color: var(--muted);
+}
+
+.ask-examples li + li {
+  margin-top: 6px;
+}
+
+@media (max-width: 799.98px) {
+  .ask-code {
+    flex-direction: column;
+  }
 }

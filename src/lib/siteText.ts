@@ -218,7 +218,8 @@ export const LLM_ABOUT = {
   mcp:
     "The local MCP server downloads this release from Zenodo, checks its checksums and answers with the same search, " +
     "workflow and trends code as this site. It sends nothing anywhere else. Each answer carries the record ids, paper " +
-    "keys, DOIs and the page each item was read from. Add it to the app's MCP settings with the command",
+    "keys, DOIs and the page each item was read from. Its command is",
+  pageLink: "How to set up Claude, ChatGPT and other apps",
   webBefore: "For a model that reads web pages,",
   webAfter: "lists the data files and a plain-text page for each paper.",
   caution:

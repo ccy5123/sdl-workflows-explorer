@@ -6,6 +6,7 @@ export type Route =
   | { kind: "home" }
   | { kind: "about" }
   | { kind: "guide" }
+  | { kind: "ask" }
   | { kind: "platform"; paperId: string; platformId: string }
   | { kind: "browse"; query: string }
   | { kind: "trends"; query: string }
@@ -38,7 +39,7 @@ function compareId(item: string): string {
  * `#/platform/<paper_id>/<platform_suffix>` → platform; `#/browse[?<query>]` → browse; `#/compare/<id>,<id>…` →
  * compare; `#/taxonomy` → taxonomy; `#/taxonomy?source=<key>` → taxonomy with a target source;
  * `#/taxonomy/<kind>/<class>` → taxonomy class; `#/benchmark` → benchmark; `#/benchmark/items[?<query>]` → benchmark
- * items; `#/workflow[?<query>]` → workflow builder; `#/about` → about; `#/guide` → getting started; empty, `#` or `#/` → home; anything else → not found.
+ * items; `#/workflow[?<query>]` → workflow builder; `#/about` → about; `#/guide` → getting started; `#/ask` → asking with your own AI; empty, `#` or `#/` → home; anything else → not found.
  */
 export function parseRoute(hash: string): Route {
   if (hash === "" || hash === "#" || hash === "#/") return { kind: "home" };
@@ -47,6 +48,7 @@ export function parseRoute(hash: string): Route {
   const rest = hash.slice(2);
   if (rest === "about") return { kind: "about" };
   if (rest === "guide") return { kind: "guide" };
+  if (rest === "ask") return { kind: "ask" };
   if (rest === "browse") return { kind: "browse", query: "" };
   if (rest.startsWith("browse?")) return { kind: "browse", query: rest.slice("browse?".length) };
   if (rest === "trends") return { kind: "trends", query: "" };
@@ -118,6 +120,8 @@ export function routeTitle(route: Route): string {
       return "About";
     case "guide":
       return "Getting started";
+    case "ask":
+      return "Ask with your own AI";
     case "platform":
       return `Platform ${route.platformId}`;
     case "browse":
@@ -163,6 +167,8 @@ export function navCurrent(route: Route): string | null {
       return "Workflow";
     case "guide":
       return "Getting started";
+    case "ask":
+      return "Ask AI";
     default:
       return null;
   }

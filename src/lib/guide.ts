@@ -1,4 +1,4 @@
-// Getting started (#/guide): four tasks a first-time reader can follow, each step pointing at the page it uses. Pure
+// Getting started (#/guide): five tasks a first-time reader can follow, each step pointing at the page it uses. Pure
 // data; views/Guide.tsx renders it. tests/guide.test.ts checks that every link opens a known route and that every
 // platform it names is in the release.
 import { compareHash, platformHash } from "./route";
@@ -34,7 +34,7 @@ export const GUIDE_WORKFLOW =
 
 export const GUIDE_TITLE = "Getting started";
 export const GUIDE_LEAD =
-  "Four tasks, each a few steps long. Every step links to the page it uses, so you can follow along in another tab.";
+  "Five tasks, each a few steps long. Every step links to the page it uses, so you can follow along in another tab.";
 
 export const GUIDE_TASKS: readonly GuideTask[] = [
   {
@@ -141,6 +141,30 @@ export const GUIDE_TASKS: readonly GuideTask[] = [
       {
         text:
           "Similar platforms compares the coded structure only; it says nothing about how well any platform worked.",
+      },
+    ],
+  },
+  {
+    id: "ask",
+    title: "Ask with your own AI",
+    outcome: "Answers to plain-language questions from the AI app you already use, each naming the records and pages it rests on.",
+    steps: [
+      {
+        text:
+          "Set up your app once: a desktop app such as Claude Desktop, Cursor or VS Code runs the SDL Workflows MCP " +
+          "server; Claude Code adds it with one command; a web chat app is given a link to the data files instead.",
+        link: { href: "#/ask", text: "Open Ask with your own AI" },
+      },
+      {
+        text:
+          "Ask in plain language, for example which labs use an in-line FT-IR, or how many experiments per day a " +
+          "workflow you describe could run.",
+      },
+      {
+        text:
+          "Each answer names platform ids, the papers' DOIs and the page each item was read from. Open a platform " +
+          "here to check it.",
+        link: { href: "#/browse?view=platforms", text: "Open Browse, Platforms" },
       },
     ],
   },

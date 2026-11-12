@@ -16,6 +16,7 @@ import { PAPER_LINK_TEXT, paperUrl } from "./lib/contribute";
 import { navCurrent, parseRoute, routeTitle } from "./lib/route";
 import { AUTHOR, PREPRINT } from "./lib/siteText";
 import { About } from "./views/About";
+import { Ask } from "./views/Ask";
 import { Browse } from "./views/Browse";
 import { Compare } from "./views/Compare";
 import { Guide } from "./views/Guide";
@@ -33,14 +34,15 @@ const Benchmark = lazy(() => import("./views/Benchmark").then((m) => ({ default:
 const Workflow = lazy(() => import("./views/Workflow").then((m) => ({ default: m.Workflow })));
 
 /**
- * The view links: tabs from 800 px up, the menu panel below (SPEC-UI-001 REQ-004, REQ-016). The four views a reader
- * starts from are tabs; the pages about the data sit under one "Data" tab. Browse opens on its platform table.
+ * The view links: tabs from 800 px up, the menu panel below (SPEC-UI-001 REQ-004, REQ-016). The views a reader starts
+ * from, and asking with one's own AI, are tabs; the pages about the data sit under one "Data" tab. Browse opens on its platform table.
  */
 const NAV_ITEMS: readonly NavEntry[] = [
   { href: "#/", text: "Home" },
   { href: "#/browse?view=platforms", text: "Browse" },
   { href: "#/trends", text: "Trends" },
   { href: "#/workflow", text: "Workflow" },
+  { href: "#/ask", text: "Ask AI" },
   {
     text: "Data",
     items: [
@@ -163,6 +165,7 @@ export function App() {
         {index && route.kind === "home" && <Home index={index} />}
         {index && route.kind === "about" && <About index={index} />}
         {index && route.kind === "guide" && <Guide />}
+        {index && route.kind === "ask" && <Ask />}
         {index && route.kind === "platform" && (
           <PlatformView key={route.platformId} index={index} paperId={route.paperId} platformId={route.platformId} hash={hash} />
         )}

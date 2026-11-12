@@ -38,7 +38,7 @@ test("AC-8: home order, links, citation and featured platform", async ({ page })
   await expect(main.locator(".hero-lead")).toHaveText(heroLead(index.counts.papers));
   await expect(main.locator(".hero-chips")).toContainText(`Release ${index.release.version}`);
   const tasks = main.locator(".hero-tasks a");
-  await expect(tasks.locator("strong")).toHaveText(["Explore platforms", "See how one is built", "Sketch your workflow", "Download data"]);
+  await expect(tasks.locator("strong")).toHaveText(["Explore platforms", "See how one is built", "Sketch your workflow", "Download data", "Ask with your own AI"]);
   await expect(tasks.nth(1)).toHaveAttribute("href", `#/platform/${FEATURED_PLATFORM}`);
   await expect(tasks.nth(2)).toHaveAttribute("href", "#/workflow");
   await expect(main.locator(".hero-chips")).toContainText("CC BY 4.0");

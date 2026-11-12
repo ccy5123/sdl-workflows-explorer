@@ -99,6 +99,9 @@ export function About({ index }: { index: IndexJson }) {
         <p>
           {LLM_ABOUT.webBefore} <a href="llms.txt">llms.txt</a> {LLM_ABOUT.webAfter}
         </p>
+        <p>
+          <a href="#/ask">{LLM_ABOUT.pageLink}</a>.
+        </p>
         <p>{LLM_ABOUT.caution}</p>
       </section>
       <section aria-labelledby="about-visitors" className="card panel">

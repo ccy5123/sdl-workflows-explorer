@@ -10,8 +10,8 @@ warnIfMissing("guide.test.ts");
 const links = GUIDE_TASKS.flatMap((t) => t.steps.flatMap((s) => (s.link ? [s.link] : [])));
 
 describe("guide", () => {
-  it("has four tasks with distinct ids, each with steps", () => {
-    expect(GUIDE_TASKS.map((t) => t.id)).toEqual(["find", "read", "compare", "build"]);
+  it("has five tasks with distinct ids, each with steps", () => {
+    expect(GUIDE_TASKS.map((t) => t.id)).toEqual(["find", "read", "compare", "build", "ask"]);
     for (const t of GUIDE_TASKS) expect(t.steps.length).toBeGreaterThan(0);
   });
 

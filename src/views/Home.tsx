@@ -1,7 +1,7 @@
 // Home (SPEC-UI-001 REQ-010 to REQ-012, built to the approved mock, variant B): hero with search and the featured
 // platform, stat tiles, the six view cards, the platform list, and the citation and sample cards. Every number comes
 // from the built data (REQ-011). Replaces the SPEC-SITE-001 REQ-003 layout; the citation rules of REQ-004 hold.
-import { ArrowRight, Download, FileText, Network, Search, SlidersHorizontal, Workflow, type LucideIcon } from "lucide-react";
+import { ArrowRight, Download, FileText, type LucideIcon, MessageSquareText, Network, Search, SlidersHorizontal, Workflow } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { CopyButton } from "../components/CopyButton";
 import { FeaturedPlatform } from "../components/FeaturedPlatform";
@@ -22,7 +22,10 @@ import { platformHash } from "../lib/route";
 import { FILTER_LABEL, PREPRINT, SEARCH_LABEL, STATS_CAPTION, heroLead, heroTitle, sampleText, searchPlaceholder } from "../lib/siteText";
 
 /** The ways in under the hero search: what a first-time reader comes to do, each one link. */
-function heroTasks(platforms: number, doiUrl: string): { title: string; note: string; href: string; icon: LucideIcon; primary?: boolean }[] {
+function heroTasks(
+  platforms: number,
+  doiUrl: string,
+): { title: string; note: string; href: string; icon: LucideIcon; primary?: boolean; wide?: boolean }[] {
   return [
     {
       title: "Explore platforms",
@@ -34,6 +37,13 @@ function heroTasks(platforms: number, doiUrl: string): { title: string; note: st
     { title: "See how one is built", note: "Modules, one cycle, and the page each is read from", href: platformHash(FEATURED_PLATFORM), icon: Network },
     { title: "Sketch your workflow", note: "Find the coded platforms most like it", href: "#/workflow", icon: Workflow },
     { title: "Download data", note: "CSV, Parquet and SQLite on Zenodo", href: doiUrl, icon: Download },
+    {
+      title: "Ask with your own AI",
+      note: "Ask in plain language in Claude, ChatGPT or the app you use; answers cite the records and pages",
+      href: "#/ask",
+      icon: MessageSquareText,
+      wide: true,
+    },
   ];
 }
 
@@ -162,13 +172,13 @@ export function Home({ index }: { index: IndexJson }) {
           </form>
 
           <p className="hero-guide">
-            New here? <a href="#/guide">Getting started</a> walks through four tasks, step by step.
+            New here? <a href="#/guide">Getting started</a> walks through five tasks, step by step.
           </p>
 
           <ul className="hero-tasks" aria-label="Start here">
             {heroTasks(total, doiUrl).map((t) => (
-              <li key={t.title}>
-                <a className={t.primary ? "hero-task hero-task-primary" : "hero-task"} href={t.href}>
+              <li key={t.title} className={t.wide ? "hero-task-row" : undefined}>
+                <a className={["hero-task", t.primary ? "hero-task-primary" : "", t.wide ? "hero-task-wide" : ""].filter(Boolean).join(" ")} href={t.href}>
                   <t.icon size={18} aria-hidden="true" className="hero-task-icon" />
                   <span className="hero-task-text">
                     <strong>{t.title}</strong>

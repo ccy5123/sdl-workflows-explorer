@@ -1,4 +1,4 @@
-// Getting started (#/guide): the four tasks of lib/guide.ts, each a card with its steps in order and a link to the
+// Getting started (#/guide): the five tasks of lib/guide.ts, each a card with its steps in order and a link to the
 // page a step uses.
 import { ArrowRight } from "lucide-react";
 import { GUIDE_LEAD, GUIDE_TASKS, GUIDE_TITLE } from "../lib/guide";

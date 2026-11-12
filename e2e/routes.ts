@@ -10,6 +10,7 @@ export const ROUTES: readonly SiteRoute[] = [
   { hash: "#/", title: "Home", current: "Home" },
   { hash: "#/about", title: "About", current: "About" },
   { hash: "#/guide", title: "Getting started", current: "Getting started" },
+  { hash: "#/ask", title: "Ask with your own AI", current: "Ask AI" },
   { hash: "#/platform/Aand2024/P1", title: "Platform Aand2024/P1", current: null },
   { hash: "#/browse", title: "Browse", current: "Browse" },
   { hash: "#/browse?view=platforms", title: "Browse", current: "Browse" },
@@ -26,12 +27,12 @@ export const ROUTES: readonly SiteRoute[] = [
 
 export const SITE_NAME = "SDL Workflows Explorer";
 
-/** The links of the top bar from 800 px up: the site title and four tabs; the "Data" tab is a button. */
-export const NAV_TAB_LINKS = ["SDL Workflows Explorer", "Home", "Browse", "Trends", "Workflow"];
+/** The links of the top bar from 800 px up: the site title and five tabs; the "Data" tab is a button. */
+export const NAV_TAB_LINKS = ["SDL Workflows Explorer", "Home", "Browse", "Trends", "Workflow", "Ask AI"];
 /** The pages under the "Data" tab, in order. */
 export const DATA_LINKS = ["About the data", "Getting started", "Taxonomy", "Benchmark"];
-/** Every link of the menu below 800 px: the four tabs, then the pages under the "Data" heading. */
-export const MENU_LINKS = ["Home", "Browse", "Trends", "Workflow", ...DATA_LINKS];
+/** Every link of the menu below 800 px: the five tabs, then the pages under the "Data" heading. */
+export const MENU_LINKS = ["Home", "Browse", "Trends", "Workflow", "Ask AI", ...DATA_LINKS];
 
 /** Opens the top bar's "Data" tab and follows one of its links. */
 export async function openDataPage(page: import("@playwright/test").Page, name: string): Promise<void> {
