@@ -242,6 +242,7 @@ dist-ssr/
 
 # SPEC-DATA-001: generated data and caches
 public/data/
+public/llms.txt
 .cache/
 coverage/
 

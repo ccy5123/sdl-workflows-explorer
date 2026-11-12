@@ -1,0 +1,36 @@
+{
+  "name": "sdl-workflows-mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for the sdl-workflows database of self-driving laboratories: search, platform records with evidence locations, similar platforms, cycle-time simulation and trends, from the pinned Zenodo release.",
+  "keywords": ["mcp", "model-context-protocol", "self-driving laboratory", "laboratory automation", "dataset"],
+  "type": "module",
+  "bin": {
+    "sdl-workflows-mcp": "dist/server.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ccy5123/sdl-workflows-explorer.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://ccy5123.github.io/sdl-workflows-explorer/",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "node dist/server.js",
+    "prepack": "node build.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "zod": "4.6.6"
+  }
+}
