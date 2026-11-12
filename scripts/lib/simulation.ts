@@ -244,7 +244,7 @@ function layouts(graphs: Graph[], rows: CsvRow[], at: (i: number) => string, tim
   return graphs.map((g) => {
     const steps = [...g.steps]
       .sort((a, b) => a.step_order - b.step_order)
-      .map((s) => ({ unit_operation: s.unit_operation, module_id: s.modules[0] ?? null }));
+      .map((s) => ({ step_id: s.step_id, unit_operation: s.unit_operation, module_id: s.modules[0] ?? null }));
     const used = new Set(steps.map((s) => s.module_id).filter((m): m is string => m !== null));
     return {
       platform_id: g.platform_id,

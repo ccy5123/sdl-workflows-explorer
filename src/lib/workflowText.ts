@@ -70,7 +70,7 @@ export const THROUGHPUT_INTRO =
   "are ringed.";
 
 export const SOURCE_LABELS: Record<string, string> = {
-  entered: "entered by you",
+  entered: "entered value",
   joint: "joint duration",
   covered: "inside a joint duration",
   recorded: "recorded durations",

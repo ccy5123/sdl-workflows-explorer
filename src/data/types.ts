@@ -380,7 +380,7 @@ export interface PlatformLayout {
   paper_id: string;
   year: number;
   /** Steps in step_order; module_id is the primary module (null when the step names none). */
-  steps: { unit_operation: string; module_id: string | null }[];
+  steps: { step_id: string; unit_operation: string; module_id: string | null }[];
   /** Only the modules some step uses as its primary module. */
   modules: { module_id: string; module_type: string; name: string | null; units: number | null }[];
   /** Connections between those modules, in edge-number order. */

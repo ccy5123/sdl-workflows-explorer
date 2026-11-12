@@ -105,8 +105,8 @@ describe("simulation.json from the mini release", () => {
     expect(p1).toEqual({
       platform_id: "PaperA2024/P1", name: "Rig One", paper_id: "PaperA2024", year: 2024,
       steps: [
-        { unit_operation: "dispense_liquid", module_id: "PaperA2024/P1/M2" },
-        { unit_operation: "analyze_data", module_id: "PaperA2024/P1/M1" },
+        { step_id: "PaperA2024/P1/S1", unit_operation: "dispense_liquid", module_id: "PaperA2024/P1/M2" },
+        { step_id: "PaperA2024/P1/S2", unit_operation: "analyze_data", module_id: "PaperA2024/P1/M1" },
       ],
       modules: [
         { module_id: "PaperA2024/P1/M1", module_type: "software", name: "controller", units: null },
@@ -119,7 +119,7 @@ describe("simulation.json from the mini release", () => {
       batch_size: 4.5, parallel_units: 2, transfer_agents: [],
     });
     const p2 = sim.platforms[1]!;
-    expect(p2.steps[2]).toEqual({ unit_operation: "analyze_data", module_id: null });
+    expect(p2.steps[2]).toEqual({ step_id: expect.stringMatching(/^PaperA2024\/P2\/S\d+$/), unit_operation: "analyze_data", module_id: null });
     expect(p2.connections.map((c) => [c.from.slice(-2), c.to.slice(-2), c.transfer_mode, c.transfer_time_s])).toEqual([
       ["M1", "M2", "fixed_tubing", 12.5],
       ["M2", "M1", "fixed_tubing", null],

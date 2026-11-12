@@ -20,7 +20,7 @@ const catalog: Catalog = {
 
 const layout = (id: string, steps: [string, string][], types: Record<string, string>, connections: PlatformLayout["connections"] = []): PlatformLayout => ({
   platform_id: id, name: null, paper_id: id.split("/")[0]!, year: 2024,
-  steps: steps.map(([unit_operation, module_id]) => ({ unit_operation, module_id })),
+  steps: steps.map(([unit_operation, module_id], k) => ({ step_id: `${id}/S${k + 1}`, unit_operation, module_id })),
   modules: Object.entries(types).map(([module_id, module_type]) => ({ module_id, module_type, name: null, units: null })),
   connections, batch_size: null, parallel_units: null, transfer_agents: [],
 });

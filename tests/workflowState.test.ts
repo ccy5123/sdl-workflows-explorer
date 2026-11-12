@@ -277,11 +277,11 @@ describe("AC-8: start from a coded platform (rules)", () => {
   const layout: PlatformLayout = {
     platform_id: "X/P9", name: null, paper_id: "X", year: 2024,
     steps: [
-      { unit_operation: "dispense_liquid", module_id: "X/P9/M1" },
-      { unit_operation: "react_thermal", module_id: "X/P9/M2" },
-      { unit_operation: "measure_optical", module_id: "X/P9/M3" },
-      { unit_operation: "analyze_data", module_id: "X/P9/M4" },
-      { unit_operation: "analyze_data", module_id: "X/P9/M4" },
+      { step_id: "X/P9/S1", unit_operation: "dispense_liquid", module_id: "X/P9/M1" },
+      { step_id: "X/P9/S2", unit_operation: "react_thermal", module_id: "X/P9/M2" },
+      { step_id: "X/P9/S3", unit_operation: "measure_optical", module_id: "X/P9/M3" },
+      { step_id: "X/P9/S4", unit_operation: "analyze_data", module_id: "X/P9/M4" },
+      { step_id: "X/P9/S5", unit_operation: "analyze_data", module_id: "X/P9/M4" },
     ],
     modules: [
       { module_id: "X/P9/M1", module_type: "fluidics", name: null, units: 2.5 },
@@ -375,5 +375,41 @@ describe.skipIf(!available)("AC-8: start from a coded platform (real 1.1.0)", ()
       const { state } = fromPlatform(p, c);
       expect(decodeWorkflow(encodeWorkflow(state), c)).toEqual({ state, ignored: [] });
     }
+  });
+
+  // Decision 11 (2026-11-12): a platform's own recorded step durations are filled as entered values.
+  it("Aand2024/P1: fills its own recorded durations of steps 2, 3 and 4 and names them", () => {
+    const { state, filled } = fromPlatform(layoutOf("Aand2024/P1"), c, sim.durations);
+    expect(state.entered).toEqual({ 2: 135, 3: 15, 4: 120 });
+    expect(filled).toContain("its recorded step durations (steps 2, 3, 4: Aand2024/P1/S2, Aand2024/P1/S3, Aand2024/P1/S4)");
+  });
+
+  it("fills only the platform's own single-step rows without a bound, or its joint rows, and the state survives the hash query", () => {
+    for (const p of sim.platforms) {
+      const { state } = fromPlatform(p, c, sim.durations);
+      expect(decodeWorkflow(encodeWorkflow(state), c)).toEqual({ state, ignored: [] });
+      const own = sim.durations.filter((d) => d.platform_id === p.platform_id);
+      for (const [i, seconds] of Object.entries(state.entered)) {
+        const row = own.find((d) => !d.joint && d.step_id === p.steps[Number(i) - 1]!.step_id);
+        expect(row, `${p.platform_id} step ${i}`).toBeDefined();
+        expect(row!.bound).toBeNull();
+        expect(seconds).toBe(Math.round(row!.seconds * 1000) / 1000);
+      }
+      for (const id of Object.values(state.joints)) expect(own.some((d) => d.joint && d.step_id === id)).toBe(true);
+    }
+  });
+
+  it("leaves a duration recorded only as a bound unfilled, and says so", () => {
+    const row = sim.durations.find((d) => d.bound !== null && !d.joint)!;
+    const layout = layoutOf(row.platform_id);
+    const i = layout.steps.findIndex((s) => s.step_id === row.step_id) + 1;
+    const { state, filled } = fromPlatform(layout, c, sim.durations);
+    expect(state.entered[i]).toBeUndefined();
+    expect(filled.join("; ")).toMatch(/durations recorded only as a bound, not filled \(/);
+    expect(filled.join("; ")).toContain(`step ${i}: ${row.step_id}`);
+  });
+
+  it("without durations, fills no duration (as before)", () => {
+    expect(fromPlatform(layoutOf("Aand2024/P1"), c).state.entered).toEqual({});
   });
 });

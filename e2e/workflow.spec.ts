@@ -83,6 +83,8 @@ test("AC-8: start from a coded platform", async ({ page }) => {
   await m.getByRole("button", { name: "Fill the builder from this platform" }).click();
   await expect(m.locator('[data-list="wf-steps"] > li')).toHaveCount(6);
   await expect(m.locator(".wf-message")).toContainText("Filled from Aand2024/P1: steps and their unit operations");
+  await expect(m.locator(".wf-message")).toContainText("its recorded step durations (steps 2, 3, 4: Aand2024/P1/S2, Aand2024/P1/S3, Aand2024/P1/S4)");
+  await expect(m.getByLabel("Your duration for step 2, seconds (empty: use the recorded values)")).toHaveValue("135");
 });
 
 test("AC-9, AC-10: similar platforms, sorting, more rows and the compare link", async ({ page }) => {
@@ -132,8 +134,8 @@ test("AC-11, AC-12: missing duration, entered value, distributions, sources and 
   await expect(result.locator('[data-value="cycle"]')).toHaveCount(0);
   await fill(page, "Your duration for step 1, seconds (empty: use the recorded values)", "120");
   await expect(result.locator('[data-value="cycle"]')).toHaveText("2 min");
-  await expect(result).toContainText("These include the duration entered by you for step 1.");
-  await expect(m.locator('table[data-table="wf-range"] tbody tr').first()).toContainText("entered by you");
+  await expect(result).toContainText("These include the duration entered for step 1.");
+  await expect(m.locator('table[data-table="wf-range"] tbody tr').first()).toContainText("entered value");
 
   await page.goto("/#/workflow?s=dispense_liquid~1,react_thermal~2&m=liquid_handler,thermal_unit");
   const step2 = m.locator('section[data-step="2"]');

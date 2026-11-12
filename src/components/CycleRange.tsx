@@ -145,7 +145,7 @@ function StepDetail({
             value={s.entered[i] === undefined ? "" : String(s.entered[i])}
             onCommit={(text) => apply(setEntered(s, catalog, i, text))}
           />
-          {step.kind === "entered" && <span className="wf-entered"> {formatDuration(step.value!)}, entered by you</span>}
+          {step.kind === "entered" && <span className="wf-entered"> {formatDuration(step.value!)}, entered</span>}
         </div>
       )}
       {chosen && (
@@ -300,7 +300,7 @@ export function CycleRange({
             <p className="table-note">{NO_WAITING}</p>
             {result.entered.length > 0 && (
               <p className="wf-entered">
-                These include the duration{result.entered.length > 1 ? "s" : ""} entered by you for step
+                These include the duration{result.entered.length > 1 ? "s" : ""} entered for step
                 {result.entered.length > 1 ? "s" : ""} {result.entered.join(", ")}.
               </p>
             )}

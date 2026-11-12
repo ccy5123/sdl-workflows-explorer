@@ -137,7 +137,7 @@ function Builder({ sim }: { sim: SimulationJson }) {
   const onStart = (platformId: string) => {
     const layout = sim.platforms.find((p) => p.platform_id === platformId);
     if (!layout) return;
-    const { state: next, filled } = fromPlatform(layout, catalog);
+    const { state: next, filled } = fromPlatform(layout, catalog, sim.durations);
     commit(next, [`Filled from ${platformId}: ${filled.join(", ")}. Every other input keeps its default.`]);
   };
 

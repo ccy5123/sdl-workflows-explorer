@@ -536,8 +536,11 @@ function buildWorkflow(ds: Dataset, src: WorkflowSource, notes: string[]): Workf
   if (src.from_platform !== undefined) {
     requirePlatform(ds, src.from_platform);
     const layout = ds.layouts.get(src.from_platform)!;
-    const r = fromPlatform(layout, c);
-    notes.push(`Filled from ${src.from_platform}: ${r.filled.join(", ")}.`);
+    const r = fromPlatform(layout, c, ds.derived.simulation.durations);
+    notes.push(
+      `Filled from ${src.from_platform}: ${r.filled.join(", ")}. Its own recorded durations are entered values (source ` +
+        "\"entered\"); the other steps draw on every platform's recorded durations of the same unit operation.",
+    );
     return r.state;
   }
   if (src.workflow_query !== undefined) {

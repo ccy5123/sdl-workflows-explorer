@@ -1,7 +1,7 @@
 // Workflow builder state: the visitor's steps, modules and transfers plus the inputs of the cycle-time range and the
 // simulation, its hash-query grammar, edits that refuse out-of-range values, and the fill from a coded platform
 // (SPEC-SIM-001 REQ-006 to REQ-008, design §3 and §4). Pure: decoding never throws.
-import type { PlatformLayout, SimulationJson } from "../data/types";
+import type { DurationRow, PlatformLayout, SimulationJson } from "../data/types";
 
 export const AGENT_MODES = ["robot_arm_gantry", "mobile_robot", "human_transfer"] as const;
 export type AgentMode = (typeof AGENT_MODES)[number];
@@ -588,8 +588,17 @@ export function boundaryConnection(
 const clampCount = (v: number, [min, max]: readonly [number, number]) => Math.min(max, Math.max(min, Math.ceil(v)));
 const AGENT_OF: Record<string, AgentMode> = { robot_arm_gantry: "robot_arm_gantry", mobile_robot: "mobile_robot", human: "human_transfer" };
 
-/** Builder state filled from a coded platform, and the inputs that came from it. */
-export function fromPlatform(layout: PlatformLayout, c: Catalog): { state: WorkflowState; filled: string[] } {
+/**
+ * Builder state filled from a coded platform, and the inputs that came from it. With the release's durations, the
+ * platform's own recorded step durations are filled as entered values (decision 11 of the LLM-access plan, 2026-11-12):
+ * single-step rows without a bound, then its joint rows over steps that got no single value. Steps without an own row
+ * keep drawing on the recorded durations of every platform.
+ */
+export function fromPlatform(
+  layout: PlatformLayout,
+  c: Catalog,
+  durations: readonly DurationRow[] = [],
+): { state: WorkflowState; filled: string[] } {
   const s: WorkflowState = structuredClone(DEFAULT_STATE);
   const filled = ["steps and their unit operations", "modules and their types", "transfer modes"];
   const moduleIndex = new Map<string, number>();
@@ -632,5 +641,43 @@ export function fromPlatform(layout: PlatformLayout, c: Catalog): { state: Workf
     if (mode && v !== 1) s.agents[mode] = v;
   }
   if (layout.transfer_agents.length > 0) filled.push("transfer agents");
-  return { state: s, filled };
+  const own = durations.filter((d) => d.platform_id === layout.platform_id);
+  if (own.length === 0) return { state: s, filled };
+
+  let state = s;
+  const tryEdit = (r: EditResult) => (r.ok ? ((state = r.state), true) : false);
+  const stepOf = new Map(layout.steps.slice(0, s.steps.length).map((st, k) => [st.step_id, k + 1]));
+  const entered: { i: number; id: string }[] = [];
+  const bounded: { i: number; id: string }[] = [];
+  const perRun: number[] = [];
+  for (const d of own.filter((x) => !x.joint)) {
+    const i = stepOf.get(d.step_id);
+    if (i === undefined) continue;
+    if (d.bound !== null) {
+      bounded.push({ i, id: d.step_id });
+      continue;
+    }
+    if (!tryEdit(setEntered(state, c, i, String(Math.round(d.seconds * 1000) / 1000)))) continue;
+    entered.push({ i, id: d.step_id });
+    if (d.samples_per_run !== null && tryEdit(setPerRun(state, c, i, String(d.samples_per_run)))) perRun.push(i);
+  }
+  const joints: { first: number; last: number; id: string }[] = [];
+  for (const d of own.filter((x) => x.joint && x.bound === null)) {
+    const idx = d.joint!.step_ids.map((id) => stepOf.get(id));
+    if (idx.some((i) => i === undefined || state.entered[i] !== undefined)) continue;
+    if (tryEdit(chooseJoint(state, c, idx[0]!, d.step_id))) joints.push({ first: idx[0]!, last: idx.at(-1)!, id: d.step_id });
+  }
+  const byStep = <T extends { i: number }>(xs: T[]) => [...xs].sort((a, b) => a.i - b.i);
+  if (entered.length > 0) {
+    const xs = byStep(entered);
+    filled.push(`its recorded step durations (step${xs.length > 1 ? "s" : ""} ${xs.map((x) => x.i).join(", ")}: ${xs.map((x) => x.id).join(", ")})`);
+  }
+  if (perRun.length > 0) filled.push(`samples per run of step${perRun.length > 1 ? "s" : ""} ${[...perRun].sort((a, b) => a - b).join(", ")}`);
+  if (joints.length > 0) {
+    filled.push(`its recorded joint durations (${joints.map((j) => `steps ${j.first}–${j.last}: ${j.id}`).join("; ")})`);
+  }
+  if (bounded.length > 0) {
+    filled.push(`durations recorded only as a bound, not filled (${byStep(bounded).map((x) => `step ${x.i}: ${x.id}`).join("; ")})`);
+  }
+  return { state, filled };
 }

@@ -223,7 +223,9 @@ describe("simulate_cycle_time", () => {
     expect(a).toEqual(b);
     const query = a.results.workflow_url.split("#/workflow?")[1] ?? "";
     const decoded = decodeWorkflow(query, ds.catalog).state;
-    const expected = fromPlatform(ds.layouts.get("Aand2024/P1")!, ds.catalog).state;
+    const expected = fromPlatform(ds.layouts.get("Aand2024/P1")!, ds.catalog, ds.derived.simulation.durations).state;
+    expect(expected.entered).toEqual({ 2: 135, 3: 15, 4: 120 }); // its own recorded durations (decision 11)
+    expect(a.notes.join(" ")).toContain("its recorded step durations (steps 2, 3, 4");
     expect(encodeWorkflow(decoded)).toBe(encodeWorkflow({ ...expected, n: 5, runs: 5 }));
     for (const s of a.results.cycle_range.steps) {
       if (!s.durations_used) continue;
