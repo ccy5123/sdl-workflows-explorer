@@ -416,10 +416,11 @@ test("Follow-up: Compare shows the comparison page at once, before the hashchang
 test("SPEC-TAXO-001 AC-14: the unit-operation filter", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#/browse?view=platforms");
-  // The group follows Module types in the bar (both shown before "More filters"), and its popover holds the options
-  // then the match control.
+  // The group follows Module types and Techniques (SPEC-TECH-001 REQ-008) in the bar, all shown before "More filters",
+  // and its popover holds the options then the match control.
   const buttons = await page.locator(".filter-panel .filter-button").allTextContents();
-  expect(buttons.indexOf("Unit operations")).toBe(buttons.indexOf("Module types") + 1);
+  expect(buttons.indexOf("Techniques")).toBe(buttons.indexOf("Module types") + 1);
+  expect(buttons.indexOf("Unit operations")).toBe(buttons.indexOf("Techniques") + 1);
   await openFilter(page, "Unit operations");
   await expect(group(page, "Unit operations").getByRole("checkbox")).toHaveCount(31);
   expect(await page.locator(".filter-popover-panel legend").allTextContents()).toEqual(["Unit operations", "Unit operations match"]);
