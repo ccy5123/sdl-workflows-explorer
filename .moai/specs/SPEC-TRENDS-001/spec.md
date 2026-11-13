@@ -4,7 +4,7 @@ title: "Trends dashboard: counts by first public year, split by one category, wi
 version: "0.3.0"
 status: completed
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-13
 author: cyjoe
 priority: P1
 phase: "v0.4.0 target"
@@ -32,6 +32,12 @@ depends_on: [SPEC-DATA-001, SPEC-BROWSE-001]
   version), the simulated deficiencies and the checks per palette kind, and exempts the shading ramp; a cell link
   takes the cell's text colour; `progress.md` records the validator commands and verbatim output; AC-12 checks the
   stack order and AC-13 measures the link text colour.
+- 2026-11-13 amended for SPEC-TECH-001: the dashboard's text search and filters are those of SPEC-BROWSE-001 as
+  amended the same day (the shared search rule of SPEC-TECH-001 REQ-005 and the technique filter `tech`, `techMatch`),
+  so a count line under a search counts what the browser's count line counts. `expected-counts.mjs` now computes the
+  search with `SPEC-TECH-001/search-rule.mjs` and adds the technique filter to the platform-level rule. The counts of
+  `acceptance.md` are unchanged under release 1.1.0 (no acceptance case uses a search other than `zzzz`, which still
+  counts 0 and 0). New count lines (papers, platforms): q FTIR 18, 19; tech x_ray_diffraction 9, 9.
 
 ## 1. Why
 

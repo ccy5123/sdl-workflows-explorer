@@ -1,6 +1,8 @@
 // Expected counts for SPEC-BROWSE-001 acceptance.md (AC-3 offered values, AC-5 counts, AC-6 and AC-14 comparison rows), computed from public/data/ with the rules of spec section 2.
 // Run from the repository root after npm run build-data: node .moai/specs/SPEC-BROWSE-001/expected-counts.mjs
 import { readFileSync, readdirSync } from "node:fs";
+// The text search and technique filter of SPEC-TECH-001 (REQ-005, REQ-008), written from that spec (2026-11-13).
+import { paperMatches, platformMatches, platformTechniques } from "../SPEC-TECH-001/search-rule.mjs";
 
 const idx = JSON.parse(readFileSync("public/data/index.json", "utf8"));
 const tax = JSON.parse(readFileSync("public/data/taxonomy.json", "utf8"));
@@ -50,27 +52,21 @@ out("transfer modes index vs material connections mismatch", tmMismatch);
 out("max steps / modules per platform", [maxSteps, maxModules]);
 
 // ---- filter semantics as specified ----
-const D = { years: null, field: [], im: [], sw: [], hw: [], mt: [], mtMatch: "all", tm: [], tmMatch: "all", q: "" };
+const D = { years: null, field: [], im: [], sw: [], hw: [], mt: [], mtMatch: "all", tech: [], techMatch: "all", tm: [], tmMatch: "all", q: "" };
 const setMatch = (have, want, mode) => want.length === 0 || (mode === "any" ? want.some((w) => have.includes(w)) : want.every((w) => have.includes(w)));
 const yearOk = (y, s) => !s.years || ((s.years[0] == null || y >= s.years[0]) && (s.years[1] == null || y <= s.years[1]));
 const fieldOk = (tags, s) => s.field.length === 0 || s.field.some((f) => tags.includes(f));
 const paperLevel = (p, s) => (s.im.length === 0 || s.im.includes(p.integration_mode)) && (s.sw.length === 0 || s.sw.includes(p.sw_autonomy)) && (s.hw.length === 0 || s.hw.includes(p.hw_autonomy));
-const platLevel = (l, s) => setMatch(l.module_types, s.mt, s.mtMatch) && setMatch(l.material_transfer_modes, s.tm, s.tmMatch);
+const platLevel = (l, s) =>
+  setMatch(l.module_types, s.mt, s.mtMatch) && setMatch(l.material_transfer_modes, s.tm, s.tmMatch) && setMatch(platformTechniques(l.platform_id), s.tech, s.techMatch);
 const has = (t, q) => t != null && t.toLowerCase().includes(q);
-// Module names as the papers state them (public/data/search.json, 2026-11-11): the text search matches them too.
-const NAMES = JSON.parse(readFileSync("public/data/search.json", "utf8")).module_names;
-const moduleHit = (platformId, q) => (NAMES[platformId] ?? []).some((n) => has(n, q));
-const paperOk = (p, s) => {
-  const q = s.q.trim().toLowerCase();
-  return yearOk(p.first_public_year, s) && fieldOk(p.field_tags, s) && paperLevel(p, s) &&
-    (s.mt.length === 0 && s.tm.length === 0 ? true : L.some((l) => l.paper_id === p.paper_id && platLevel(l, s))) &&
-    (!q || has(p.paper_id, q) || has(p.title, q) || L.some((l) => l.paper_id === p.paper_id && moduleHit(l.platform_id, q)));
-};
-const platOk = (l, s) => {
-  const q = s.q.trim().toLowerCase();
-  return yearOk(l.first_public_year, s) && fieldOk(l.field_tags, s) && paperLevel(byId[l.paper_id], s) && platLevel(l, s) &&
-    (!q || has(l.platform_id, q) || has(l.platform_name, q) || moduleHit(l.platform_id, q));
-};
+// Text search (2026-11-13, SPEC-TECH-001 REQ-005): every term must match; technique terms through the tag table.
+const paperOk = (p, s) =>
+  yearOk(p.first_public_year, s) && fieldOk(p.field_tags, s) && paperLevel(p, s) &&
+  (s.mt.length === 0 && s.tm.length === 0 && s.tech.length === 0 ? true : L.some((l) => l.paper_id === p.paper_id && platLevel(l, s))) &&
+  paperMatches(p, s.q);
+const platOk = (l, s) =>
+  yearOk(l.first_public_year, s) && fieldOk(l.field_tags, s) && paperLevel(byId[l.paper_id], s) && platLevel(l, s) && platformMatches(l, s.q);
 const cases = {
   "empty": {},
   "years 2018-2024": { years: [2018, 2024] },
@@ -93,6 +89,18 @@ const cases = {
   "q Aand2024": { q: "Aand2024" },
   "example URL": { years: [2018, 2024], field: ["catalysis", "nanomaterials"], mt: ["flow_reactor"], mtMatch: "any", q: "chemspeed" },
   "years 2018-2024 + field catalysis + mt flow_reactor": { years: [2018, 2024], field: ["catalysis"], mt: ["flow_reactor"] },
+  // SPEC-TECH-001 (2026-11-13): spellings of one technique, a quoted spelling, the technique filter
+  "q FTIR": { q: "FTIR" },
+  "q FT-IR": { q: "FT-IR" },
+  "q ReactIR": { q: "ReactIR" },
+  "q IR": { q: "IR" },
+  "q \"ReactIR\"": { q: '"ReactIR"' },
+  "q XRD": { q: "XRD" },
+  "q diffractometer": { q: "diffractometer" },
+  "q LC-MS": { q: "LC-MS" },
+  "tech ir_spectroscopy": { tech: ["ir_spectroscopy"] },
+  "tech x_ray_diffraction,uv_vis_spectroscopy all": { tech: ["x_ray_diffraction", "uv_vis_spectroscopy"] },
+  "tech x_ray_diffraction,uv_vis_spectroscopy any": { tech: ["x_ray_diffraction", "uv_vis_spectroscopy"], techMatch: "any" },
 };
 for (const [name, c] of Object.entries(cases)) {
   const s = { ...D, ...c };
@@ -129,6 +137,7 @@ out("offered im", alpha(P.map((p) => p.integration_mode)));
 out("offered sw / hw", [numeric(P.map((p) => p.sw_autonomy)), numeric(P.map((p) => p.hw_autonomy))]);
 out("offered mt", alpha(L.flatMap((l) => l.module_types)));
 out("offered tm", alpha(L.flatMap((l) => l.material_transfer_modes)));
+out("offered tech", alpha(L.flatMap((l) => platformTechniques(l.platform_id))));
 out("Bedard2018 links (numeric suffix order)", L.filter((l) => l.paper_id === "Bedard2018").map((l) => l.platform_id.split("/")[1]).sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))));
 
 // ---- comparison rows (REQ-014, AC-6, AC-14): all modules by type, material connections by mode, steps by step_order ----

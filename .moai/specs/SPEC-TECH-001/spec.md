@@ -1,7 +1,7 @@
 ---
 id: SPEC-TECH-001
 title: "Technique tags: one search for every spelling of an instrument, on the site and in the MCP package"
-version: "0.1.0"
+version: "0.1.1"
 status: approved
 created: 2026-11-13
 updated: 2026-11-13
@@ -18,6 +18,14 @@ depends_on: [SPEC-DATA-001, SPEC-BROWSE-001, SPEC-TRENDS-001, SPEC-UI-001]
 ## HISTORY
 
 - 2026-11-13 0.1.0 draft.
+- 2026-11-13 0.1.1 implementation notes, written into the requirements below: the matching function is in
+  `src/lib/techniqueMatch.ts` (the vocabulary rules stay in `techniqueSearch.ts`); a word whose tokens are each an
+  alias gives one technique term per token, and a compound alias (LCMS, which "LC-MS" normalises to) needs every
+  technique it names among the platform's tagged modules; a plain query found whole in a platform's id, paper or name
+  puts that platform first, and a short plain word must be a whole token there too; a paper row's own id and title
+  are read with every term plain; `tech` and `techMatch` come after `uoMatch`, the unit-operation filter added since
+  SPEC-BROWSE-001; reasons with evidence are shown on Home (the Browse tables have no reason column), the expansion
+  line and suggestions on both.
 
 ## 1. Why
 
@@ -85,19 +93,23 @@ it, the mapping shown to the reader, and quotes to switch it off.
 
 ### One matching function
 
-- **REQ-005** (ubiquitous) One pure function in `src/lib/techniqueSearch.ts` shall decide which platforms match a
-  query and why. It is used by the Home search (`platformFilter.ts`), the Browse and Trends text search
-  (`filterApply.ts`, whose platform and paper rules otherwise stay as SPEC-BROWSE-001 REQ-005 states them) and the
-  MCP's `search_platforms`. Terms are read left to right:
+- **REQ-005** (ubiquitous) One pure function, `searchWithTechniques` in `src/lib/techniqueMatch.ts`, shall decide
+  which platforms match a query and why. It is used by the Home search (`platformFilter.ts`), the Browse and Trends
+  text search (`filterApply.ts`) and the MCP's `search_platforms`. Terms are read left to right:
   - a double-quoted term is matched as written: a case-insensitive substring of the platform id, paper id, platform
     name, stated module names, readable module types or readable unit operations (today's rule), with no mapping;
   - otherwise the longest run of one to four words that is an alias is one **technique term**;
+  - a word whose tokens are each an alias ("HPLC/ESI") gives one technique term per token;
   - every other word is a **plain term**, matched by today's rule, except that a plain word of at most three letters
     or digits must equal a whole token.
 
   A platform matches when it matches every term (AND, as today). A technique term matches a platform that has a
-  module tagged with that technique, or whose id, paper id or name contains the alias. It does not match stated
-  module names as text: by REQ-003 (d) every module whose name contains an alias has a row, so the table decides.
+  module tagged with that technique (for a compound alias such as LCMS, modules carrying every technique it names),
+  or whose id, paper id or name contains the alias. It does not match stated module names as text: by REQ-003 (d)
+  every module whose name contains an alias has a row, so the table decides. Platforms whose id, paper or name holds
+  the whole query, when every term is plain, come first (a short word as a whole token), then the rest, each group in
+  input order. A paper row matches when one of its platforms matches or when its own paper id and title match with
+  every term read as plain (titles carry no tags).
 - **REQ-006** (ubiquitous) For each matching platform the function shall return the reason: for a technique term,
   the module id, stated name, evidence location and technique; for a text hit on a module, the module id, stated
   name and evidence location; for a hit on the id, name or paper, that field. It shall also return, for each
@@ -108,12 +120,12 @@ it, the mapping shown to the reader, and quotes to switch it off.
 
 - **REQ-007** (event) When a query contains a technique term, the Home search and Browse shall show one line above
   the results, for example `FTIR: searched as IR spectroscopy (FT-IR, FTIR, FT/IR, ReactIR, FlowIR, …)`, with a button
-  "Search "FTIR" only" that puts the term in double quotes (the URL `q` changes accordingly). Each row's reason shows
-  the module id, stated name and evidence location. When fewer than three platforms match, the site lists the
-  suggested module names as links that search for them.
+  "Search "FTIR" only" that puts the term in double quotes (the URL `q` changes accordingly). On Home, each row's
+  reason shows the module id, stated name and evidence location. When fewer than three platforms match, the site
+  lists the suggested module names as links that search for them.
 - **REQ-008** (ubiquitous) Browse and Trends shall have a technique filter next to the module-type filter: a
   checkbox group "Techniques" with an "all"/"any" match control, URL parameters `tech` and `techMatch` after
-  `tmMatch` (SPEC-BROWSE-001 §3), offered values the techniques that tag at least one module. It is a platform-level
+  `uoMatch` (SPEC-BROWSE-001 §3), offered values the techniques that tag at least one module. It is a platform-level
   filter in the sense of SPEC-BROWSE-001 REQ-007. Until `techniques.json` has loaded, a `tech` value in the URL is
   kept and not applied, and the group shows that it is loading.
 - **REQ-009** (ubiquitous) Wherever tags appear (site, `llms.txt`, technique pages, MCP results and instructions),

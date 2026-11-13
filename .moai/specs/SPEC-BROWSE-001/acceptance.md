@@ -62,7 +62,8 @@ with platform `Alpha2020/P1` (name "Flow rig", mt [flow_reactor, software], tm [
 - years 2016–2020 → papers [Alpha2020]; years 2015–2015 → papers [Beta2015] (both ends inclusive).
 - field [nanomaterials] → papers [Beta2015]; platforms [Beta2015/P1, Beta2015/P2].
 - q `  BETA ` → papers [Beta2015], platforms [Beta2015/P1, Beta2015/P2]; q `flow rig` → platforms [Alpha2020/P1],
-  papers none (titles do not contain it); q `null` matches no platform.
+  papers [Alpha2020] (through its platform; amended 2026-11-13 for SPEC-TECH-001, was none); q `null` matches no
+  platform.
 
 ### AC-5 Real index counts (REQ-005, REQ-006, REQ-007)
 
@@ -92,6 +93,18 @@ with platform `Alpha2020/P1` (name "Flow rig", mt [flow_reactor, software], tm [
 - q chemspeed matches exactly `Christensen2021/P1`, `Moosavi2019/P1`, `Ramirez2024/P1`, `Sim2024/P1`,
   `StriethKalthoff2024/P1`, `StriethKalthoff2024/P2`, `StriethKalthoff2024/P3`, `Vescovi2023/P2`, `Wu2025c/P1`
   (three by name, six by a module name; amended 2026-11-11).
+- Technique search and filter (amended 2026-11-13 for SPEC-TECH-001; release 1.1.0, 237 papers, 279 platforms):
+
+| Filter state | Papers | Platforms |
+|---|---|---|
+| q FTIR, q FT-IR, q ReactIR (each) | 18 | 19 |
+| q IR | 18 | 19 |
+| q "ReactIR" (quoted) | 9 | 9 |
+| q XRD, q diffractometer (each) | 9 | 9 |
+| q LC-MS | 19 | 24 |
+| tech ir_spectroscopy | 18 | 19 |
+| tech x_ray_diffraction, uv_vis_spectroscopy, match all | 0 | 0 |
+| tech x_ray_diffraction, uv_vis_spectroscopy, match any | 71 | 75 |
 
 ### AC-6 Comparison assembly (REQ-014, REQ-009)
 - Fixture: steps given out of order come back sorted by `step_order`; a null performer stays null (shown as "—");

@@ -4,6 +4,8 @@
 // Section 10 holds the checks added in spec version 0.2.0.
 // Run from the repository root after npm run build-data: node .moai/specs/SPEC-TRENDS-001/expected-counts.mjs
 import { readFileSync } from "node:fs";
+// The text search and technique filter of SPEC-TECH-001 (REQ-005, REQ-008), written from that spec (2026-11-13).
+import { paperMatches, platformMatches, platformTechniques } from "../SPEC-TECH-001/search-rule.mjs";
 
 const idx = JSON.parse(readFileSync("public/data/index.json", "utf8"));
 const P = idx.papers, L = idx.platforms;
@@ -11,27 +13,20 @@ const byId = Object.fromEntries(P.map((p) => [p.paper_id, p]));
 const out = (k, v) => console.log(k.padEnd(52), JSON.stringify(v));
 
 // ---- SPEC-BROWSE-001 filter rules (REQ-005 to REQ-007 there) ----
-const D = { view: "papers", years: { from: null, to: null }, field: [], im: [], sw: [], hw: [], mt: [], mtMatch: "all", tm: [], tmMatch: "all", q: "" };
+const D = { view: "papers", years: { from: null, to: null }, field: [], im: [], sw: [], hw: [], mt: [], mtMatch: "all", tech: [], techMatch: "all", tm: [], tmMatch: "all", q: "" };
 const setMatch = (have, want, mode) => want.length === 0 || (mode === "any" ? want.some((w) => have.includes(w)) : want.every((w) => have.includes(w)));
 const yearOk = (y, s) => (s.years.from === null || y >= s.years.from) && (s.years.to === null || y <= s.years.to);
 const fieldOk = (tags, s) => s.field.length === 0 || s.field.some((f) => tags.includes(f));
 const paperLevel = (p, s) => (s.im.length === 0 || s.im.includes(p.integration_mode)) && (s.sw.length === 0 || s.sw.includes(p.sw_autonomy)) && (s.hw.length === 0 || s.hw.includes(p.hw_autonomy));
-const platLevel = (l, s) => setMatch(l.module_types, s.mt, s.mtMatch) && setMatch(l.material_transfer_modes, s.tm, s.tmMatch);
-const has = (t, q) => t != null && t.toLowerCase().includes(q);
-// Module names as the papers state them (public/data/search.json, 2026-11-11): the text search matches them too.
-const NAMES = JSON.parse(readFileSync("public/data/search.json", "utf8")).module_names;
-const moduleHit = (platformId, q) => (NAMES[platformId] ?? []).some((n) => has(n, q));
-const paperOk = (p, s) => {
-  const q = s.q.trim().toLowerCase();
-  return yearOk(p.first_public_year, s) && fieldOk(p.field_tags, s) && paperLevel(p, s) &&
-    (s.mt.length === 0 && s.tm.length === 0 ? true : L.some((l) => l.paper_id === p.paper_id && platLevel(l, s))) &&
-    (!q || has(p.paper_id, q) || has(p.title, q) || L.some((l) => l.paper_id === p.paper_id && moduleHit(l.platform_id, q)));
-};
-const platOk = (l, s) => {
-  const q = s.q.trim().toLowerCase();
-  return yearOk(l.first_public_year, s) && fieldOk(l.field_tags, s) && paperLevel(byId[l.paper_id], s) && platLevel(l, s) &&
-    (!q || has(l.platform_id, q) || has(l.platform_name, q) || moduleHit(l.platform_id, q));
-};
+const platLevel = (l, s) =>
+  setMatch(l.module_types, s.mt, s.mtMatch) && setMatch(l.material_transfer_modes, s.tm, s.tmMatch) && setMatch(platformTechniques(l.platform_id), s.tech, s.techMatch);
+// Text search (2026-11-13, SPEC-TECH-001 REQ-005): every term must match; technique terms through the tag table.
+const paperOk = (p, s) =>
+  yearOk(p.first_public_year, s) && fieldOk(p.field_tags, s) && paperLevel(p, s) &&
+  (s.mt.length === 0 && s.tm.length === 0 && s.tech.length === 0 ? true : L.some((l) => l.paper_id === p.paper_id && platLevel(l, s))) &&
+  paperMatches(p, s.q);
+const platOk = (l, s) =>
+  yearOk(l.first_public_year, s) && fieldOk(l.field_tags, s) && paperLevel(byId[l.paper_id], s) && platLevel(l, s) && platformMatches(l, s.q);
 const count = (s) => (s.view === "platforms" ? L.filter((l) => platOk(l, s)) : P.filter((p) => paperOk(p, s))).length;
 
 // ---- offered values and URL encoding (SPEC-BROWSE-001 REQ-002, REQ-004) ----
@@ -186,6 +181,9 @@ out("trends hash platforms + years 2018-2024 + field catalysis + mt", trendsHash
 out("trends count line years 2018-2024 + field catalysis (papers, platforms)", [count(S({ years: { from: 2018, to: 2024 }, field: ["catalysis"] })), count(S({ view: "platforms", years: { from: 2018, to: 2024 }, field: ["catalysis"] }))]);
 out("count line im mixed + mt flow_reactor (papers, platforms)", [count(S({ im: ["mixed"], mt: ["flow_reactor"] })), count(S({ view: "platforms", im: ["mixed"], mt: ["flow_reactor"] }))]);
 out("count line q zzzz (papers, platforms)", [count(S({ q: "zzzz" })), count(S({ view: "platforms", q: "zzzz" }))]);
+// SPEC-TECH-001 (2026-11-13): the count line under a technique search and under the technique filter
+out("count line q FTIR (papers, platforms)", [count(S({ q: "FTIR" })), count(S({ view: "platforms", q: "FTIR" }))]);
+out("count line tech x_ray_diffraction (papers, platforms)", [count(S({ tech: ["x_ray_diffraction"] })), count(S({ view: "platforms", tech: ["x_ray_diffraction"] }))]);
 out("bins from 2030 (empty)", bins({ from: 2030, to: null }).length);
 
 // ---- 8. colours: WCAG contrast ----

@@ -4,7 +4,7 @@ title: "Browser and comparison: filtered paper and platform tables, shareable fi
 version: "0.2.0"
 status: completed
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-13
 author: cyjoe
 priority: P1
 phase: "v0.3.0 target"
@@ -30,6 +30,17 @@ depends_on: [SPEC-DATA-001, SPEC-VIEW-001]
 - 2026-11-11 amended: the text search also matches the module names the papers state (`public/data/search.json`), so
   a reader can search by instrument (Browse and Trends; the Home search already did). `q chemspeed` now counts 7
   papers and 9 platforms (was 0 and 3); `expected-counts.mjs` applies the same rule.
+- 2026-11-13 amended for SPEC-TECH-001: the text search is the one rule the Home search and the MCP package also use
+  (REQ-005 below): every term must match, an instrument named in any spelling matches through the technique tags of
+  `public/data/techniques.json`, a quoted term is matched as written, a plain word of up to 3 letters or digits must
+  be a whole token, and module types and unit operations are read by their labels. A paper matches through any
+  matching platform or through its own id and title. A technique filter joins the platform-level filters (`tech`,
+  `techMatch` in §3). Under release 1.1.0 the existing counts in `expected-counts.mjs` are unchanged (q chemspeed
+  still 7 papers, 9 platforms); the fixture search `flow rig` now also returns paper `Alpha2020`, through its
+  platform. New counts (papers, platforms): q FTIR, FT-IR or ReactIR 18, 19; q IR 18, 19; q "ReactIR" 9, 9; q XRD or
+  diffractometer 9, 9; q LC-MS 19, 24; tech ir_spectroscopy 18, 19; tech x_ray_diffraction and uv_vis_spectroscopy
+  0, 0 (all) and 71, 75 (any). `expected-counts.mjs` computes them with `SPEC-TECH-001/search-rule.mjs`, written from
+  that spec without the site's code; the site's functions give the same numbers.
 
 ## 1. Why
 
@@ -45,7 +56,8 @@ autonomy) and filters on the platform row (module types, transfer modes) both ap
 
 Terms used below. A **paper-level filter** is one whose value is stored on the paper row of `index.json`:
 integration mode, software autonomy, hardware autonomy. A **platform-level filter** is one whose value is stored on
-the platform row: module types present (`module_types`) and transfer modes present (`material_transfer_modes`).
+the platform row: module types present (`module_types`) and transfer modes present (`material_transfer_modes`);
+since 2026-11-13 also unit operations and the techniques the platform's tagged modules carry (SPEC-TECH-001).
 Year range, field tag and text search apply to each row's own values.
 
 ### Routing and navigation
@@ -93,10 +105,12 @@ Year range, field tag and text search apply to each row's own values.
   no selected value, an empty year input or an empty search does not restrict. Within one checkbox group, a row
   passes when it has any of the selected values (OR), except for the two groups governed by REQ-006. The year range
   is inclusive on both ends and applies to the row's `first_public_year`. The field-tag filter applies to the row's
-  own `field_tags`. The text search trims the input and matches, case-insensitively as a substring, the paper id,
-  the title, or a module name (as the paper states it) of one of the paper's platforms on a paper row, and the
-  platform id, the platform name (a null name never matches) or one of its module names on a platform row. Module
-  names come from `public/data/search.json`; until it loads, rows are searched without them.
+  own `field_tags`. The text search is the rule of SPEC-TECH-001 REQ-005 (amended 2026-11-13): a platform row
+  matches when every term of the query matches the platform (technique terms through its tagged modules or its own
+  id, paper or name; quoted and plain terms in the id, paper, name, module names, module type labels or unit
+  operation labels), and a paper row matches when one of its platforms matches or when its own paper id and title
+  match with every term read as plain. Module names come from `public/data/search.json` and tags from
+  `public/data/techniques.json`; until they load, rows are searched without them.
 - **REQ-006** (ubiquitous) For module types and for transfer modes, each with its own switch, match mode "all" shall
   pass a platform whose `module_types` (or `material_transfer_modes`) contains every selected value, and match mode
   "any" shall pass a platform that contains at least one selected value.
@@ -179,6 +193,10 @@ Year range, field tag and text search apply to each row's own values.
 | `mtMatch` | match mode for `mt` | `all` or `any` | these two | `all` |
 | `tm` | transfer modes present | comma-separated | values present on platform rows | none |
 | `tmMatch` | match mode for `tm` | `all` or `any` | these two | `all` |
+| `uo` | unit operations present | comma-separated | values present on platform rows | none |
+| `uoMatch` | match mode for `uo` | `all` or `any` | these two | `all` |
+| `tech` | techniques carried by tagged modules (SPEC-TECH-001, 2026-11-13) | comma-separated | ids of `techniques.json` that tag a module; while it loads, well-formed ids are kept | none |
+| `techMatch` | match mode for `tech` | `all` or `any` | these two | `all` |
 | `q` | text search | `encodeURIComponent` of the trimmed text (decoded with `decodeURIComponent`; `+` is not a space) | any non-empty text | empty |
 
 Example: `#/browse?view=platforms&years=2018-2024&field=catalysis&mt=flow_reactor` (6 of 280 platforms).
