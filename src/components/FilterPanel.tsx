@@ -106,10 +106,22 @@ function YearRange({ yearText, onYearText }: Pick<Props, "yearText" | "onYearTex
   );
 }
 
+/** Below the techniques group: how the tags were made (SPEC-TECH-001 REQ-009). */
+export const TECHNIQUE_NOTE =
+  "Technique tags were assigned by a language model from the module names the papers state; they are not part of the data release.";
+
 function GroupFields({ group, offered, state, onState }: { group: FilterGroup } & Pick<Props, "offered" | "state" | "onState">) {
+  const options = offered[group.key];
   return (
     <>
-      <CheckboxGroup group={group} options={offered[group.key]} state={state} onState={onState} />
+      {options ? (
+        <CheckboxGroup group={group} options={options} state={state} onState={onState} />
+      ) : (
+        <p className="filter-group filter-loading" role="status">
+          {group.legend}: loading…
+        </p>
+      )}
+      {group.key === "tech" && <p className="table-note filter-note">{TECHNIQUE_NOTE}</p>}
       {group.match && (
         <MatchControl
           legend={`${group.legend} match`}

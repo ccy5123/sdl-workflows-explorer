@@ -10,6 +10,8 @@ import { PHONE_QUERY, useMedia } from "../components/useMedia";
 import { useSearchIndex } from "../components/useSearchIndex";
 import { show } from "../lib/evidence";
 import { matchingPapers, matchingPlatforms } from "../lib/filterApply";
+import { searchDetails } from "../lib/platformFilter";
+import { SearchExpansion } from "../components/SearchExpansion";
 import {
   PAPER_TABLE_NOTE,
   autonomyText,
@@ -167,7 +169,9 @@ function platformColumns(selected: string[], toggle: (id: string) => void, codes
 }
 
 export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (hash: string) => void }) {
-  const offered = useMemo(() => offeredValues(index), [index]);
+  // Module names, module refs and technique tags (search.json, techniques.json) for the search box and the technique filter.
+  const searchIndex = useSearchIndex(index);
+  const offered = useMemo(() => ({ ...offeredValues(index), tech: searchIndex.techOffered }), [index, searchIndex.techOffered]);
   const [state, setState] = useState<FilterState>(() => stateFromLocation(offered) ?? decodeFilters("", offered));
   const [years, setYears] = useState(() => yearText(state.years));
   const [selected, setSelected] = useState<string[]>([]);
@@ -205,12 +209,16 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
     for (const list of m.values()) list.sort((a, b) => suffixNumber(a.platform_id) - suffixNumber(b.platform_id));
     return m;
   }, [index]);
-  // Module names from search.json, so the search box also finds instruments.
-  // Only a search reads them; without one the plain index keeps the tables from redrawing when search.json arrives.
-  const searchIndex = useSearchIndex(index);
-  const rowsFrom = state.q.trim() ? searchIndex : index;
-  const papers = useMemo(() => matchingPapers(state, rowsFrom.papers, rowsFrom.platforms), [state, rowsFrom]);
-  const platforms = useMemo(() => matchingPlatforms(state, rowsFrom.papers, rowsFrom.platforms), [state, rowsFrom]);
+  // Only a search or the technique filter reads search.json and techniques.json; without them the plain index keeps the
+  // tables from redrawing when those files arrive.
+  const rowsFrom = state.q.trim() || state.tech.length ? searchIndex : index;
+  const tech = state.q.trim() || state.tech.length ? searchIndex.tech : null;
+  const papers = useMemo(() => matchingPapers(state, rowsFrom.papers, rowsFrom.platforms, tech), [state, rowsFrom, tech]);
+  const platforms = useMemo(() => matchingPlatforms(state, rowsFrom.papers, rowsFrom.platforms, tech), [state, rowsFrom, tech]);
+  const details = useMemo(
+    () => (state.q.trim() ? searchDetails(searchIndex.platforms, state.q, searchIndex.tech) : null),
+    [state.q, searchIndex],
+  );
   const paperCols = useMemo(() => paperColumns(links, codes), [links, codes]);
   const platformCols = useMemo(
     () => platformColumns(selected, (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])), codes),
@@ -237,6 +245,9 @@ export function Browse({ index, onNavigate }: { index: IndexJson; onNavigate: (h
         onClear={onClear}
         resultText={state.view === "papers" ? `Show ${papers.length} papers` : `Show ${platforms.length} platforms`}
       />
+      {details && (
+        <SearchExpansion query={state.q} expansions={details.expansions} suggestions={details.suggestions} onQuery={(next) => apply({ ...state, q: next })} />
+      )}
       <div className="browse-layout">
         <div className="browse-results">
           <div className="table-switch" role="group" aria-label="Table shown">

@@ -5143,3 +5143,48 @@ body:has(.sheet-layer) .evidence-sheet {
     max-width: 100%;
   }
 }
+
+/* What the search did with the query (SPEC-TECH-001 REQ-007). */
+.search-expansion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 8px;
+  font-size: 13px;
+}
+
+.search-expansion p {
+  margin: 0;
+}
+
+.search-expansion-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+
+.search-suggest {
+  color: var(--muted);
+}
+
+.search-expansion .link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.filter-loading {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.filter-note {
+  max-width: 40ch;
+  margin: 6px 0 0;
+}

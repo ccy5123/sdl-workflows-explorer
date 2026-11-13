@@ -53,7 +53,8 @@ function stateFromLocation(offered: Offered): TrendsState | null {
 }
 
 export function Trends({ index }: { index: IndexJson }) {
-  const offered = useMemo(() => offeredValues(index), [index]);
+  const searchIndex = useSearchIndex(index);
+  const offered = useMemo(() => ({ ...offeredValues(index), tech: searchIndex.techOffered }), [index, searchIndex.techOffered]);
   const [{ state, split }, setTrends] = useState<TrendsState>(() => stateFromLocation(offered) ?? decodeTrends("", offered));
   const [years, setYears] = useState(() => yearText(state.years));
 
@@ -83,10 +84,9 @@ export function Trends({ index }: { index: IndexJson }) {
   };
 
   // Module names from search.json, so the search box counts the same rows as in Browse.
-  const searchIndex = useSearchIndex(index);
   // Only a search reads the module names; without one the counts are the same, and keeping the plain index keeps the
   // chart (and the keyboard focus in it) from redrawing when search.json arrives.
-  const counted = state.q.trim() ? searchIndex : index;
+  const counted = state.q.trim() || state.tech.length ? searchIndex : index;
   const table = useMemo(() => countTable(state, split, counted), [state, split, counted]);
   const unit = state.view;
   const all = unit === "papers" ? index.papers.length : index.platforms.length;

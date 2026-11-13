@@ -1,5 +1,5 @@
 // Browse URL format of spec §3: encode a filter state to the hash query and decode it back (REQ-002; SPEC-TAXO-001
-// REQ-006: uo and uoMatch after tmMatch). Pure: never throws.
+// REQ-006: uo and uoMatch after tmMatch; SPEC-TECH-001 REQ-008: tech and techMatch after uoMatch). Pure: never throws.
 import {
   DEFAULT_STATE,
   sortedNumbers,
@@ -37,6 +37,8 @@ export function encodeFilters(state: FilterState): string {
   if (state.tmMatch !== DEFAULT_STATE.tmMatch) add("tmMatch", state.tmMatch);
   if (state.uo.length) add("uo", list(sortedText(state.uo)));
   if (state.uoMatch !== DEFAULT_STATE.uoMatch) add("uoMatch", state.uoMatch);
+  if (state.tech.length) add("tech", list(sortedText(state.tech)));
+  if (state.techMatch !== DEFAULT_STATE.techMatch) add("techMatch", state.techMatch);
   const q = state.q.trim();
   if (q) add("q", encodeURIComponent(q));
   return parts.join("&");
@@ -71,6 +73,8 @@ function decodeNumberList(raw: string, offered: readonly number[]): number[] | n
   return items.length ? sortedNumbers(items) : null;
 }
 
+const TECH_ID = /^[a-z][a-z0-9_]*$/;
+
 const decodeMatch = (raw: string): Match | null => (raw === "all" || raw === "any" ? raw : null);
 
 /**
@@ -100,6 +104,9 @@ export function decodeFilters(query: string, offered: Offered): FilterState {
     tmMatch: read("tmMatch", decodeMatch, DEFAULT_STATE.tmMatch),
     uo: read("uo", (v) => decodeTextList(v, offered.uo), DEFAULT_STATE.uo),
     uoMatch: read("uoMatch", decodeMatch, DEFAULT_STATE.uoMatch),
+    // Until techniques.json has loaded the offered techniques are unknown: well-formed ids are kept (SPEC-TECH-001 REQ-008).
+    tech: read("tech", (v) => decodeTextList(v, offered.tech ?? v.split(",").map(decode).filter((x): x is string => x !== null && TECH_ID.test(x))), DEFAULT_STATE.tech),
+    techMatch: read("techMatch", decodeMatch, DEFAULT_STATE.techMatch),
     q: read("q", (v) => decode(v)?.trim() || null, DEFAULT_STATE.q),
   };
 }

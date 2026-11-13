@@ -5,6 +5,7 @@ import { matchingPapers, matchingPlatforms, type SearchablePlatform } from "./fi
 import { HW_LABELS, INTEGRATION_MODE_TEXT, SW_LABELS, offeredValues, sortedText, type FilterState, type Offered, type View, type YearRange } from "./filterState";
 import { decodeFilters, encodeFilters } from "./filterUrl";
 import { displayLabel } from "./labels";
+import type { TechniqueData } from "./techniqueMatch";
 
 /** Category a dashboard splits the counts by; each is also a filter group of the browser. */
 export type Split = "im" | "field" | "sw" | "hw" | "mt" | "tm";
@@ -113,13 +114,15 @@ export function linkState(state: FilterState, bin: Bin, split: Split, value?: Sp
 interface IndexRows {
   papers: readonly PaperRow[];
   platforms: readonly SearchablePlatform[];
+  /** Technique tags for the search (SPEC-TECH-001); absent or null until techniques.json has loaded. */
+  tech?: TechniqueData | null;
 }
 
 /** Rows of the state's unit that the browser shows for it. */
 export function rowCount(state: FilterState, index: IndexRows): number {
   return state.view === "platforms"
-    ? matchingPlatforms(state, index.papers, index.platforms).length
-    : matchingPapers(state, index.papers, index.platforms).length;
+    ? matchingPlatforms(state, index.papers, index.platforms, index.tech ?? null).length
+    : matchingPapers(state, index.papers, index.platforms, index.tech ?? null).length;
 }
 
 export interface CountTable {

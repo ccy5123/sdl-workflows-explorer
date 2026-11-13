@@ -4,17 +4,18 @@ import { DISPLAY_GROUPS, FILTER_GROUPS, filterPills, optionLabel } from "../src/
 import { DEFAULT_STATE } from "../src/lib/filterState";
 
 describe("FILTER_GROUPS", () => {
-  it("lists the seven popover groups in bar order with their legends", () => {
+  it("lists the eight popover groups in bar order with their legends", () => {
     expect(FILTER_GROUPS.map((g) => [g.key, g.legend])).toEqual([
       ["field", "Field tag"],
       ["im", "Integration mode"],
       ["sw", "Software autonomy"],
       ["hw", "Hardware autonomy"],
       ["mt", "Module types"],
+      ["tech", "Techniques"],
       ["tm", "Transfer modes"],
       ["uo", "Unit operations"],
     ]);
-    expect(FILTER_GROUPS.filter((g) => g.match).map((g) => g.match)).toEqual(["mtMatch", "tmMatch", "uoMatch"]);
+    expect(FILTER_GROUPS.filter((g) => g.match).map((g) => g.match)).toEqual(["mtMatch", "techMatch", "tmMatch", "uoMatch"]);
   });
 });
 
@@ -73,6 +74,6 @@ describe("filterPills", () => {
 
 describe("DISPLAY_GROUPS", () => {
   it("puts field tag, module types and unit operations first, then the other groups in bar order", () => {
-    expect(DISPLAY_GROUPS.map((g) => g.key)).toEqual(["field", "mt", "uo", "im", "sw", "hw", "tm"]);
+    expect(DISPLAY_GROUPS.map((g) => g.key)).toEqual(["field", "mt", "tech", "uo", "im", "sw", "hw", "tm"]);
   });
 });

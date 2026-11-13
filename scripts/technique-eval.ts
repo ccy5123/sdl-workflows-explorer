@@ -5,7 +5,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { IndexJson, SearchJson, TechniquesJson } from "../src/data/types";
 import { displayLabel } from "../src/lib/labels";
-import { searchPlatforms } from "../src/lib/platformFilter";
 import { searchWithTechniques, techniqueData, type SearchRow } from "../src/lib/techniqueMatch";
 
 export interface EvalQuery {
@@ -62,7 +61,32 @@ export function loadEval(root = join(import.meta.dirname, "..")) {
   return { rows, tech, queries };
 }
 
-export const oldSearch = (rows: readonly SearchRow[], q: string) => searchPlatforms(rows, q).map((m) => m.row.platform_id);
+/**
+ * The Home search as it was before SPEC-TECH-001 (src/lib/platformFilter.ts at 03679ea), kept here as the baseline:
+ * every word must be a case-insensitive substring of the platform id, paper id, name, a stated module name, a readable
+ * module type or a readable unit operation.
+ */
+export function oldSearch(rows: readonly SearchRow[], query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return rows.map((r) => r.platform_id);
+  const words = q.split(/\s+/);
+  const direct: string[] = [];
+  const detailed: string[] = [];
+  for (const row of rows) {
+    const head = [row.platform_id, row.paper_id, row.platform_name ?? ""].join(" ").toLowerCase();
+    if (head.includes(q)) {
+      direct.push(row.platform_id);
+      continue;
+    }
+    const fields = [
+      ...(row.module_names ?? []),
+      ...row.module_types.map((c) => `${displayLabel("module_type", c)} ${c}`),
+      ...row.unit_operations.map((c) => `${displayLabel("unit_operation", c)} ${c}`),
+    ].map((t) => t.toLowerCase());
+    if (words.every((w) => head.includes(w) || fields.some((f) => f.includes(w)))) detailed.push(row.platform_id);
+  }
+  return [...direct, ...detailed];
+}
 export const newSearch = (rows: readonly SearchRow[], q: string, tech: Parameters<typeof searchWithTechniques>[2]) =>
   searchWithTechniques(rows, q, tech, displayLabel).hits.map((h) => h.row.platform_id);
 

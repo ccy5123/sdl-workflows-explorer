@@ -2,6 +2,7 @@
 // override map below gives a name (acronyms, instrument_* and measure_* types, reactions, joined fields, and an
 // "unmapped" name per kind so no two classes share a label, REQ-009). The code itself stays visible as secondary
 // text (components/Label.tsx). Pure.
+import techniqueVocabulary from "../../data-overlay/techniques.json";
 
 /** "chemistry_synthesis" → "Chemistry synthesis". */
 export function sentenceCase(code: string): string {
@@ -55,7 +56,11 @@ const OVERRIDES: Record<string, Record<string, string>> = {
   },
 };
 
-/** Readable name of `code` in the vocabulary `kind` (field_tag, module_type, unit_operation, transfer_mode, …). */
+/** Technique labels from the explorer's technique vocabulary (SPEC-TECH-001), so they are written in one place. */
+const TECHNIQUE_LABELS: Record<string, string> = Object.fromEntries(techniqueVocabulary.techniques.map((t) => [t.id, t.label]));
+
+/** Readable name of `code` in the vocabulary `kind` (field_tag, module_type, unit_operation, transfer_mode, technique, …). */
 export function displayLabel(kind: string, code: string): string {
+  if (kind === "technique") return TECHNIQUE_LABELS[code] ?? sentenceCase(code);
   return OVERRIDES[kind]?.[code] ?? sentenceCase(code);
 }

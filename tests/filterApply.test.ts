@@ -113,7 +113,8 @@ describe("filter rules on the fixture (AC-4)", () => {
 
   it("searches ids, titles and names, trimmed and case-insensitively", () => {
     expect(run({ q: "  BETA " })).toEqual({ papers: ["Beta2015"], platforms: ["Beta2015/P1", "Beta2015/P2"] });
-    expect(run({ q: "flow rig" })).toEqual({ papers: [], platforms: ["Alpha2020/P1"] });
+    // SPEC-TECH-001 REQ-005: a paper matches when one of its platforms matches, the platform's name included.
+    expect(run({ q: "flow rig" })).toEqual({ papers: ["Alpha2020"], platforms: ["Alpha2020/P1"] });
     expect(run({ q: "screening" })).toEqual({ papers: ["Alpha2020"], platforms: [] });
     expect(run({ q: "null" }).platforms).toEqual([]);
   });

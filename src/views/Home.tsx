@@ -17,7 +17,8 @@ import { formatCitation, licenseLabel } from "../lib/citation";
 import { PAPER_LINK_TEXT, paperUrl } from "../lib/contribute";
 import { show } from "../lib/evidence";
 import { FEATURED_PLATFORM, SEARCH_EXAMPLES, latestYear, licenceChips, newestFirst, statTiles } from "../lib/home";
-import { filterPlatforms, searchPlatforms } from "../lib/platformFilter";
+import { filterPlatforms, searchDetails, searchPlatforms } from "../lib/platformFilter";
+import { SearchExpansion } from "../components/SearchExpansion";
 import { platformHash } from "../lib/route";
 import { FILTER_LABEL, PREPRINT, SEARCH_LABEL, STATS_CAPTION, heroLead, heroTitle, sampleText, searchPlaceholder } from "../lib/siteText";
 
@@ -65,7 +66,8 @@ export function Home({ index }: { index: IndexJson }) {
   const taxonomy = useJson<TaxonomyJson>("data/taxonomy.json");
   const benchmark = useJson<BenchmarkJson>("data/benchmark.json");
   // Module names for the search (search.json); until they load the search reads names, ids, module types and steps.
-  const searchable = useSearchIndex(index).platforms;
+  const searchIndex = useSearchIndex(index);
+  const searchable = searchIndex.platforms;
   const featured = featuredFile.data?.platforms.find((p) => p.platform_id === FEATURED_PLATFORM) ?? null;
   const featuredPaper = index.papers.find((p) => p.paper_id === featured?.paper_id);
 
@@ -75,7 +77,8 @@ export function Home({ index }: { index: IndexJson }) {
   // Hero search (REQ-012).
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
-  const matches = useMemo(() => (query.trim() ? searchPlatforms(searchable, query) : []), [searchable, query]);
+  const details = useMemo(() => (query.trim() ? searchDetails(searchable, query, searchIndex.tech) : null), [searchable, query, searchIndex.tech]);
+  const matches = useMemo(() => (query.trim() ? searchPlatforms(searchable, query, searchIndex.tech) : []), [searchable, query, searchIndex.tech]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || typingIn(e.target)) return;
@@ -95,7 +98,7 @@ export function Home({ index }: { index: IndexJson }) {
   const [showAll, setShowAll] = useState(false);
   const listRef = useRef<HTMLInputElement>(null);
   const sorted = useMemo(() => newestFirst(searchable), [searchable]);
-  const listRows = useMemo(() => filterPlatforms(sorted, listQuery), [sorted, listQuery]);
+  const listRows = useMemo(() => filterPlatforms(sorted, listQuery, searchIndex.tech), [sorted, listQuery, searchIndex.tech]);
   const visible = showAll || listQuery.trim() ? listRows : listRows.slice(0, LIST_SIZE);
   const latest = latestYear(index.platforms);
   const showMatchesInList = () => {
@@ -132,6 +135,17 @@ export function Home({ index }: { index: IndexJson }) {
               <p id="hero-search-count" className="search-count" aria-live="polite">
                 {query.trim() ? `${matches.length} of ${total} platforms match` : ""}
               </p>
+              {details && (
+                <SearchExpansion
+                  query={query}
+                  expansions={details.expansions}
+                  suggestions={details.suggestions}
+                  onQuery={(next) => {
+                    setQuery(next);
+                    searchRef.current?.focus();
+                  }}
+                />
+              )}
               {matches.length > 0 && (
                 <ul className="search-suggestions">
                   {matches.slice(0, SUGGESTIONS).map(({ row: p, reason }) => (

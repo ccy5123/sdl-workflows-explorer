@@ -24,6 +24,9 @@ export interface FilterState {
   tmMatch: Match;
   uo: string[];
   uoMatch: Match;
+  /** Techniques (SPEC-TECH-001 REQ-008). */
+  tech: string[];
+  techMatch: Match;
   /** Search text as typed; filtering and the URL use it trimmed. */
   q: string;
 }
@@ -41,6 +44,8 @@ export const DEFAULT_STATE: FilterState = {
   tmMatch: "all",
   uo: [],
   uoMatch: "all",
+  tech: [],
+  techMatch: "all",
   q: "",
 };
 
@@ -53,6 +58,8 @@ export interface Offered {
   mt: string[];
   tm: string[];
   uo: string[];
+  /** Techniques tagging at least one module; undefined until techniques.json has loaded. */
+  tech?: string[];
 }
 
 /** Autonomy category texts of Tom et al. 2024 (release data_dictionary.csv). */
@@ -121,7 +128,7 @@ export function yearsFromInputs(from: string, to: string): { years: YearRange; i
 
 /** Filters that restrict rows, as shown on the filter toggle: the year range once, each non-empty group, a search. */
 export function activeFilterCount(state: FilterState): number {
-  const groups = [state.field, state.im, state.sw, state.hw, state.mt, state.tm, state.uo].filter((g) => g.length > 0).length;
+  const groups = [state.field, state.im, state.sw, state.hw, state.mt, state.tm, state.uo, state.tech].filter((g) => g.length > 0).length;
   const years = state.years.from !== null || state.years.to !== null ? 1 : 0;
   return groups + years + (state.q.trim() ? 1 : 0);
 }

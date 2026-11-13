@@ -3,8 +3,8 @@
 import { displayLabel } from "./labels";
 import { HW_LABELS, SW_LABELS, type FilterState } from "./filterState";
 
-export type ListKey = "field" | "im" | "sw" | "hw" | "mt" | "tm" | "uo";
-export type MatchKey = "mtMatch" | "tmMatch" | "uoMatch";
+export type ListKey = "field" | "im" | "sw" | "hw" | "mt" | "tm" | "uo" | "tech";
+export type MatchKey = "mtMatch" | "tmMatch" | "uoMatch" | "techMatch";
 
 export interface FilterGroup {
   key: ListKey;
@@ -22,6 +22,7 @@ export const FILTER_GROUPS: readonly FilterGroup[] = [
   { key: "sw", legend: "Software autonomy", kind: null },
   { key: "hw", legend: "Hardware autonomy", kind: null },
   { key: "mt", legend: "Module types", kind: "module_type", match: "mtMatch" },
+  { key: "tech", legend: "Techniques", kind: "technique", match: "techMatch" },
   { key: "tm", legend: "Transfer modes", kind: "transfer_mode", match: "tmMatch" },
   { key: "uo", legend: "Unit operations", kind: "unit_operation", match: "uoMatch" },
 ];
@@ -30,7 +31,7 @@ export const FILTER_GROUPS: readonly FilterGroup[] = [
  * The groups the bar shows before "More filters": the ones a first-time reader reaches for. The rest fold away until
  * asked for or until they hold a chosen value.
  */
-export const PRIMARY_GROUPS: readonly ListKey[] = ["field", "mt", "uo"];
+export const PRIMARY_GROUPS: readonly ListKey[] = ["field", "mt", "tech", "uo"];
 
 /** The groups in the order the bar and the phone tray show them: the primary ones first, then the rest. */
 export const DISPLAY_GROUPS: readonly FilterGroup[] = [

@@ -1,66 +1,41 @@
-// Home-page platform search and list filter (REQ-003): case-insensitive match on the platform id, name and paper id,
-// and also on the module names stated in the paper, the readable module types and the readable unit operations of the
-// steps, so a reader can search by instrument ("FT-IR") or by step ("photo"). Every word of the query must match
-// somewhere in the platform. Pure.
+// Home-page platform search and list filter (REQ-003; SPEC-TECH-001 REQ-005): the shared technique search over the
+// platform id, name and paper id, the module names stated in the paper, the readable module types and the readable unit
+// operations of the steps. Every term of the query must match somewhere in the platform; an instrument named in any of
+// its spellings ("FTIR", "ReactIR") is found through the technique tags. Pure.
 import type { PlatformRow } from "../data/types";
 import { displayLabel } from "./labels";
+import { reasonText, searchWithTechniques, type ModuleRef, type Reason, type SearchResult, type TechniqueData } from "./techniqueMatch";
 
-/** A platform row as the search reads it; `module_names` come from search.json and may not have loaded yet. */
+/** A platform row as the search reads it; module names and refs come from search.json and may not have loaded yet. */
 export type SearchableRow = Pick<PlatformRow, "platform_id" | "paper_id" | "platform_name" | "module_types" | "unit_operations"> & {
   module_names?: readonly string[];
+  module_refs?: readonly ModuleRef[];
 };
 
-/** A matching row and why it matched: null for a match on the name, id or paper, else the module or step that did. */
+/** A matching row and why it matched: null for a match on the name, id or paper, else the modules or steps that did. */
 export interface PlatformMatch<T> {
   row: T;
   reason: string | null;
+  reasons: Reason[];
 }
 
-/** Fields searched after the name, id and paper, with the text the reason shows for each. */
-function detailFields(r: SearchableRow): { text: string; reason: string }[] {
-  return [
-    ...(r.module_names ?? []).map((n) => ({ text: n, reason: `Module: ${n}` })),
-    ...r.module_types.map((c) => {
-      const label = displayLabel("module_type", c);
-      return { text: `${label} ${c}`, reason: `Module type: ${label}` };
-    }),
-    ...r.unit_operations.map((c) => {
-      const label = displayLabel("unit_operation", c);
-      return { text: `${label} ${c}`, reason: `Step: ${label}` };
-    }),
-  ];
+/** The full result of the shared search: hits, the technique expansions and the suggestions (SPEC-TECH-001 REQ-006). */
+export function searchDetails<T extends SearchableRow>(rows: readonly T[], query: string, tech: TechniqueData | null = null): SearchResult<T> {
+  return searchWithTechniques(rows, query, tech, displayLabel);
 }
 
 /**
- * Rows matching every word of `query`, those matched on the name, id or paper first, each group in input order. A
- * blank query returns every row with no reason.
+ * Rows matching every term of `query`, those matched on the name, id or paper for the whole query first, each group in
+ * input order. A blank query returns every row with no reason.
  */
-export function searchPlatforms<T extends SearchableRow>(rows: readonly T[], query: string): PlatformMatch<T>[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return rows.map((row) => ({ row, reason: null }));
-  const words = q.split(/\s+/);
-  const direct: PlatformMatch<T>[] = [];
-  const detailed: PlatformMatch<T>[] = [];
-  for (const row of rows) {
-    const head = [row.platform_id, row.paper_id, row.platform_name ?? ""].join(" ").toLowerCase();
-    if (head.includes(q)) {
-      direct.push({ row, reason: null });
-      continue;
-    }
-    const fields = detailFields(row).map((f) => ({ ...f, lower: f.text.toLowerCase() }));
-    const reasons: string[] = [];
-    const all = words.every((w) => {
-      if (head.includes(w)) return true;
-      const f = fields.find((x) => x.lower.includes(w));
-      if (f && !reasons.includes(f.reason)) reasons.push(f.reason);
-      return !!f;
-    });
-    if (all) detailed.push({ row, reason: reasons.length > 0 ? reasons.slice(0, 2).join(" · ") : null });
-  }
-  return [...direct, ...detailed];
+export function searchPlatforms<T extends SearchableRow>(rows: readonly T[], query: string, tech: TechniqueData | null = null): PlatformMatch<T>[] {
+  return searchDetails(rows, query, tech).hits.map((h) => {
+    const shown = [...new Set(h.reasons.filter((r) => r.kind !== "field").map(reasonText))];
+    return { row: h.row, reasons: h.reasons, reason: shown.length > 0 ? shown.slice(0, 2).join(" · ") : null };
+  });
 }
 
 /** The rows of `searchPlatforms`, without the reasons. */
-export function filterPlatforms<T extends SearchableRow>(rows: readonly T[], query: string): T[] {
-  return searchPlatforms(rows, query).map((m) => m.row);
+export function filterPlatforms<T extends SearchableRow>(rows: readonly T[], query: string, tech: TechniqueData | null = null): T[] {
+  return searchPlatforms(rows, query, tech).map((m) => m.row);
 }
