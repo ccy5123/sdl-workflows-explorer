@@ -19,24 +19,24 @@ const add = (question: string, tools: string, expect: string[]) => {
   sections.push(`### ${sections.length + 1}. ${question}\n\nExpected tools: ${tools}\n\n${expect.map((e) => `- ${e}`).join("\n")}\n`);
 };
 
-/** Platforms matching any of several spellings, with the count per spelling. */
-function union(spellings: string[]) {
-  const per = spellings.map((text) => ({ text, ids: ids(searchPlatformsTool(ds, { text, limit: 100 }).results.platforms) }));
+/** Platforms each spelling finds; under the technique search every spelling of one technique gives the same set. */
+function spellings(texts: string[]) {
+  const per = texts.map((text) => ({ text, ids: ids(searchPlatformsTool(ds, { text, limit: 100 }).results.platforms) }));
   return { per, all: [...new Set(per.flatMap((p) => p.ids))].sort() };
 }
 
-const ftir = union(["FT-IR", "FTIR", "ReactIR", "FlowIR"]);
-add("Which self-driving labs use an in-line FT-IR?", "search_platforms (text, several spellings)", [
-  `${ftir.all.length} platforms over the spellings ${ftir.per.map((p) => `"${p.text}" (${p.ids.length})`).join(", ")}: ${list(ftir.all)}`,
-  "An answer that searched one spelling only misses some; whether a given IR is in-line is in the module name",
-  "Each named with paper key and DOI; the FT-IR module named as the paper states it, with its module id and evidence (matched_modules)",
+const ftir = spellings(["FT-IR", "FTIR", "ReactIR", "FlowIR"]);
+add("Which self-driving labs use an in-line FT-IR?", "search_platforms (text, or filters.techniques ir_spectroscopy)", [
+  `${ftir.all.length} platforms; each spelling gives the same set (${ftir.per.map((p) => `"${p.text}" ${p.ids.length}`).join(", ")}): ${list(ftir.all)}`,
+  "Whether a given IR is in-line is in the module name, not in the technique tag",
+  "Each named with paper key and DOI; the IR module named as the paper states it, with its module id and evidence (matched_modules)",
+  "The answer says the technique tags were assigned by a language model and are not part of the release",
 ]);
 
-const xrd = union(["XRD", "diffractometer", "diffraction"]);
-add("Find platforms that measure with X-ray diffraction.", "list_vocabulary (module_type) and/or search_platforms", [
-  `${xrd.all.length} platforms over the spellings ${xrd.per.map((p) => `"${p.text}" (${p.ids.length})`).join(", ")}: ${list(xrd.all)}`,
-  "Text hits are module names; an answer should read them before calling each one an X-ray diffractometer",
-  "If the model filters by module type, the code is `instrument_structural` (XRD, XPS or NMR), so it must not call every hit an XRD",
+const xrd = spellings(["XRD", "diffractometer", "X-ray diffraction"]);
+add("Find platforms that measure with X-ray diffraction.", "search_platforms (text, or filters.techniques x_ray_diffraction)", [
+  `${xrd.all.length} platforms; each spelling gives the same set (${xrd.per.map((p) => `"${p.text}" ${p.ids.length}`).join(", ")}): ${list(xrd.all)}`,
+  "If the model filters by module type instead, the code is `instrument_structural` (XRD, XPS or NMR), so it must not call every hit an XRD",
 ]);
 
 const flowOpt = searchPlatformsTool(ds, { filters: { module_types: ["flow_reactor", "instrument_optical"] }, limit: 100 }).results;

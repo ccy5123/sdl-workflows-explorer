@@ -7,12 +7,12 @@ import { formatCitation } from "../../src/lib/citation";
 import { assembleComparison, checkCompareIds } from "../../src/lib/compare";
 import { cycleRange, jointOffers, stepSources } from "../../src/lib/cycleRange";
 import { MAX_STEP_RUNS, simulate, simUnits, stepRunCount } from "../../src/lib/des";
-import { matchingPlatforms, type SearchablePlatform } from "../../src/lib/filterApply";
+import { matchingPlatforms } from "../../src/lib/filterApply";
 import { autonomyText, DEFAULT_STATE as DEFAULT_FILTERS, INTEGRATION_MODE_TEXT, type FilterState, type Match } from "../../src/lib/filterState";
 import { browseHash } from "../../src/lib/filterUrl";
 import { evidenceText } from "../../src/lib/home";
 import { displayLabel } from "../../src/lib/labels";
-import { searchPlatforms, type PlatformMatch } from "../../src/lib/platformFilter";
+import { searchDetails } from "../../src/lib/platformFilter";
 import { compareHash, platformHash, workflowHash } from "../../src/lib/route";
 import { editDistance, rankPlatforms, workflowSets, type LayoutSets } from "../../src/lib/similarity";
 import { sortSteps } from "../../src/lib/steps";
@@ -38,6 +38,9 @@ import {
   type WorkflowState,
 } from "../../src/lib/workflowState";
 import { SITE_URL } from "../../scripts/lib/llms";
+import { TAG_PROVENANCE } from "../../scripts/lib/techniques";
+import { platformTechniques, reasonText, type Reason } from "../../src/lib/techniqueMatch";
+import { parseQuery, type Term } from "../../src/lib/techniqueSearch";
 import type { Dataset } from "./dataset";
 
 export const EXPLORER = SITE_URL;
@@ -68,11 +71,15 @@ const where = (e: Evidence) => ({ ...e, text: evidenceText(e) });
 
 // ---- Vocabulary ---------------------------------------------------------------------------------------------------
 
-export const VOCABULARY_KINDS = ["module_type", "unit_operation", "transfer_mode", "field_tag", "integration_mode"] as const;
+export const VOCABULARY_KINDS = ["module_type", "unit_operation", "transfer_mode", "field_tag", "integration_mode", "technique"] as const;
 export type VocabularyKind = (typeof VOCABULARY_KINDS)[number];
+
+/** The sentence every result that shows technique tags carries (SPEC-TECH-001 REQ-009). */
+export const TECHNIQUE_PROVENANCE = TAG_PROVENANCE;
 
 function codesOf(ds: Dataset, kind: VocabularyKind): string[] {
   if (kind === "integration_mode") return ds.offered.im;
+  if (kind === "technique") return ds.tech.vocabulary.techniques.map((t) => t.id);
   return ds.derived.taxonomy.classes.filter((c) => c.class_kind === kind).map((c) => c.class);
 }
 
@@ -91,17 +98,24 @@ function closest(code: string, codes: readonly string[], text: (x: string) => st
   return [...sub, ...rest].slice(0, 5);
 }
 
-/** Refuses any code that is not a class of the release, naming the closest valid ones. */
+/** Refuses any code that is not a class of the release (or a technique of the vocabulary), naming the closest valid ones. */
 function checkCodes(ds: Dataset, kind: VocabularyKind, codes: readonly string[] | undefined): string[] {
   const valid = codesOf(ds, kind);
-  const definitions = new Map(ds.derived.taxonomy.classes.filter((c) => c.class_kind === kind).map((c) => [c.class, c.definition]));
-  const label = kind === "integration_mode" ? "transfer_mode" : kind;
-  const text = (x: string) => `${displayLabel(label, x)} ${definitions.get(x) ?? ""}`;
+  const text =
+    kind === "technique"
+      ? (x: string) => {
+          const t = ds.tech.vocabulary.techniques.find((y) => y.id === x)!;
+          return `${t.label} ${t.aliases.join(" ")} ${t.definition}`;
+        }
+      : (x: string) => {
+          const definition = ds.derived.taxonomy.classes.find((c) => c.class_kind === kind && c.class === x)?.definition ?? "";
+          return `${displayLabel(kind === "integration_mode" ? "transfer_mode" : kind, x)} ${definition}`;
+        };
   for (const code of codes ?? []) {
     if (!valid.includes(code)) {
       throw new ToolError(
-        `"${code}" is not a ${kind} code of release ${ds.pin.version}. Closest: ${closest(code, valid, text).join(", ")}. ` +
-          `Call list_vocabulary with kind "${kind}" for all codes and definitions.`,
+        `"${code}" is not a ${kind} code of ${kind === "technique" ? "the technique vocabulary" : `release ${ds.pin.version}`}. ` +
+          `Closest: ${closest(code, valid, text).join(", ")}. Call list_vocabulary with kind "${kind}" for all codes and definitions.`,
       );
     }
   }
@@ -113,8 +127,35 @@ export interface VocabularyInput {
   query?: string;
 }
 
+/** The techniques of the vocabulary, with their aliases and how many tagged modules, platforms and papers carry each. */
+function listTechniques(ds: Dataset, query: string) {
+  const modules = [...ds.tech.tagged.entries()].flatMap(([platform_id, ms]) => ms.map((m) => ({ platform_id, ...m })));
+  const q = query.trim();
+  const named = q ? new Set(parseQuery(q, ds.tech.index).flatMap((t) => (t.kind === "technique" ? t.techniques : []))) : null;
+  const classes = ds.tech.vocabulary.techniques
+    .map((t) => {
+      const ms = modules.filter((m) => m.techniques.includes(t.id));
+      return {
+        code: t.id,
+        label: t.label,
+        definition: t.definition,
+        aliases: t.aliases,
+        module_types: t.module_types,
+        n_modules: ms.length,
+        n_platforms: new Set(ms.map((m) => m.platform_id)).size,
+        n_papers: new Set(ms.map((m) => m.platform_id.split("/")[0])).size,
+      };
+    })
+    .filter((c) => !named || named.has(c.code) || `${c.code} ${c.label} ${c.definition}`.toLowerCase().includes(q.toLowerCase()));
+  return envelope(ds, { kind: "technique" as const, classes }, [
+    TECHNIQUE_PROVENANCE,
+    "The query matches aliases (FTIR, ReactIR, XRD, diffractometer), codes, labels and definitions. Filter search_platforms with filters.techniques.",
+  ]);
+}
+
 export function listVocabulary(ds: Dataset, input: VocabularyInput) {
   const q = input.query?.trim().toLowerCase() ?? "";
+  if (input.kind === "technique") return listTechniques(ds, input.query ?? "");
   if (input.kind === "integration_mode") {
     const rows = ds.offered.im.map((code) => ({
       code,
@@ -123,15 +164,20 @@ export function listVocabulary(ds: Dataset, input: VocabularyInput) {
     }));
     return envelope(ds, { kind: input.kind, meaning: INTEGRATION_MODE_TEXT, classes: rows.filter((r) => !q || `${r.code} ${r.label}`.toLowerCase().includes(q)) });
   }
-  // For module types, the query is also looked up in the module names the papers state, so a technique the class
-  // definition does not spell out ("diffraction" under "XRD, XPS or NMR instrument") still leads to its code.
+  // For module types, the query is also searched in the module names the papers state, by the site's search rule
+  // (an instrument name through its technique tags), so a technique the class definition does not spell out
+  // ("diffraction" under "XRD, XPS or NMR instrument") still leads to its code.
   const nameHits = new Map<string, { module_id: string; name_in_paper: string }[]>();
   if (q && input.kind === "module_type") {
-    const toks = tokens(input.query!.trim());
-    for (const g of ds.graphs.values()) {
-      for (const m of g.modules) {
-        if (!m.name_in_paper || !toks.every((t) => hit(t, m.name_in_paper!))) continue;
-        nameHits.set(m.module_type, [...(nameHits.get(m.module_type) ?? []), { module_id: m.module_id, name_in_paper: m.name_in_paper }]);
+    const typeOf = new Map<string, string>();
+    for (const g of ds.graphs.values()) for (const m of g.modules) typeOf.set(m.module_id, m.module_type);
+    const seen = new Set<string>();
+    for (const h of searchDetails(ds.searchable, input.query!, ds.tech).hits) {
+      for (const r of h.reasons) {
+        if ((r.kind !== "module" && r.kind !== "technique") || !r.module.id || seen.has(r.module.id)) continue;
+        seen.add(r.module.id);
+        const type = typeOf.get(r.module.id)!;
+        nameHits.set(type, [...(nameHits.get(type) ?? []), { module_id: r.module.id, name_in_paper: r.module.name }]);
       }
     }
   }
@@ -154,7 +200,10 @@ export function listVocabulary(ds: Dataset, input: VocabularyInput) {
     .filter((c) => !q || c.module_name_hits || `${c.code} ${c.label} ${c.definition}`.toLowerCase().includes(q));
   const notes =
     q && input.kind === "module_type"
-      ? ["The query matches codes, labels and definitions, and the module names the papers state; module_name_hits counts the modules of each type whose name contains it."]
+      ? [
+          "The query matches codes, labels and definitions, and the module names the papers state (an instrument name " +
+            "through its technique tags); module_name_hits counts the modules of each type it found.",
+        ]
       : [];
   return envelope(ds, { kind: input.kind, classes }, notes);
 }
@@ -169,6 +218,8 @@ export interface Filters {
   hw_autonomy?: number[];
   module_types?: string[];
   module_types_match?: Match;
+  techniques?: string[];
+  techniques_match?: Match;
   transfer_modes?: string[];
   transfer_modes_match?: Match;
   unit_operations?: string[];
@@ -186,6 +237,8 @@ function filterState(ds: Dataset, f: Filters = {}, view: FilterState["view"] = "
     hw: [...(f.hw_autonomy ?? [])],
     mt: checkCodes(ds, "module_type", f.module_types),
     mtMatch: f.module_types_match ?? "all",
+    tech: checkCodes(ds, "technique", f.techniques),
+    techMatch: f.techniques_match ?? "all",
     tm: checkCodes(ds, "transfer_mode", f.transfer_modes),
     tmMatch: f.transfer_modes_match ?? "all",
     uo: checkCodes(ds, "unit_operation", f.unit_operations),
@@ -193,93 +246,38 @@ function filterState(ds: Dataset, f: Filters = {}, view: FilterState["view"] = "
   };
 }
 
-/** Words of at most this many letters or digits are matched as whole words (see textSearch). */
-export const SHORT_WORD = 3;
-
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const wholeWord = (word: string, text: string) => new RegExp(`(^|[^a-z0-9])${escapeRe(word)}([^a-z0-9]|$)`).test(text.toLowerCase());
-
-/**
- * A search word and how it matches: "case" for a word written in capitals ("IR", "STEM", "UPLC"), which must appear in
- * capitals in the field, not run into other capitals (so "IR" finds "ReactIR" and "FT-IR" but not "stirrer", "STEM"
- * finds "UltraSTEM100" but not "system", "SEM" does not find "TSEMO"); "word" for another word of at most SHORT_WORD letters or digits ("ir"), which must be a whole word; "any"
- * for the rest, the site's rule (anywhere, any case).
- */
-interface Token {
-  w: string;
-  raw: string;
-  mode: "case" | "word" | "any";
+/** A module a text term matched: through a technique tag (with the techniques and the alias typed) or by its name. */
+interface MatchedModule {
+  module_id: string;
+  module_type: string;
+  name_in_paper: string;
+  evidence: string;
+  techniques?: string[];
+  alias?: string;
 }
 
-function tokens(text: string): Token[] {
-  return text
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((raw) => {
-      const w = raw.toLowerCase();
-      const alnum = /^[A-Za-z0-9]+$/.test(raw);
-      const capitals = alnum && raw.length >= 2 && /[A-Z]/.test(raw) && raw === raw.toUpperCase();
-      return { w, raw, mode: capitals ? "case" : alnum && w.length <= SHORT_WORD ? "word" : "any" } as Token;
-    });
-}
-const strict = (t: Token) => t.mode !== "any";
-/** The capitals not run into other capitals: "IR" in "ReactIR" or "FT-IR", "STEM" in "UltraSTEM100", but "SEM" not in "TSEMO". */
-const inCapitals = (raw: string, text: string) => new RegExp(`(?<![A-Z])${escapeRe(raw)}(?![A-Z])`).test(text);
-const hit = (t: Token, text: string) =>
-  t.mode === "case" ? inCapitals(t.raw, text) : t.mode === "word" ? wholeWord(t.w, text) : text.toLowerCase().includes(t.w);
-
-/** The texts the site's search reads for a platform, each with the reason text it shows: module names, types, steps. */
-function detailFields(p: SearchablePlatform): { text: string; reason: string }[] {
-  return [
-    ...(p.module_names ?? []).map((n) => ({ text: n, reason: `Module: ${n}` })),
-    ...p.module_types.map((c) => ({ text: `${displayLabel("module_type", c)} ${c}`, reason: `Module type: ${displayLabel("module_type", c)}` })),
-    ...p.unit_operations.map((c) => ({ text: `${displayLabel("unit_operation", c)} ${c}`, reason: `Step: ${displayLabel("unit_operation", c)}` })),
-  ];
-}
-const headText = (p: SearchablePlatform) => [p.platform_id, p.paper_id, p.platform_name ?? ""].join(" ");
-
-/** Why a platform matched under the token rules, in the site's form ("Module: …", at most two); null for a name hit. */
-function reasonOf(p: SearchablePlatform, toks: readonly Token[]): string | null {
-  const head = headText(p);
-  const fields = detailFields(p);
-  const reasons: string[] = [];
-  for (const t of toks) {
-    if (hit(t, head)) continue;
-    const f = fields.find((x) => hit(t, x.text));
-    if (f && !reasons.includes(f.reason)) reasons.push(f.reason);
+/** The modules the reasons name, once each, in reason order; techniques and aliases of tag matches gathered per module. */
+function matchedModules(ds: Dataset, platformId: string, reasons: readonly Reason[]): MatchedModule[] {
+  const g = ds.graphs.get(platformId)!;
+  const out = new Map<string, MatchedModule>();
+  for (const r of reasons) {
+    if (r.kind !== "module" && r.kind !== "technique") continue;
+    const m = g.modules.find((x) => x.module_id === r.module.id);
+    if (!m) continue;
+    const row = out.get(m.module_id) ?? { module_id: m.module_id, module_type: m.module_type, name_in_paper: r.module.name, evidence: r.module.evidence };
+    if (r.kind === "technique") {
+      row.techniques = [...new Set([...(row.techniques ?? []), r.technique])];
+      row.alias = row.alias ?? r.alias;
+    }
+    out.set(m.module_id, row);
   }
-  return reasons.length > 0 ? reasons.slice(0, 2).join(" · ") : null;
+  return [...out.values()];
 }
 
-/**
- * The site's search (every word must match, anywhere in a field), except that whole-word tokens must match as whole
- * words; their reasons are recomputed under the same rule, so a reason never names a word that only contains them.
- */
-function textSearch(rows: readonly SearchablePlatform[], text: string): { matches: PlatformMatch<SearchablePlatform>[]; anywhere: number } {
-  const site = searchPlatforms(rows, text);
-  const toks = tokens(text);
-  if (!toks.some(strict)) return { matches: site, anywhere: site.length };
-  const matches = site
-    .filter((m) => toks.every((t) => hit(t, headText(m.row)) || detailFields(m.row).some((f) => hit(t, f.text))))
-    .map((m) => ({ row: m.row, reason: reasonOf(m.row, toks) }));
-  return { matches, anywhere: site.length };
-}
-
-/** Modules of a platform whose name in the paper contains a word of the text, with their evidence locations. */
-function matchedModules(ds: Dataset, platformId: string, text: string) {
-  const toks = tokens(text);
-  if (toks.length === 0) return undefined;
-  const hits = ds.graphs
-    .get(platformId)!
-    .modules.filter((m) => m.name_in_paper && toks.some((t) => hit(t, m.name_in_paper!)))
-    .map((m) => ({ module_id: m.module_id, module_type: m.module_type, name_in_paper: m.name_in_paper, evidence: evidenceText(m.evidence) }));
-  return hits;
-}
-
-function platformRow(ds: Dataset, platformId: string, reason: string | null = null, text = "") {
+function platformRow(ds: Dataset, platformId: string, reasons: readonly Reason[] | null) {
   const p = ds.platforms.get(platformId)!;
   const paper = ds.papers.get(p.paper_id);
-  if (reason === null && text) reason = `Platform name, id or paper: ${p.platform_name ?? p.platform_id}`;
+  const shown = reasons ? [...new Set(reasons.map(reasonText))] : [];
   return {
     platform_id: p.platform_id,
     paper_id: p.paper_id,
@@ -289,12 +287,13 @@ function platformRow(ds: Dataset, platformId: string, reason: string | null = nu
     year: p.first_public_year,
     field_tags: p.field_tags,
     module_types: p.module_types,
+    techniques: platformTechniques(ds.tech, p.platform_id),
     unit_operations: p.unit_operations,
     material_transfer_modes: p.material_transfer_modes,
     n_modules: p.n_modules,
     n_steps: p.n_steps,
-    match_reason: reason,
-    matched_modules: matchedModules(ds, platformId, text),
+    match_reason: shown.length > 0 ? shown.slice(0, 2).join(" · ") : null,
+    matched_modules: reasons ? matchedModules(ds, platformId, reasons) : undefined,
     explorer_url: url(platformHash(p.platform_id)),
   };
 }
@@ -306,49 +305,48 @@ export interface SearchInput {
   offset?: number;
 }
 
+/** A term as the user would type it to search it alone: quoted terms keep their quotes. */
+const termText = (t: Term) => (t.kind === "quoted" ? `"${t.text}"` : t.text);
+
 export function searchPlatformsTool(ds: Dataset, input: SearchInput) {
   const state = filterState(ds, input.filters);
-  const filtered = matchingPlatforms(state, ds.derived.index.papers, ds.searchable);
+  const filtered = matchingPlatforms(state, ds.derived.index.papers, ds.searchable, ds.tech);
   const text = input.text?.trim() ?? "";
-  const { matches, anywhere } = textSearch(filtered, text);
+  const found = searchDetails(filtered, text, ds.tech);
   const limit = Math.min(Math.max(input.limit ?? 20, 1), 100);
   const offset = Math.max(input.offset ?? 0, 0);
   const notes: string[] = [];
   let per_word: { word: string; platforms: number }[] | undefined;
-  if (text && matches.length === 0) {
-    per_word = tokens(text).map((t) => ({ word: t.raw, platforms: textSearch(filtered, t.raw).matches.length }));
+  if (text && found.hits.length === 0) {
+    per_word = found.terms.map((t) => ({ word: termText(t), platforms: searchDetails(filtered, termText(t), ds.tech).hits.length }));
     notes.push(
-      "No platform matches every word of the text. per_word gives the platforms each word matches on its own; drop the " +
-        "words that match nothing, or use the coded filters (list_vocabulary) instead of descriptive words.",
+      "No platform matches every term of the text. per_word gives the platforms each term matches on its own; drop the " +
+        "terms that match nothing, or use the coded filters (list_vocabulary) instead of descriptive words.",
     );
   }
   if (text) {
     notes.push(
       "The text matches platform ids, names, paper keys, module names as the papers state them, module types and unit " +
-        "operations; every word must match. Papers spell instruments differently (FT-IR, FTIR, ReactIR, FlowIR; XRD, " +
-        "diffractometer): search each spelling, or filter by module type, before saying a platform is absent. " +
-        "matched_modules gives the module ids and evidence locations of module-name hits.",
+        "operations; every term must match. An instrument name in any spelling (FTIR, FT-IR, ReactIR; XRD, " +
+        "diffractometer) is searched as its technique through the technique tags, so the spellings give the same " +
+        "platforms; expansions says how each such term was read. A term in double quotes is matched as written. A plain " +
+        "word of up to 3 letters or digits must be a whole word. matched_modules gives the module ids and evidence " +
+        "locations of the modules that matched.",
     );
   }
-  const caps = tokens(text).filter((t) => t.mode === "case").map((t) => t.raw);
-  const short = tokens(text).filter((t) => t.mode === "word").map((t) => t.raw);
-  if (caps.length + short.length > 0) {
-    const rules = [
-      caps.length > 0 ? `words in capitals (${caps.join(", ")}) must appear in capitals` : "",
-      short.length > 0 ? `short words (${short.join(", ")}) must be whole words` : "",
-    ].filter(Boolean);
-    notes.push(
-      `${rules.join("; ")}: ${matches.length} platforms, against ${anywhere} when they may match inside longer words in ` +
-        "any case, as the explorer's search box does.",
-    );
+  if (found.suggestions.length > 0) {
+    notes.push("Fewer than three platforms match; suggestions lists module names the papers state that are closest to the text.");
   }
+  if (found.expansions.length > 0 || state.tech.length > 0) notes.push(TECHNIQUE_PROVENANCE);
   if (!text) notes.push("match_reason is null for filter-only searches: every row meets all the filters.");
   return envelope(
     ds,
     {
-      total: matches.length,
+      total: found.hits.length,
       offset,
-      platforms: matches.slice(offset, offset + limit).map((m) => platformRow(ds, m.row.platform_id, m.reason, text)),
+      platforms: found.hits.slice(offset, offset + limit).map((h) => platformRow(ds, h.row.platform_id, text ? h.reasons : null)),
+      expansions: found.expansions.length > 0 ? found.expansions : undefined,
+      suggestions: found.suggestions.length > 0 ? found.suggestions : undefined,
       per_word,
       browse_url_filters_only: url(browseHash(state)),
     },
@@ -793,7 +791,7 @@ export interface CountInput {
 
 export function countByYear(ds: Dataset, input: CountInput) {
   const state = filterState(ds, input.filters, input.unit);
-  const table = countTable(state, input.split, { papers: ds.derived.index.papers, platforms: ds.searchable });
+  const table = countTable(state, input.split, { papers: ds.derived.index.papers, platforms: ds.searchable, tech: ds.tech });
   const idx = ds.derived.index;
   return envelope(
     ds,

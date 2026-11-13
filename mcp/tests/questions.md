@@ -7,19 +7,19 @@ of those observations, not a score.
 
 ### 1. Which self-driving labs use an in-line FT-IR?
 
-Expected tools: search_platforms (text, several spellings)
+Expected tools: search_platforms (text, or filters.techniques ir_spectroscopy)
 
-- 19 platforms over the spellings "FT-IR" (8), "FTIR" (4), "ReactIR" (9), "FlowIR" (4): `Aand2024/P1`, `Ahn2023/P1`, `Bedard2018/P2`, `Fabry2019/P1`, `Fitzpatrick2016/P2`, `Fitzpatrick2018/P1`, `Gerardy2022/P1`, `Granda2018/P1`, `Mikami2026/P1`, `Moore2012/P1`, `Nambiar2022/P1`, `Nambiar2022/P2`, `Poscharny2018/P1`, `SinghBhati2026/P1`, `Skilton2013/P1`, `Vargas2026/P1`, `Wagner2024/P1`, `Wong2026/P1`, `Xu2022/P1`
-- An answer that searched one spelling only misses some; whether a given IR is in-line is in the module name
-- Each named with paper key and DOI; the FT-IR module named as the paper states it, with its module id and evidence (matched_modules)
+- 19 platforms; each spelling gives the same set ("FT-IR" 19, "FTIR" 19, "ReactIR" 19, "FlowIR" 19): `Aand2024/P1`, `Ahn2023/P1`, `Bedard2018/P2`, `Fabry2019/P1`, `Fitzpatrick2016/P2`, `Fitzpatrick2018/P1`, `Gerardy2022/P1`, `Granda2018/P1`, `Mikami2026/P1`, `Moore2012/P1`, `Nambiar2022/P1`, `Nambiar2022/P2`, `Poscharny2018/P1`, `SinghBhati2026/P1`, `Skilton2013/P1`, `Vargas2026/P1`, `Wagner2024/P1`, `Wong2026/P1`, `Xu2022/P1`
+- Whether a given IR is in-line is in the module name, not in the technique tag
+- Each named with paper key and DOI; the IR module named as the paper states it, with its module id and evidence (matched_modules)
+- The answer says the technique tags were assigned by a language model and are not part of the release
 
 ### 2. Find platforms that measure with X-ray diffraction.
 
-Expected tools: list_vocabulary (module_type) and/or search_platforms
+Expected tools: search_platforms (text, or filters.techniques x_ray_diffraction)
 
-- 9 platforms over the spellings "XRD" (5), "diffractometer" (7), "diffraction" (1): `Chang2026/P1`, `Fei2026/P1`, `Li2026/P1`, `Liang2025/P1`, `Moosavi2019/P1`, `Pilz2023/P1`, `Rendy2026/P1`, `Szymanski2023/P1`, `Xie2021/P1`
-- Text hits are module names; an answer should read them before calling each one an X-ray diffractometer
-- If the model filters by module type, the code is `instrument_structural` (XRD, XPS or NMR), so it must not call every hit an XRD
+- 9 platforms; each spelling gives the same set ("XRD" 9, "diffractometer" 9, "X-ray diffraction" 9): `Chang2026/P1`, `Fei2026/P1`, `Li2026/P1`, `Liang2025/P1`, `Moosavi2019/P1`, `Pilz2023/P1`, `Rendy2026/P1`, `Szymanski2023/P1`, `Xie2021/P1`
+- If the model filters by module type instead, the code is `instrument_structural` (XRD, XPS or NMR), so it must not call every hit an XRD
 
 ### 3. Which platforms combine a flow reactor with an optical spectrometer?
 

@@ -1,20 +1,24 @@
 // The pinned release, downloaded and verified on the user's machine, derived with the site's own code and indexed for
 // the tools. Nothing here talks to any server other than Zenodo (one download, then the local cache).
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import pinJson from "../../release.config.json";
 import { validateConfig, type ReleaseConfig } from "../../scripts/lib/config";
 import { checkCounts, formatProblems } from "../../scripts/lib/counts";
 import { deriveAll, type Derived } from "../../scripts/lib/derive";
 import { fetchRelease } from "../../scripts/lib/release";
+import { readOverlay, VOCABULARY_FILE } from "../../scripts/lib/techniques";
 import type { DurationRow, PaperRow, PlatformGraph, PlatformLayout, PlatformRow } from "../../src/data/types";
 import { singleStepGroups } from "../../src/lib/cycleRange";
 import type { SearchablePlatform } from "../../src/lib/filterApply";
 import { offeredValues, type Offered } from "../../src/lib/filterState";
 import { platformSets, type PlatformSets } from "../../src/lib/similarity";
+import { platformTechniques, techniqueData, type TechniqueData } from "../../src/lib/techniqueMatch";
 import { catalogOf, type Catalog } from "../../src/lib/workflowState";
 
-export const PACKAGE_VERSION = "0.1.1";
+export const PACKAGE_VERSION = "0.2.0";
 export const USER_AGENT = `sdl-workflows-mcp/${PACKAGE_VERSION} (+https://github.com/ccy5123/sdl-workflows-explorer)`;
 
 /** The release this package version serves, copied from the explorer's release.config.json at build time. */
@@ -27,8 +31,13 @@ export interface Dataset {
   derived: Derived;
   papers: Map<string, PaperRow>;
   platforms: Map<string, PlatformRow>;
-  /** Platform rows with the module names stated in the papers (search.json), as the site's search reads them. */
+  /**
+   * Platform rows with the module names and refs stated in the papers (search.json) and the platform's techniques
+   * (techniques.json), as the site's search reads them.
+   */
   searchable: SearchablePlatform[];
+  /** The technique tags of the explorer overlay (SPEC-TECH-001), as the site's search reads them. */
+  tech: TechniqueData;
   graphs: Map<string, PlatformGraph>;
   layouts: Map<string, PlatformLayout>;
   layoutSets: PlatformSets[];
@@ -48,8 +57,22 @@ export function defaultCacheDir(version: string): string {
   return join(base, version);
 }
 
+/**
+ * The technique overlay folder: dist/overlay next to the bundled server (build.mjs copies it there), else the
+ * repository's data-overlay when run from source.
+ */
+export function overlayDir(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const candidates = [join(here, "overlay"), join(here, "..", "..", "data-overlay")];
+  const found = candidates.find((d) => existsSync(join(d, VOCABULARY_FILE)));
+  if (!found) throw new Error(`technique overlay not found in ${candidates.join(" or ")}`);
+  return found;
+}
+
 /** Indexes a derived release for the tools. */
 export function indexDataset(pin: ReleaseConfig, derived: Derived, releaseDir: string): Dataset {
+  if (!derived.techniques) throw new Error("the derived release has no techniques.json: derive it with the overlay");
+  const tech = techniqueData(derived.techniques);
   const graphs = new Map<string, PlatformGraph>();
   for (const file of Object.values(derived.platformFiles)) for (const g of file.platforms) graphs.set(g.platform_id, g);
   const catalog = catalogOf(derived.simulation);
@@ -59,7 +82,13 @@ export function indexDataset(pin: ReleaseConfig, derived: Derived, releaseDir: s
     derived,
     papers: new Map(derived.index.papers.map((p) => [p.paper_id, p])),
     platforms: new Map(derived.index.platforms.map((p) => [p.platform_id, p])),
-    searchable: derived.index.platforms.map((p) => ({ ...p, module_names: derived.search.module_names[p.platform_id] ?? [] })),
+    searchable: derived.index.platforms.map((p) => ({
+      ...p,
+      module_names: derived.search.module_names[p.platform_id] ?? [],
+      module_refs: (derived.search.modules[p.platform_id] ?? []).map(([id, name, evidence]) => ({ id, name, evidence })),
+      techniques: platformTechniques(tech, p.platform_id),
+    })),
+    tech,
     graphs,
     layouts: new Map(derived.simulation.platforms.map((l) => [l.platform_id, l])),
     layoutSets: derived.simulation.platforms.map((l) => platformSets(l, catalog)),
@@ -79,8 +108,8 @@ export interface LoadOptions {
 }
 
 /**
- * Downloads (once) and verifies the pinned release, derives it with the site's deriveAll and refuses to serve when a
- * count differs from the pin.
+ * Downloads (once) and verifies the pinned release, derives it with the site's deriveAll and the technique overlay the
+ * package ships, and refuses to serve when a count differs from the pin.
  */
 export async function loadDataset(options: LoadOptions = {}): Promise<Dataset> {
   const pin = options.pin ?? PIN;
@@ -91,7 +120,7 @@ export async function loadDataset(options: LoadOptions = {}): Promise<Dataset> {
     log: options.log,
     userAgent: USER_AGENT,
   });
-  const derived = deriveAll(releaseDir);
+  const derived = deriveAll(releaseDir, readOverlay(overlayDir()));
   const problems = checkCounts(pin.counts, derived, releaseDir);
   if (problems.length > 0) {
     throw new Error(`release ${pin.version} does not match its pinned counts:\n${formatProblems(problems)}`);

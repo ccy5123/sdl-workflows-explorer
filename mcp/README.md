@@ -37,8 +37,8 @@ Web chat apps cannot start a local server. They can read the same data without i
 
 | Tool | What it returns |
 |---|---|
-| `list_vocabulary` | Codes, labels, definitions and counts of module types, unit operations, transfer modes, field tags, integration modes |
-| `search_platforms` | Platforms matching coded filters and/or 1–3 keywords (instrument or module name, platform name, step) |
+| `list_vocabulary` | Codes, labels, definitions and counts of module types, unit operations, transfer modes, field tags, integration modes and techniques |
+| `search_platforms` | Platforms matching coded filters (including techniques) and/or 1–3 keywords (instrument or module name in any spelling, platform name, step) |
 | `get_platform` | One platform: paper, modules, ordered steps, connections, recorded durations and throughputs, each with its evidence location |
 | `get_paper` | A paper's metadata and its platforms |
 | `similar_platforms` | Platforms ranked by step order, module types and transfer modes against a platform or a described workflow (structure only) |
@@ -54,6 +54,11 @@ record in the [explorer](https://ccy5123.github.io/sdl-workflows-explorer/) and 
 asks the model to answer only from these results and to cite them. The records were coded from the papers by a
 language model and the release contains no human coding, so check a claim against its evidence location before
 relying on it.
+
+An instrument named in any spelling (FTIR, FT-IR, ReactIR; XRD, diffractometer) is searched as its technique through
+the explorer's technique tags, the same way as the explorer's search box; a term in double quotes is matched as
+written. The tags were assigned by a language model from the module names the papers state; they ship with the
+package as an explorer layer and are not part of the Zenodo release.
 
 ## Settings
 

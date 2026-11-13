@@ -22,6 +22,7 @@ import {
   searchPlatformsTool,
   similarPlatforms,
   simulateCycleTime,
+  TECHNIQUE_PROVENANCE,
   ToolError,
 } from "../src/tools";
 
@@ -49,12 +50,14 @@ describe("loader", () => {
   });
 
   it.skipIf(!existsSync(join(SITE_DATA, "index.json")))("derives the same JSON as the site build", () => {
-    for (const file of ["index.json", "search.json", "simulation.json", "taxonomy.json"]) {
-      const key = { "index.json": "index", "search.json": "search", "simulation.json": "simulation", "taxonomy.json": "taxonomy" }[file] as
-        | "index"
-        | "search"
-        | "simulation"
-        | "taxonomy";
+    for (const file of ["index.json", "search.json", "simulation.json", "taxonomy.json", "techniques.json"]) {
+      const key = {
+        "index.json": "index",
+        "search.json": "search",
+        "simulation.json": "simulation",
+        "taxonomy.json": "taxonomy",
+        "techniques.json": "techniques",
+      }[file] as "index" | "search" | "simulation" | "taxonomy" | "techniques";
       expect(JSON.stringify(ds.derived[key])).toBe(readFileSync(join(SITE_DATA, file), "utf8"));
     }
   });
@@ -94,6 +97,15 @@ describe("list_vocabulary", () => {
     expect(structural!.module_name_hits!.examples.every((e) => /diffraction/i.test(e.name_in_paper))).toBe(true);
   });
 
+  it("lists the techniques with their aliases and counts, found by any alias (SPEC-TECH-001 REQ-010)", () => {
+    const all = listVocabulary(ds, { kind: "technique" });
+    expect(all.results.classes.map((c) => c.code)).toEqual(ds.tech.vocabulary.techniques.map((t) => t.id));
+    expect(all.notes).toContain(TECHNIQUE_PROVENANCE);
+    const ir = listVocabulary(ds, { kind: "technique", query: "ReactIR" }).results.classes as { code: string; aliases: string[]; n_platforms: number }[];
+    expect(ir.map((c) => c.code)).toEqual(["ir_spectroscopy"]);
+    expect(ir[0]!.n_platforms).toBe(searchPlatformsTool(ds, { filters: { techniques: ["ir_spectroscopy"] }, limit: 100 }).results.total);
+  });
+
   it("lists the integration modes present in the papers", () => {
     expect(listVocabulary(ds, { kind: "integration_mode" }).results.classes.map((c) => c.code)).toEqual(ds.offered.im);
   });
@@ -102,7 +114,7 @@ describe("list_vocabulary", () => {
 describe("search_platforms", () => {
   it("finds the same platforms as the site's search, with the citation fields", () => {
     const r = searchPlatformsTool(ds, { text: "FT-IR", limit: 100 }).results;
-    expect(r.platforms.map((p) => p.platform_id)).toEqual(searchPlatforms(ds.searchable, "FT-IR").map((m) => m.row.platform_id));
+    expect(r.platforms.map((p) => p.platform_id)).toEqual(searchPlatforms(ds.searchable, "FT-IR", ds.tech).map((m) => m.row.platform_id));
     expect(r.platforms.map((p) => p.platform_id)).toContain("Aand2024/P1");
     for (const p of r.platforms) {
       expect(p.paper_id).toBeTruthy();
@@ -111,46 +123,70 @@ describe("search_platforms", () => {
     }
   });
 
-  it("gives the module ids and evidence of module-name hits, and a reason for name hits", () => {
+  it("gives every spelling of a technique the same platforms, with the expansion and the provenance sentence (SPEC-TECH-001 REQ-010)", () => {
+    const sets = ["FTIR", "FT-IR", "ReactIR", "IR spectroscopy"].map((text) => searchPlatformsTool(ds, { text, limit: 100 }));
+    const ids = sets.map((r) => r.results.platforms.map((p) => p.platform_id).sort());
+    for (const x of ids.slice(1)) expect(x).toEqual(ids[0]);
+    expect(ids[0]).toContain("Aand2024/P1");
+    expect(ids[0]).toContain("Bedard2018/P2"); // "ReactIR"
+    for (const r of sets) {
+      expect(r.results.expansions![0]!.techniques.map((t) => t.id)).toEqual(["ir_spectroscopy"]);
+      expect(r.notes).toContain(TECHNIQUE_PROVENANCE);
+      expect(r.notes.join(" ")).not.toMatch(/search each spelling|checked by/i);
+    }
+  });
+
+  it("names the matched module with its id, evidence, technique and the alias typed", () => {
     const aand = searchPlatformsTool(ds, { text: "FT-IR" }).results.platforms.find((p) => p.platform_id === "Aand2024/P1")!;
     expect(aand.matched_modules).toEqual([
-      { module_id: "Aand2024/P1/M4", module_type: "instrument_optical", name_in_paper: expect.stringContaining("FT-IR"), evidence: "SI1 · p. 10 · §2.2.4 ¶1" },
+      {
+        module_id: "Aand2024/P1/M4",
+        module_type: "instrument_optical",
+        name_in_paper: expect.stringContaining("FT-IR"),
+        evidence: "SI1 · p. 10 · §2.2.4 ¶1",
+        techniques: ["ir_spectroscopy"],
+        alias: "FT-IR",
+      },
     ]);
+    expect(aand.techniques).toContain("ir_spectroscopy");
+    expect(aand.match_reason).toMatch(/^IR spectroscopy: Aand2024\/P1\/M4 /);
     const rainbot = searchPlatformsTool(ds, { text: "RAINBOT" }).results.platforms;
     expect(rainbot.length).toBeGreaterThan(0);
     expect(rainbot.every((p) => p.match_reason !== null)).toBe(true);
   });
 
-  it("matches a word in capitals only where the field writes it in capitals, and other short words as whole words", () => {
-    const r = searchPlatformsTool(ds, { text: "IR", limit: 100 });
-    const anywhere = searchPlatforms(ds.searchable, "IR").length;
-    expect(r.results.total).toBeGreaterThan(0);
-    expect(r.results.total).toBeLessThan(anywhere);
-    expect(r.notes.join(" ")).toContain(`against ${anywhere} when`);
-    const ids = r.results.platforms.map((p) => p.platform_id);
-    expect(ids).toContain("Aand2024/P1"); // "in-line FT-IR"
-    expect(ids).toContain("Bedard2018/P2"); // "ReactIR"
-    const lower = searchPlatformsTool(ds, { text: "ir", limit: 100 }).results;
-    expect(lower.total).toBeLessThan(anywhere);
-    expect(lower.platforms.map((p) => p.platform_id)).toContain("Aand2024/P1");
-  });
-
-  it("gives the whole-word match as the reason, not a word that only contains the letters", () => {
+  it("does not find IR lamps, infrared thermometers or stirrers for IR", () => {
     const rows = searchPlatformsTool(ds, { text: "IR", limit: 100 }).results.platforms;
     for (const p of rows) {
-      if (!p.match_reason!.startsWith("Module: ")) continue;
-      expect(p.matched_modules?.map((m) => `Module: ${m.name_in_paper}`)).toContain(p.match_reason!.split(" · ")[0]);
+      for (const m of p.matched_modules ?? []) expect(m.name_in_paper, `${p.platform_id} ${m.module_id}`).not.toMatch(/lamp|thermometer|stirr/i);
     }
-    expect(rows.find((p) => p.platform_id === "Ahn2023/P1")!.match_reason).toMatch(/FT-IR/);
+    expect(rows.map((p) => p.platform_id)).toEqual(searchPlatformsTool(ds, { text: "FTIR", limit: 100 }).results.platforms.map((p) => p.platform_id));
   });
 
-  it("matches words written in capitals as whole words (STEM does not match system)", () => {
-    const r = searchPlatformsTool(ds, { text: "STEM", limit: 100 });
-    expect(r.results.total).toBeLessThan(searchPlatforms(ds.searchable, "STEM").length);
-    expect(r.results.platforms.map((p) => p.platform_id)).toContain("Wu2026a/P1");
-    expect(searchPlatformsTool(ds, { text: "FT-IR", limit: 100 }).results.total).toBe(searchPlatforms(ds.searchable, "FT-IR").length);
+  it("matches a quoted term as written, and a short plain word as a whole word", () => {
+    const quoted = searchPlatformsTool(ds, { text: '"ReactIR"', limit: 100 }).results;
+    expect(quoted.expansions).toBeUndefined();
+    expect(quoted.total).toBeGreaterThan(0);
+    expect(quoted.total).toBeLessThan(searchPlatformsTool(ds, { text: "ReactIR", limit: 100 }).results.total);
+    for (const p of quoted.platforms) expect(p.matched_modules!.some((m) => /reactir/i.test(m.name_in_paper))).toBe(true);
     const sem = searchPlatformsTool(ds, { text: "SEM", limit: 100 }).results.platforms;
     expect(sem.every((p) => !/TSEMO/.test(p.match_reason ?? ""))).toBe(true);
+  });
+
+  it("filters by technique, refusing an unknown technique code with the closest", () => {
+    const r = searchPlatformsTool(ds, { filters: { techniques: ["x_ray_diffraction"] }, limit: 100 });
+    expect(r.results.total).toBe(searchPlatformsTool(ds, { text: "XRD", limit: 100 }).results.total);
+    expect(r.results.platforms.every((p) => p.techniques.includes("x_ray_diffraction"))).toBe(true);
+    expect(r.notes).toContain(TECHNIQUE_PROVENANCE);
+    expect(() => searchPlatformsTool(ds, { filters: { techniques: ["XRD"] } })).toThrow(/Closest: x_ray_diffraction/);
+    const both = searchPlatformsTool(ds, { filters: { techniques: ["x_ray_diffraction", "uv_vis_spectroscopy"], techniques_match: "any" }, limit: 100 }).results;
+    expect(both.total).toBeGreaterThan(r.results.total);
+  });
+
+  it("offers the closest module names when fewer than three platforms match", () => {
+    const r = searchPlatformsTool(ds, { text: "diffractomter" }).results;
+    expect(r.total).toBeLessThan(3);
+    expect(r.suggestions!.some((s) => /diffractometer/i.test(s))).toBe(true);
   });
 
   it("applies coded filters", () => {
@@ -165,16 +201,15 @@ describe("search_platforms", () => {
     expect(() => searchPlatformsTool(ds, { filters: { module_types: ["XRD"] } })).toThrow(/Closest: instrument_structural/);
   });
 
-  it("always gives matched_modules on text searches, and echoes words as typed", () => {
+  it("always gives matched_modules on text searches", () => {
     for (const p of searchPlatformsTool(ds, { text: "mobile robot", limit: 100 }).results.platforms) expect(Array.isArray(p.matched_modules)).toBe(true);
-    expect(searchPlatformsTool(ds, { text: "TEM" }).results.per_word).toEqual([{ word: "TEM", platforms: 0 }]);
   });
 
-  it("reports per-word matches when no platform matches every word", () => {
+  it("reports per-term matches when no platform matches every term", () => {
     const r = searchPlatformsTool(ds, { text: "FT-IR zzqqxx" });
     expect(r.results.total).toBe(0);
     expect(r.results.per_word).toEqual([
-      { word: "FT-IR", platforms: searchPlatforms(ds.searchable, "FT-IR").length },
+      { word: "FT-IR", platforms: searchPlatforms(ds.searchable, "FT-IR", ds.tech).length },
       { word: "zzqqxx", platforms: 0 },
     ]);
   });

@@ -25,7 +25,8 @@ export const INSTRUCTIONS = `This server answers questions about the sdl-workflo
 Rules for answers:
 - Answer only from tool results, not from memory. If a tool returns nothing or a field is null, say it is not recorded in the database.
 - Name every platform by its platform_id (e.g. Aand2024/P1) and paper key with DOI; for a module, step or connection, give its id and evidence location (evidence.text, e.g. "SI1 · p. 13 · §2.2.8 ¶1").
-- Map the user's words to codes with list_vocabulary before filtering; search_platforms text takes 1–3 keywords such as an instrument name. Papers spell instruments differently (FT-IR, FTIR, ReactIR; XRD, diffractometer): search each spelling before saying a platform is absent.
+- Map the user's words to codes with list_vocabulary before filtering; search_platforms text takes 1–3 keywords such as an instrument name. An instrument name in any spelling (FT-IR, FTIR, ReactIR; XRD, diffractometer) is searched as its technique, so one spelling is enough; the expansions field says how it was read.
+- Technique tags (the technique filter, the techniques field, technique matches) were assigned by a language model from the module names the papers state; they are an explorer layer, not part of the release. Say so when an answer rests on them.
 - Do not add properties the record does not state (an instrument's temperature, the kind of sample, why a choice was made); if the user asks for one, say it is not recorded.
 - Cycle-time results are simulated from durations recorded on other platforms; say so and name the duration rows used.
 - Give the explorer_url so the user can check the record, and end with the cite_as line.`;
@@ -43,6 +44,8 @@ const filters = z
     transfer_modes_match: z.enum(["all", "any"]).optional(),
     unit_operations: z.array(z.string()).optional(),
     unit_operations_match: z.enum(["all", "any"]).optional(),
+    techniques: z.array(z.string()).optional().describe("Technique codes (list_vocabulary kind technique), from the explorer's technique tags"),
+    techniques_match: z.enum(["all", "any"]).optional(),
   })
   .describe("Coded filters; codes come from list_vocabulary. *_match: all (default) or any of the listed codes.")
   .optional();
@@ -110,7 +113,7 @@ export function createServer(ds: Dataset): McpServer {
     {
       title: "List vocabulary codes",
       description:
-        "Codes, readable labels, definitions and usage counts of one coded vocabulary (module types, unit operations, transfer modes, field tags, integration modes). Use it to turn the user's words into the codes the other tools take. For module types, the query also searches the module names the papers state (module_name_hits), so a technique name such as diffraction leads to its code.",
+        "Codes, readable labels, definitions and usage counts of one coded vocabulary (module types, unit operations, transfer modes, field tags, integration modes, techniques). Use it to turn the user's words into the codes the other tools take. For module types, the query also searches the module names the papers state (module_name_hits), so a technique name such as diffraction leads to its code. Techniques come from the explorer's technique tags, with their aliases (FTIR, ReactIR, XRD, diffractometer).",
       inputSchema: { kind: z.enum(VOCABULARY_KINDS), query: z.string().optional().describe("Optional words to narrow the list") },
       annotations: READ_ONLY,
     },
@@ -122,9 +125,9 @@ export function createServer(ds: Dataset): McpServer {
     {
       title: "Search platforms",
       description:
-        "Platforms matching coded filters and/or a short text (instrument or module name as the paper states it, platform name, unit operation). Returns ids, paper keys, DOIs, module types, unit operations, why each matched, the matching modules with their ids and evidence locations, and explorer links. A word written in capitals (IR, STEM, UPLC) matches only where the field also writes it in capitals and not inside a longer capital run, so IR finds ReactIR but not stirrer, and SEM does not find TSEMO; another word of up to 3 letters matches whole words only. Instrument spellings vary between papers: search each (FT-IR, FTIR, ReactIR).",
+        "Platforms matching coded filters and/or a short text (instrument or module name, platform name, unit operation). Returns ids, paper keys, DOIs, module types, techniques, unit operations, why each matched, the matching modules with their ids and evidence locations, and explorer links. An instrument name in any spelling (FTIR, FT-IR, ReactIR; XRD, diffractometer) is searched as its technique through the technique tags, so IR finds FT-IR and ReactIR modules but not IR lamps or stirrers; expansions says how each such term was read. A term in double quotes is matched as written; another word of up to 3 letters matches whole words only. With fewer than three results, suggestions lists the closest module names the papers state.",
       inputSchema: {
-        text: z.string().optional().describe("1–3 keywords; every word must match"),
+        text: z.string().optional().describe("1–3 keywords; every term must match; double quotes match a term as written"),
         filters,
         limit: z.number().int().optional().describe("Default 20, at most 100"),
         offset: z.number().int().optional(),
