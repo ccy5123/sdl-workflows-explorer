@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { PlatformFile, PlatformGraph, SearchJson } from "../src/data/types";
+import type { PlatformFile, PlatformGraph, SearchJson, TechniquesJson } from "../src/data/types";
 import {
   ASK_CAUTION,
   ASK_EXAMPLES,
@@ -18,6 +18,7 @@ import {
 } from "../src/lib/ask";
 import { evidenceText } from "../src/lib/home";
 import { searchPlatforms } from "../src/lib/platformFilter";
+import { techniqueData } from "../src/lib/techniqueMatch";
 import { navCurrent, parseRoute, routeTitle } from "../src/lib/route";
 import { numbersIn } from "../src/lib/siteText";
 import { dataAvailable, readIndex } from "./viewer-data";
@@ -81,11 +82,16 @@ describe.skipIf(!dataAvailable)("the example exchanges on the real release", () 
 
   it("states the counts the search gives, and the uncertain step the record marks", () => {
     const names = JSON.parse(readFileSync(join(DATA_DIR, "search.json"), "utf8")) as SearchJson;
-    const rows = index!.platforms.map((p) => ({ ...p, module_names: names.module_names[p.platform_id] ?? [] }));
+    const tech = techniqueData(JSON.parse(readFileSync(join(DATA_DIR, "techniques.json"), "utf8")) as TechniquesJson);
+    const rows = index!.platforms.map((p) => ({
+      ...p,
+      module_names: names.module_names[p.platform_id] ?? [],
+      module_refs: (names.modules[p.platform_id] ?? []).map(([id, name, evidence]) => ({ id, name, evidence })),
+    }));
     const ftir = CHAT_EXCHANGES.find((e) => e.question.includes("FT-IR"))!;
-    expect(ftir.intro).toContain(`finds ${searchPlatforms(rows, "FT-IR").length} platforms`);
-    expect(searchPlatforms(rows, "cryo-EM")).toHaveLength(0);
-    expect(searchPlatforms(rows, "cryo")).toHaveLength(0);
+    expect(ftir.intro).toContain(`finds ${searchPlatforms(rows, "FT-IR", tech).length} platforms`);
+    expect(searchPlatforms(rows, "cryo-EM", tech)).toHaveLength(0);
+    expect(searchPlatforms(rows, "cryo", tech)).toHaveLength(0);
     const aand = graph("Aand2024/P1");
     const cycle = CHAT_EXCHANGES.find((e) => e.question.includes("one cycle of Aand2024/P1"))!;
     expect(cycle.cites.map((c) => c.id)).toEqual([...aand.steps].sort((a, b) => a.step_order - b.step_order).map((s) => s.step_id));

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PlatformFile } from "../src/data/types";
-import { buildTechniques, checkOverlay, modulesNeedingRows, parseTagTable, parseVocabulary, type Overlay } from "../scripts/lib/techniques";
+import { buildTechniques, checkOverlay, modulesNeedingRows, parseTagTable, parseVocabulary, untaggedModules, type Overlay } from "../scripts/lib/techniques";
 
 const vocabulary = parseVocabulary(readFileSync(join(import.meta.dirname, "..", "data-overlay", "techniques.json"), "utf8"));
 const ev = { doc: "main", page: 3, locator: "Fig. 1" };
@@ -47,6 +47,19 @@ describe("tag table checks (REQ-003)", () => {
     expect(() => table(["A2024/P1/M2,ir,in-line FT-IR"])).toThrow(/"ir" is not a technique/);
     expect(() => table(["A2024/P1/M2,none;ir_spectroscopy,in-line FT-IR"])).toThrow(/none is combined/);
     expect(() => table(["A2024/P1/M2,,in-line FT-IR"])).toThrow(/write none/);
+  });
+});
+
+describe("after a pin move (REQ-012, AC-7)", () => {
+  it("lists exactly the module whose row was removed, and a module whose stated name changed", () => {
+    expect(untaggedModules({ platformFiles: files }, overlay(good)).modules).toEqual([]);
+    expect(untaggedModules({ platformFiles: files }, overlay([good[0]!, good[2]!])).modules.map((m) => m.module_id)).toEqual(["A2024/P1/M2"]);
+    expect(untaggedModules({ platformFiles: files }, overlay([good[0]!, "A2024/P1/M2,ir_spectroscopy,FT-IR", good[2]!])).modules.map((m) => m.module_id)).toEqual(["A2024/P1/M2"]);
+    expect(untaggedModules({ platformFiles: files }, overlay(good), true).modules.length).toBe(3);
+  });
+
+  it("names a row whose module is gone", () => {
+    expect(untaggedModules({ platformFiles: files }, overlay([...good, "A2024/P9/M1,none,x"])).orphanRows.map((r) => r.module_id)).toEqual(["A2024/P9/M1"]);
   });
 });
 

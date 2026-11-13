@@ -1,16 +1,19 @@
-// llms.txt and one plain-text page per paper (data/papers/<paper_id>.md), for LLMs that read the site through a fetch
+// llms.txt, one plain-text page per paper (data/papers/<paper_id>.md) and one per technique of the explorer's technique
+// tags (data/techniques/<id>.md, SPEC-TECH-001 REQ-011), for LLMs that read the site through a fetch
 // or browsing tool (they do not run the site's JavaScript, so they cannot open the hash routes). Generated from the derived release like every other
 // file of public/data, so version, DOI and counts always match the deployed data. Pure text builders plus one writer.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Evidence, PaperRow, PlatformFile, SimulationJson } from "../../src/data/types";
+import type { Evidence, PaperRow, PlatformFile, SimulationJson, TechniquesJson } from "../../src/data/types";
 import { formatCitation } from "../../src/lib/citation";
-import { autonomyText } from "../../src/lib/filterState";
+import { autonomyText, DEFAULT_STATE } from "../../src/lib/filterState";
+import { browseHash } from "../../src/lib/filterUrl";
 import { evidenceText } from "../../src/lib/home";
 import { displayLabel } from "../../src/lib/labels";
 import { platformHash } from "../../src/lib/route";
 import { sortSteps } from "../../src/lib/steps";
 import type { Derived } from "./derive";
+import { TAG_PROVENANCE } from "./techniques";
 
 /** The deployed site; llms.txt is read from outside, so its links are absolute. */
 export const SITE_URL = "https://ccy5123.github.io/sdl-workflows-explorer/";
@@ -25,6 +28,7 @@ export const CITATION_RULE =
   "for a null field, and cite the release.";
 
 export const paperPage = (paperId: string) => `data/papers/${encodeURIComponent(paperId)}.md`;
+export const techniquePage = (id: string) => `data/techniques/${id}.md`;
 
 const n = (x: number) => x.toLocaleString("en");
 const ev = (e: Evidence) => `evidence: ${evidenceText(e)}`;
@@ -50,7 +54,10 @@ export function llmsTxt(d: Derived): string {
     "## Data",
     "",
     `- [index.json](${SITE_URL}data/index.json): release info, counts, one row per paper (paper_id, doi, title, venue, first_public_year, field_tags, integration_mode, sw_autonomy, hw_autonomy) and per platform (platform_id, paper_id, platform_name, module_types, material_transfer_modes, unit_operations, n_modules, n_steps)`,
-    `- [search.json](${SITE_URL}data/search.json): per platform_id, the module names as the papers state them (instrument names such as "in-line FT-IR")`,
+    `- [search.json](${SITE_URL}data/search.json): per platform_id, the module names as the papers state them (instrument names such as "in-line FT-IR"), with module ids and evidence locations`,
+    ...(d.techniques
+      ? [`- [techniques.json](${SITE_URL}data/techniques.json): the technique vocabulary with its aliases and the technique tags of the modules (an explorer layer, not part of the release; see Techniques)`]
+      : []),
     `- data/papers/<paper_id>.md (plain text, listed under Papers) and data/platforms/<paper_id>.json: one paper's platforms with modules, ordered steps, connections and evidence locations`,
     `- [taxonomy.json](${SITE_URL}data/taxonomy.json): definitions of every module type, unit operation, transfer mode and field tag, with usage counts`,
     `- [simulation.json](${SITE_URL}data/simulation.json): recorded step durations, throughputs and transfer times with evidence, and the platform layouts the workflow simulator uses`,
@@ -62,6 +69,7 @@ export function llmsTxt(d: Derived): string {
     `- [Explorer](${SITE_URL}): the interactive site`,
     `- [Zenodo record](https://doi.org/${release.doi}): the release files (CSV, Parquet, SQLite)`,
     "",
+    ...(d.techniques ? techniqueSection(d.techniques) : []),
     "## Papers",
     "",
     ...[...papers]
@@ -70,6 +78,63 @@ export function llmsTxt(d: Derived): string {
     "",
   ];
   return lines.join("\n");
+}
+
+/** The Techniques section of llms.txt: the provenance sentence and one link per technique page. */
+function techniqueSection(t: TechniquesJson): string[] {
+  return [
+    "## Techniques",
+    "",
+    `${TAG_PROVENANCE} An instrument name in any spelling (FTIR, ReactIR; XRD, diffractometer) leads to its technique; each page lists the platforms whose modules carry it, with module ids and evidence locations.`,
+    "",
+    ...t.techniques.map((x) => {
+      const n = new Set(t.modules.filter((m) => m.techniques.includes(x.id)).map((m) => m.platform_id)).size;
+      return `- [${x.label}](${SITE_URL}${techniquePage(x.id)}): ${x.aliases.slice(0, 6).join(", ")} (${n} platform${n === 1 ? "" : "s"})`;
+    }),
+    "",
+  ];
+}
+
+/** One technique: definition, aliases, the provenance sentence, and per platform the tagged modules with evidence. */
+export function techniqueMarkdown(d: Derived, id: string): string {
+  const t = d.techniques!;
+  const tech = t.techniques.find((x) => x.id === id)!;
+  const platforms = new Map(d.index.platforms.map((p) => [p.platform_id, p]));
+  const papers = new Map(d.index.papers.map((p) => [p.paper_id, p]));
+  const byPlatform = new Map<string, TechniquesJson["modules"]>();
+  for (const m of t.modules.filter((x) => x.techniques.includes(id))) byPlatform.set(m.platform_id, [...(byPlatform.get(m.platform_id) ?? []), m]);
+  const out = [
+    `# ${tech.label} (${tech.id})`,
+    "",
+    `> ${tech.definition}`,
+    "",
+    `Aliases searched as this technique: ${tech.aliases.join(", ")}`,
+    `Module types it usually appears under: ${tech.module_types.join(", ")}`,
+    "",
+    TAG_PROVENANCE,
+    "",
+    CITATION_RULE,
+    "",
+    `Cite as: ${formatCitation(d.releaseDocs.citation)}`,
+    "",
+    `In the explorer: ${SITE_URL}${browseHash({ ...DEFAULT_STATE, view: "platforms", tech: [id] })}`,
+    "",
+    `## Platforms (${byPlatform.size})`,
+  ];
+  for (const [pid, mods] of [...byPlatform.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    const p = platforms.get(pid)!;
+    const paper = papers.get(p.paper_id);
+    out.push(
+      "",
+      `### ${pid}${p.platform_name ? `: ${p.platform_name}` : ""}`,
+      "",
+      `Paper ${p.paper_id}, DOI ${nul(paper?.doi)}, ${paper?.first_public_year ?? "year not recorded"}; record: ${SITE_URL}${paperPage(p.paper_id)}`,
+      "",
+      ...mods.map((m) => `- ${m.module_id}: ${m.name} (evidence: ${m.evidence})`),
+    );
+  }
+  out.push("");
+  return out.join("\n");
 }
 
 /** One paper's platforms as plain text, every item with its id and evidence location. */
@@ -145,7 +210,7 @@ export function paperMarkdown(file: PlatformFile, paper: PaperRow, sim: Simulati
   return out.join("\n");
 }
 
-/** Writes llms.txt into the site folder and one Markdown page per paper next to its JSON file. */
+/** Writes llms.txt into the site folder, one Markdown page per paper next to its JSON file and one per technique. */
 export function writeLlms(d: Derived, publicDir: string, dataDir: string): void {
   writeFileSync(join(publicDir, "llms.txt"), llmsTxt(d));
   mkdirSync(join(dataDir, "papers"), { recursive: true });
@@ -153,5 +218,9 @@ export function writeLlms(d: Derived, publicDir: string, dataDir: string): void 
   const papers = new Map(d.index.papers.map((p) => [p.paper_id, p]));
   for (const [paperId, file] of Object.entries(d.platformFiles)) {
     writeFileSync(join(dataDir, "papers", `${paperId}.md`), paperMarkdown(file, papers.get(paperId)!, d.simulation, cite));
+  }
+  if (d.techniques) {
+    mkdirSync(join(dataDir, "techniques"), { recursive: true });
+    for (const t of d.techniques.techniques) writeFileSync(join(dataDir, "techniques", `${t.id}.md`), techniqueMarkdown(d, t.id));
   }
 }

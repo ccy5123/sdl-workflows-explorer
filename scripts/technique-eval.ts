@@ -96,29 +96,37 @@ function main(): void {
   const { rows, tech, queries } = loadEval();
   const md = process.argv.includes("--markdown");
   const lines: string[] = [];
-  lines.push(md ? "| Query | Expected | Earlier: returned, recall, precision | Technique search: returned, recall, precision | Gained | Lost |" : "");
-  if (md) lines.push("|---|---|---|---|---|---|");
+  if (md) {
+    lines.push(
+      "| Query | Expected | Earlier: returned, recall, precision | Technique search: returned, recall, precision | Expected platforms gained | Expected platforms lost | Other platforms no longer returned | Other platforms returned |",
+      "|---|---|---|---|---|---|---|---|",
+    );
+  }
   let oe = 0, oh = 0, or = 0, ne = 0, nh = 0, nr = 0;
   for (const q of queries) {
-    const o = score(q, oldSearch(rows, q.query));
-    const n = tech ? score(q, newSearch(rows, q.query, tech)) : null;
+    const oldIds = oldSearch(rows, q.query);
+    const o = score(q, oldIds);
+    const newIds = tech ? newSearch(rows, q.query, tech) : [];
+    const n = tech ? score(q, newIds) : null;
     oe += o.expected; oh += o.hits; or += o.returned;
     if (n) { ne += n.expected; nh += n.hits; nr += n.returned; }
-    const gained = n ? n.extra.length + n.hits - o.hits : 0;
-    const oldSet = new Set(oldSearch(rows, q.query));
-    const newSet = n ? new Set(newSearch(rows, q.query, tech)) : new Set<string>();
-    const gain = [...newSet].filter((id) => !oldSet.has(id));
-    const lose = [...oldSet].filter((id) => !newSet.has(id));
+    const exp = new Set(q.expected);
+    const ign = new Set(q.ignore);
+    const gain = newIds.filter((id) => exp.has(id) && !oldIds.includes(id));
+    const lose = oldIds.filter((id) => exp.has(id) && !newIds.includes(id));
+    const dropped = oldIds.filter((id) => !exp.has(id) && !ign.has(id) && !newIds.includes(id)).length;
+    const list = (xs: string[]) => xs.join(", ") || "–";
     if (md) {
       lines.push(
-        `| ${q.query} | ${o.expected} | ${o.returned}, ${pct(o.recall)}, ${pct(o.precision)} | ${n ? `${n.returned}, ${pct(n.recall)}, ${pct(n.precision)}` : "–"} | ${n ? gain.join(", ") || "–" : "–"} | ${n ? lose.join(", ") || "–" : "–"} |`,
+        `| ${q.query} | ${o.expected} | ${o.returned}, ${pct(o.recall)}, ${pct(o.precision)} | ${n ? `${n.returned}, ${pct(n.recall)}, ${pct(n.precision)}` : "–"} | ` +
+          (n ? `${gain.length} | ${list(lose)} | ${dropped} | ${list(n.extra)} |` : "– | – | – | – |"),
       );
     } else {
-      lines.push(`${q.query.padEnd(22)} exp ${String(o.expected).padStart(3)} | old ${o.returned} r=${pct(o.recall)} p=${pct(o.precision)}${n ? ` | new ${n.returned} r=${pct(n.recall)} p=${pct(n.precision)} forbidden=${n.forbidden.join(",") || "-"}` : ""}${gained ? "" : ""}`);
+      lines.push(`${q.query.padEnd(22)} exp ${String(o.expected).padStart(3)} | old ${o.returned} r=${pct(o.recall)} p=${pct(o.precision)}${n ? ` | new ${n.returned} r=${pct(n.recall)} p=${pct(n.precision)} forbidden=${n.forbidden.join(",") || "-"}` : ""}`);
     }
   }
   const tot = `Total over ${queries.length} queries: earlier recall ${pct(oh / oe)}, precision ${pct(or ? oh / or : null)}` + (tech ? `; technique search recall ${pct(nh / ne)}, precision ${pct(nr ? nh / nr : null)}` : "");
-  console.log([...lines.filter(Boolean), "", tot].join("\n"));
+  console.log([...lines, "", tot].join("\n"));
 }
 
 if (process.argv[1]?.endsWith("technique-eval.ts")) main();

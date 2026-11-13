@@ -211,11 +211,13 @@ export function searchWithTechniques<T extends SearchRow>(
   const q = query.trim();
   if (!q) return { hits: rows.map((row) => ({ row, reasons: [] })), terms: [], expansions: [], suggestions: [] };
   const terms = parseQuery(q, data ? data.index : new Map());
+  // Rows whose id, paper or name contains the whole plain query come first, as the Home search ordered them; a short
+  // word must be a whole token there too ("ir" must not find "HamediRad" or "Bioinspired").
   const whole = terms.every((t) => t.kind === "plain") ? lower(q) : null;
   const direct: PlatformHit<T>[] = [];
   const other: PlatformHit<T>[] = [];
   for (const row of rows) {
-    const head = whole === null ? undefined : headFields(row).find((f) => lower(f.text).includes(whole));
+    const head = whole === null ? undefined : headFields(row).find((f) => textHit(whole, f.text, true));
     if (head) {
       direct.push({ row, reasons: [{ kind: "field", field: head.field, text: head.text }] });
       continue;

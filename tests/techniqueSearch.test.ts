@@ -104,6 +104,15 @@ describe("matching on a fixture", () => {
     expect(searchWithTechniques(rows, "stirer", data, (_k, c) => c).suggestions).toContain("magnetic stirrer");
   });
 
+  it("holds a short plain query to whole tokens in the platform id, paper and name too", () => {
+    const titled: SearchRow[] = [
+      { platform_id: "HamediRad2019", paper_id: "HamediRad2019", platform_name: "Bioinspired lignans", module_types: [], unit_operations: [] },
+      { platform_id: "X2020", paper_id: "X2020", platform_name: "An Ir catalyst screen", module_types: [], unit_operations: [] },
+    ];
+    expect(searchWithTechniques(titled, "ir", null, (_k, c) => c).hits.map((h) => h.row.platform_id)).toEqual(["X2020"]);
+    expect(searchWithTechniques(titled, "Bioinspired", null, (_k, c) => c).hits.map((h) => h.row.platform_id)).toEqual(["HamediRad2019"]);
+  });
+
   it("quotes a typed term for the 'only' button", () => {
     expect(quoteTerm("in-line FTIR", "FTIR")).toBe('in-line "FTIR"');
   });

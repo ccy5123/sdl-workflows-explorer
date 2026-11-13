@@ -3,7 +3,7 @@
 // when few platforms match, the closest stated module names as searches.
 import type { Expansion } from "../lib/techniqueMatch";
 import { expansionText, quoteTerm } from "../lib/techniqueMatch";
-import { TECHNIQUE_NOTE } from "./FilterPanel";
+import { TECHNIQUE_NOTE } from "../lib/siteText";
 
 export function SearchExpansion({
   query,

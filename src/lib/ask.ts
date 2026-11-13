@@ -123,7 +123,9 @@ export const CHAT_EXCHANGES: readonly ChatExchange[] = [
   {
     question: "Which self-driving labs use an in-line FT-IR?",
     tools: ["search_platforms"],
-    intro: "Searching the module names the papers state for “FT-IR” finds 8 platforms. Three of them:",
+    intro:
+      "Searching for “FT-IR” finds 19 platforms; the search reads FTIR, ReactIR, FlowIR and the other IR spellings as " +
+      "one technique. Three of them:",
     cites: [
       {
         platform: "Aand2024/P1",
@@ -147,7 +149,9 @@ export const CHAT_EXCHANGES: readonly ChatExchange[] = [
         evidence: "main · p. 5 · §Online attenuated total-reflectance infrared spectroscopy ¶1",
       },
     ],
-    outro: "Papers also write FTIR, ReactIR or FlowIR; searching those spellings finds more platforms.",
+    outro:
+      "The technique tags behind this search were assigned by a language model from the module names the papers " +
+      "state; whether an IR is in-line is in the module name.",
   },
   {
     question: "Walk me through one cycle of Aand2024/P1 and say where each step is described.",

@@ -104,6 +104,22 @@ export function modulesNeedingRows(d: { platformFiles: Record<string, PlatformFi
   return out.sort((a, b) => (a.module_id < b.module_id ? -1 : a.module_id > b.module_id ? 1 : 0));
 }
 
+/**
+ * What a pin move leaves to classify (REQ-012): the modules that need a row and have none, or whose row's stated name
+ * no longer matches the release (`all` lists every module that needs a row), and the rows whose module is gone.
+ */
+export function untaggedModules(
+  d: { platformFiles: Record<string, PlatformFile> },
+  overlay: Overlay,
+  all = false,
+): { modules: NeedRow[]; orphanRows: TagRow[] } {
+  const rows = new Map(overlay.rows.map((r) => [r.module_id, r]));
+  const ids = new Set<string>();
+  for (const file of Object.values(d.platformFiles)) for (const g of file.platforms) for (const m of g.modules) ids.add(m.module_id);
+  const modules = modulesNeedingRows(d, overlay.vocabulary).filter((m) => all || rows.get(m.module_id)?.name_in_paper !== m.name_in_paper);
+  return { modules, orphanRows: overlay.rows.filter((r) => !ids.has(r.module_id)) };
+}
+
 /** Throws, naming every offending row or module, when the table does not fit the release (REQ-003 (a)-(e)). */
 export function checkOverlay(d: { platformFiles: Record<string, PlatformFile> }, overlay: Overlay): void {
   const modules = new Map<string, { name: string | null }>();

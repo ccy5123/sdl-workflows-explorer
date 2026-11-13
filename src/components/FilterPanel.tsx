@@ -12,6 +12,7 @@ import type { FilterState, Match, Offered } from "../lib/filterState";
 import { Popover } from "./Popover";
 import { Sheet } from "./Sheet";
 import { PHONE_QUERY, useMedia } from "./useMedia";
+import { TECHNIQUE_NOTE } from "../lib/siteText";
 
 function CheckboxGroup({ group, options, state, onState }: { group: FilterGroup; options: readonly (string | number)[]; state: FilterState; onState: (next: FilterState) => void }) {
   const selected = state[group.key] as (string | number)[];
@@ -105,10 +106,6 @@ function YearRange({ yearText, onYearText }: Pick<Props, "yearText" | "onYearTex
     </fieldset>
   );
 }
-
-/** Below the techniques group: how the tags were made (SPEC-TECH-001 REQ-009). */
-export const TECHNIQUE_NOTE =
-  "Technique tags were assigned by a language model from the module names the papers state; they are not part of the data release.";
 
 function GroupFields({ group, offered, state, onState }: { group: FilterGroup } & Pick<Props, "offered" | "state" | "onState">) {
   const options = offered[group.key];
