@@ -1,9 +1,8 @@
-// What the search did with the query (SPEC-TECH-001 REQ-007, REQ-009): one line per technique term ("FTIR: searched as
-// IR spectroscopy (…)") with a button that searches the typed spelling only, the note on how the tags were made, and,
-// when few platforms match, the closest stated module names as searches.
+// What the search did with the query (SPEC-TECH-001 REQ-007): one line per technique term ("FTIR: searched as
+// IR spectroscopy (…)") with a button that searches the typed spelling only, and, when few platforms match, the
+// closest stated module names as searches.
 import type { Expansion } from "../lib/techniqueMatch";
 import { expansionText, quoteTerm } from "../lib/techniqueMatch";
-import { TECHNIQUE_NOTE } from "../lib/siteText";
 
 export function SearchExpansion({
   query,
@@ -27,7 +26,6 @@ export function SearchExpansion({
           </button>
         </p>
       ))}
-      {expansions.length > 0 && <p className="table-note">{TECHNIQUE_NOTE}</p>}
       {suggestions.length > 0 && (
         <p className="search-suggest">
           Module names close to the query:{" "}

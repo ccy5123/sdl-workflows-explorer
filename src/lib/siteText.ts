@@ -235,7 +235,3 @@ export function unsourcedNumbers(text: string, source: string, allowed: readonly
   const known = new Set([...numbersIn(source), ...allowed]);
   return numbersIn(text).filter((n) => !known.has(n));
 }
-
-/** Below the techniques group and the expansion line: how the tags were made (SPEC-TECH-001 REQ-009). */
-export const TECHNIQUE_NOTE =
-  "Technique tags were assigned by a language model from the module names the papers state; they are not part of the data release.";

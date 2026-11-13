@@ -7,7 +7,7 @@ import { CACHE_DIR, fetchRelease, MARKER_NAME } from "../scripts/fetch-release";
 import { loadConfig } from "../scripts/lib/config";
 import { deriveAll, writeDerived, type Derived } from "../scripts/lib/derive";
 import { CITATION_RULE, llmsTxt, SITE_URL, techniquePage, writeLlms } from "../scripts/lib/llms";
-import { readOverlay, TAG_PROVENANCE } from "../scripts/lib/techniques";
+import { readOverlay } from "../scripts/lib/techniques";
 import { evidenceText } from "../src/lib/home";
 import { tempDir } from "./fixtures/zip";
 
@@ -47,14 +47,12 @@ describe.skipIf(!available)("llms.txt and paper pages", () => {
     expect(readdirSync(join(dataDir, "papers")).filter((f) => f.endsWith(".md")).length).toBe(derived.index.papers.length);
   });
 
-  it("links one page per technique, each with the provenance sentence and every tagged module with its evidence (SPEC-TECH-001 REQ-011)", () => {
+  it("links one page per technique, each with every tagged module and its evidence (SPEC-TECH-001 REQ-011)", () => {
     const text = readFileSync(join(publicDir, "llms.txt"), "utf8");
-    expect(text).toContain(TAG_PROVENANCE);
     const t = derived.techniques!;
     for (const tech of t.techniques) {
       expect(text).toContain(`${SITE_URL}${techniquePage(tech.id)}`);
       const page = readFileSync(join(publicDir, techniquePage(tech.id)), "utf8");
-      expect(page).toContain(TAG_PROVENANCE);
       expect(page).toContain(tech.definition);
       expect(page).not.toMatch(/checked by/i);
       for (const m of t.modules.filter((x) => x.techniques.includes(tech.id))) expect(page).toContain(`- ${m.module_id}: ${m.name} (evidence: ${m.evidence})`);

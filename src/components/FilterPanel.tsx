@@ -12,7 +12,6 @@ import type { FilterState, Match, Offered } from "../lib/filterState";
 import { Popover } from "./Popover";
 import { Sheet } from "./Sheet";
 import { PHONE_QUERY, useMedia } from "./useMedia";
-import { TECHNIQUE_NOTE } from "../lib/siteText";
 
 function CheckboxGroup({ group, options, state, onState }: { group: FilterGroup; options: readonly (string | number)[]; state: FilterState; onState: (next: FilterState) => void }) {
   const selected = state[group.key] as (string | number)[];
@@ -118,7 +117,6 @@ function GroupFields({ group, offered, state, onState }: { group: FilterGroup } 
           {group.legend}: loading…
         </p>
       )}
-      {group.key === "tech" && <p className="table-note filter-note">{TECHNIQUE_NOTE}</p>}
       {group.match && (
         <MatchControl
           legend={`${group.legend} match`}

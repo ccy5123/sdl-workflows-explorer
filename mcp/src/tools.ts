@@ -38,7 +38,6 @@ import {
   type WorkflowState,
 } from "../../src/lib/workflowState";
 import { SITE_URL } from "../../scripts/lib/llms";
-import { TAG_PROVENANCE } from "../../scripts/lib/techniques";
 import { platformTechniques, reasonText, type Reason } from "../../src/lib/techniqueMatch";
 import { parseQuery, type Term } from "../../src/lib/techniqueSearch";
 import type { Dataset } from "./dataset";
@@ -73,9 +72,6 @@ const where = (e: Evidence) => ({ ...e, text: evidenceText(e) });
 
 export const VOCABULARY_KINDS = ["module_type", "unit_operation", "transfer_mode", "field_tag", "integration_mode", "technique"] as const;
 export type VocabularyKind = (typeof VOCABULARY_KINDS)[number];
-
-/** The sentence every result that shows technique tags carries (SPEC-TECH-001 REQ-009). */
-export const TECHNIQUE_PROVENANCE = TAG_PROVENANCE;
 
 function codesOf(ds: Dataset, kind: VocabularyKind): string[] {
   if (kind === "integration_mode") return ds.offered.im;
@@ -148,7 +144,6 @@ function listTechniques(ds: Dataset, query: string) {
     })
     .filter((c) => !named || named.has(c.code) || `${c.code} ${c.label} ${c.definition}`.toLowerCase().includes(q.toLowerCase()));
   return envelope(ds, { kind: "technique" as const, classes }, [
-    TECHNIQUE_PROVENANCE,
     "The query matches aliases (FTIR, ReactIR, XRD, diffractometer), codes, labels and definitions. Filter search_platforms with filters.techniques.",
   ]);
 }
@@ -337,7 +332,6 @@ export function searchPlatformsTool(ds: Dataset, input: SearchInput) {
   if (found.suggestions.length > 0) {
     notes.push("Fewer than three platforms match; suggestions lists module names the papers state that are closest to the text.");
   }
-  if (found.expansions.length > 0 || state.tech.length > 0) notes.push(TECHNIQUE_PROVENANCE);
   if (!text) notes.push("match_reason is null for filter-only searches: every row meets all the filters.");
   return envelope(
     ds,

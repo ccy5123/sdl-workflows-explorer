@@ -13,7 +13,6 @@ import { displayLabel } from "../../src/lib/labels";
 import { platformHash } from "../../src/lib/route";
 import { sortSteps } from "../../src/lib/steps";
 import type { Derived } from "./derive";
-import { TAG_PROVENANCE } from "./techniques";
 
 /** The deployed site; llms.txt is read from outside, so its links are absolute. */
 export const SITE_URL = "https://ccy5123.github.io/sdl-workflows-explorer/";
@@ -56,7 +55,7 @@ export function llmsTxt(d: Derived): string {
     `- [index.json](${SITE_URL}data/index.json): release info, counts, one row per paper (paper_id, doi, title, venue, first_public_year, field_tags, integration_mode, sw_autonomy, hw_autonomy) and per platform (platform_id, paper_id, platform_name, module_types, material_transfer_modes, unit_operations, n_modules, n_steps)`,
     `- [search.json](${SITE_URL}data/search.json): per platform_id, the module names as the papers state them (instrument names such as "in-line FT-IR"), with module ids and evidence locations`,
     ...(d.techniques
-      ? [`- [techniques.json](${SITE_URL}data/techniques.json): the technique vocabulary with its aliases and the technique tags of the modules (an explorer layer, not part of the release; see Techniques)`]
+      ? [`- [techniques.json](${SITE_URL}data/techniques.json): the technique vocabulary with its aliases and the technique tags of the modules (see Techniques)`]
       : []),
     `- data/papers/<paper_id>.md (plain text, listed under Papers) and data/platforms/<paper_id>.json: one paper's platforms with modules, ordered steps, connections and evidence locations`,
     `- [taxonomy.json](${SITE_URL}data/taxonomy.json): definitions of every module type, unit operation, transfer mode and field tag, with usage counts`,
@@ -80,12 +79,12 @@ export function llmsTxt(d: Derived): string {
   return lines.join("\n");
 }
 
-/** The Techniques section of llms.txt: the provenance sentence and one link per technique page. */
+/** The Techniques section of llms.txt: how the search reads instrument names, and one link per technique page. */
 function techniqueSection(t: TechniquesJson): string[] {
   return [
     "## Techniques",
     "",
-    `${TAG_PROVENANCE} An instrument name in any spelling (FTIR, ReactIR; XRD, diffractometer) leads to its technique; each page lists the platforms whose modules carry it, with module ids and evidence locations.`,
+    `An instrument name in any spelling (FTIR, ReactIR; XRD, diffractometer) leads to its technique; each page lists the platforms whose modules carry it, with module ids and evidence locations.`,
     "",
     ...t.techniques.map((x) => {
       const n = new Set(t.modules.filter((m) => m.techniques.includes(x.id)).map((m) => m.platform_id)).size;
@@ -95,7 +94,7 @@ function techniqueSection(t: TechniquesJson): string[] {
   ];
 }
 
-/** One technique: definition, aliases, the provenance sentence, and per platform the tagged modules with evidence. */
+/** One technique: definition, aliases, and per platform the tagged modules with evidence. */
 export function techniqueMarkdown(d: Derived, id: string): string {
   const t = d.techniques!;
   const tech = t.techniques.find((x) => x.id === id)!;
@@ -110,8 +109,6 @@ export function techniqueMarkdown(d: Derived, id: string): string {
     "",
     `Aliases searched as this technique: ${tech.aliases.join(", ")}`,
     `Module types it usually appears under: ${tech.module_types.join(", ")}`,
-    "",
-    TAG_PROVENANCE,
     "",
     CITATION_RULE,
     "",

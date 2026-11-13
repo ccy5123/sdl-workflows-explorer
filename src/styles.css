@@ -5184,7 +5184,3 @@ body:has(.sheet-layer) .evidence-sheet {
   font-size: 13px;
 }
 
-.filter-note {
-  max-width: 40ch;
-  margin: 6px 0 0;
-}

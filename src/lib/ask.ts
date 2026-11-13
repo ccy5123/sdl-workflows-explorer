@@ -149,9 +149,7 @@ export const CHAT_EXCHANGES: readonly ChatExchange[] = [
         evidence: "main · p. 5 · §Online attenuated total-reflectance infrared spectroscopy ¶1",
       },
     ],
-    outro:
-      "The technique tags behind this search were assigned by a language model from the module names the papers " +
-      "state; whether an IR is in-line is in the module name.",
+    outro: "Whether an IR is in-line is in the module name.",
   },
   {
     question: "Walk me through one cycle of Aand2024/P1 and say where each step is described.",

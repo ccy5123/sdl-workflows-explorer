@@ -1,7 +1,7 @@
 // SPEC-TECH-001 AC-4: the technique search on Home and Browse (expansion line, the "only" button, reasons with
-// evidence, suggestions), the Techniques filter and its URL, the provenance note, and 375 px.
+// evidence, suggestions), the Techniques filter and its URL, and 375 px.
 import { expect, test, type Page } from "@playwright/test";
-import { SEARCH_LABEL, TECHNIQUE_NOTE } from "../src/lib/siteText";
+import { SEARCH_LABEL } from "../src/lib/siteText";
 
 const hash = (page: Page) => page.evaluate(() => window.location.hash);
 const overflowX = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -16,7 +16,6 @@ test("Home: every spelling finds the IR set, the line says how, and the button s
   await search.fill("FTIR");
   await expect(main.locator(".search-count")).toHaveText("19 of 279 platforms match");
   await expect(main.locator(".search-expansion-line")).toContainText("FTIR: searched as IR spectroscopy (");
-  await expect(main.locator(".search-expansion .table-note")).toHaveText(TECHNIQUE_NOTE);
   // The reason names the module id, its stated name and the page it was read from.
   await expect(main.locator(".suggestion-reason").first()).toContainText(/IR spectroscopy: \S+\/P\d+\/M\d+ .+ · .+p\. \d+/);
   await search.fill("ReactIR");
@@ -52,14 +51,13 @@ test("Browse: the expansion line, and the only button writes the quoted term int
   await expect(page.locator(".search-expansion-line")).toHaveCount(0);
 });
 
-test("Browse: the Techniques filter, its URL and its note", async ({ page }) => {
+test("Browse: the Techniques filter and its URL", async ({ page }) => {
   await page.goto("/#/browse?view=platforms&tech=ir_spectroscopy");
   await expect(browseCount(page)).toHaveText("19 of 279 platforms");
   await expect(filterButton(page, "Techniques")).toHaveText("Techniques · 1");
   await filterButton(page, "Techniques").click();
   const group = page.getByRole("group", { name: "Techniques", exact: true });
   await expect(group.getByRole("checkbox", { name: /\(ir_spectroscopy\)$/ })).toBeChecked();
-  await expect(page.locator(".filter-note")).toHaveText(TECHNIQUE_NOTE);
   await group.getByRole("checkbox", { name: /\(x_ray_diffraction\)$/ }).check();
   await expect(page).toHaveURL(/tech=ir_spectroscopy,x_ray_diffraction/);
   await page.getByRole("group", { name: "Techniques match", exact: true }).getByRole("radio", { name: "any" }).check();

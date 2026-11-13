@@ -22,7 +22,6 @@ import {
   searchPlatformsTool,
   similarPlatforms,
   simulateCycleTime,
-  TECHNIQUE_PROVENANCE,
   ToolError,
 } from "../src/tools";
 
@@ -100,7 +99,6 @@ describe("list_vocabulary", () => {
   it("lists the techniques with their aliases and counts, found by any alias (SPEC-TECH-001 REQ-010)", () => {
     const all = listVocabulary(ds, { kind: "technique" });
     expect(all.results.classes.map((c) => c.code)).toEqual(ds.tech.vocabulary.techniques.map((t) => t.id));
-    expect(all.notes).toContain(TECHNIQUE_PROVENANCE);
     const ir = listVocabulary(ds, { kind: "technique", query: "ReactIR" }).results.classes as { code: string; aliases: string[]; n_platforms: number }[];
     expect(ir.map((c) => c.code)).toEqual(["ir_spectroscopy"]);
     expect(ir[0]!.n_platforms).toBe(searchPlatformsTool(ds, { filters: { techniques: ["ir_spectroscopy"] }, limit: 100 }).results.total);
@@ -123,7 +121,7 @@ describe("search_platforms", () => {
     }
   });
 
-  it("gives every spelling of a technique the same platforms, with the expansion and the provenance sentence (SPEC-TECH-001 REQ-010)", () => {
+  it("gives every spelling of a technique the same platforms, with the expansion (SPEC-TECH-001 REQ-010)", () => {
     const sets = ["FTIR", "FT-IR", "ReactIR", "IR spectroscopy"].map((text) => searchPlatformsTool(ds, { text, limit: 100 }));
     const ids = sets.map((r) => r.results.platforms.map((p) => p.platform_id).sort());
     for (const x of ids.slice(1)) expect(x).toEqual(ids[0]);
@@ -131,7 +129,6 @@ describe("search_platforms", () => {
     expect(ids[0]).toContain("Bedard2018/P2"); // "ReactIR"
     for (const r of sets) {
       expect(r.results.expansions![0]!.techniques.map((t) => t.id)).toEqual(["ir_spectroscopy"]);
-      expect(r.notes).toContain(TECHNIQUE_PROVENANCE);
       expect(r.notes.join(" ")).not.toMatch(/search each spelling|checked by/i);
     }
   });
@@ -177,7 +174,6 @@ describe("search_platforms", () => {
     const r = searchPlatformsTool(ds, { filters: { techniques: ["x_ray_diffraction"] }, limit: 100 });
     expect(r.results.total).toBe(searchPlatformsTool(ds, { text: "XRD", limit: 100 }).results.total);
     expect(r.results.platforms.every((p) => p.techniques.includes("x_ray_diffraction"))).toBe(true);
-    expect(r.notes).toContain(TECHNIQUE_PROVENANCE);
     expect(() => searchPlatformsTool(ds, { filters: { techniques: ["XRD"] } })).toThrow(/Closest: x_ray_diffraction/);
     const both = searchPlatformsTool(ds, { filters: { techniques: ["x_ray_diffraction", "uv_vis_spectroscopy"], techniques_match: "any" }, limit: 100 }).results;
     expect(both.total).toBeGreaterThan(r.results.total);

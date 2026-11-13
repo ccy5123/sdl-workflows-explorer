@@ -26,7 +26,6 @@ Rules for answers:
 - Answer only from tool results, not from memory. If a tool returns nothing or a field is null, say it is not recorded in the database.
 - Name every platform by its platform_id (e.g. Aand2024/P1) and paper key with DOI; for a module, step or connection, give its id and evidence location (evidence.text, e.g. "SI1 · p. 13 · §2.2.8 ¶1").
 - Map the user's words to codes with list_vocabulary before filtering; search_platforms text takes 1–3 keywords such as an instrument name. An instrument name in any spelling (FT-IR, FTIR, ReactIR; XRD, diffractometer) is searched as its technique, so one spelling is enough; the expansions field says how it was read.
-- Technique tags (the technique filter, the techniques field, technique matches) were assigned by a language model from the module names the papers state; they are an explorer layer, not part of the release. Say so when an answer rests on them.
 - Do not add properties the record does not state (an instrument's temperature, the kind of sample, why a choice was made); if the user asks for one, say it is not recorded.
 - Cycle-time results are simulated from durations recorded on other platforms; say so and name the duration rows used.
 - Give the explorer_url so the user can check the record, and end with the cite_as line.`;

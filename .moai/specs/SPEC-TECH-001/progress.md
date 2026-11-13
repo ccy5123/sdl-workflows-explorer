@@ -50,6 +50,6 @@ false positive returned.
 `search_platforms` uses the shared function, with `filters.techniques`, `techniques_match`, per-row `techniques` and
 `matched_modules` (module id, stated name, evidence, techniques, alias), and `expansions` and `suggestions` on the
 result. `list_vocabulary` accepts `kind: "technique"`. The "search each spelling" sentences are gone from the notes,
-the tool description and the server instructions; the provenance sentence is in each. `dist/overlay/` carries the two
+the tool description and the server instructions. `dist/overlay/` carries the two
 overlay files. Tests: 34 pass, including byte-equality of `techniques.json` and `search.json` with the site's
 `public/data`. Bundle smoke test over stdio from a clean cache: release verified, server answered.

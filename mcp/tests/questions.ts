@@ -30,7 +30,6 @@ add("Which self-driving labs use an in-line FT-IR?", "search_platforms (text, or
   `${ftir.all.length} platforms; each spelling gives the same set (${ftir.per.map((p) => `"${p.text}" ${p.ids.length}`).join(", ")}): ${list(ftir.all)}`,
   "Whether a given IR is in-line is in the module name, not in the technique tag",
   "Each named with paper key and DOI; the IR module named as the paper states it, with its module id and evidence (matched_modules)",
-  "The answer says the technique tags were assigned by a language model and are not part of the release",
 ]);
 
 const xrd = spellings(["XRD", "diffractometer", "X-ray diffraction"]);

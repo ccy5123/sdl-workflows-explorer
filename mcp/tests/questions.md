@@ -12,7 +12,6 @@ Expected tools: search_platforms (text, or filters.techniques ir_spectroscopy)
 - 19 platforms; each spelling gives the same set ("FT-IR" 19, "FTIR" 19, "ReactIR" 19, "FlowIR" 19): `Aand2024/P1`, `Ahn2023/P1`, `Bedard2018/P2`, `Fabry2019/P1`, `Fitzpatrick2016/P2`, `Fitzpatrick2018/P1`, `Gerardy2022/P1`, `Granda2018/P1`, `Mikami2026/P1`, `Moore2012/P1`, `Nambiar2022/P1`, `Nambiar2022/P2`, `Poscharny2018/P1`, `SinghBhati2026/P1`, `Skilton2013/P1`, `Vargas2026/P1`, `Wagner2024/P1`, `Wong2026/P1`, `Xu2022/P1`
 - Whether a given IR is in-line is in the module name, not in the technique tag
 - Each named with paper key and DOI; the IR module named as the paper states it, with its module id and evidence (matched_modules)
-- The answer says the technique tags were assigned by a language model and are not part of the release
 
 ### 2. Find platforms that measure with X-ray diffraction.
 

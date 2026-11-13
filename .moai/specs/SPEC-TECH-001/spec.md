@@ -128,9 +128,9 @@ it, the mapping shown to the reader, and quotes to switch it off.
   `uoMatch` (SPEC-BROWSE-001 §3), offered values the techniques that tag at least one module. It is a platform-level
   filter in the sense of SPEC-BROWSE-001 REQ-007. Until `techniques.json` has loaded, a `tech` value in the URL is
   kept and not applied, and the group shows that it is loading.
-- **REQ-009** (ubiquitous) Wherever tags appear (site, `llms.txt`, technique pages, MCP results and instructions),
-  the text shall say that the tags were assigned by a language model from the module names the papers state and are
-  not part of the Zenodo release. No text shall say they were checked by a person.
+- **REQ-009** (ubiquitous) No text that shows tags (site, `llms.txt`, technique pages, MCP results and instructions)
+  shall say they were checked by a person. (Amended 2026-11-13: the researcher dropped the sentence on how the tags
+  were made from every visible text; `techniques.json` keeps it in its `provenance` field.)
 
 ### MCP package
 

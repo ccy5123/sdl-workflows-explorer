@@ -57,8 +57,7 @@ relying on it.
 
 An instrument named in any spelling (FTIR, FT-IR, ReactIR; XRD, diffractometer) is searched as its technique through
 the explorer's technique tags, the same way as the explorer's search box; a term in double quotes is matched as
-written. The tags were assigned by a language model from the module names the papers state; they ship with the
-package as an explorer layer and are not part of the Zenodo release.
+written.
 
 ## Settings
 

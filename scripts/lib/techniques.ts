@@ -13,7 +13,7 @@ export const VOCABULARY_FILE = "techniques.json";
 export const TABLE_FILE = "module-techniques.csv";
 export const TABLE_HEADER = ["module_id", "techniques", "name_in_paper"] as const;
 
-/** The sentence every place that shows tags carries (REQ-009). */
+/** How the tags were made, kept in techniques.json (its provenance field); no visible text repeats it (REQ-009). */
 export const TAG_PROVENANCE =
   "Technique tags were assigned by a language model from the module names the papers state; they are an explorer " +
   "layer, not part of the Zenodo release.";
