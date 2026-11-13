@@ -225,11 +225,6 @@ export const LLM_ABOUT = {
   caution:
     "The records were coded from the papers by a language model and the release contains no human coding, so check a " +
     "claim against the page it cites before relying on it.",
-  techniques:
-    "The search boxes, the Techniques filter, llms.txt and the MCP server read an instrument named in any spelling " +
-    "(FTIR, FT-IR, ReactIR; XRD, diffractometer) as its technique, through technique tags on the modules; a term in " +
-    "double quotes is searched as written. The tags were assigned by a language model from the module names the " +
-    "papers state; they are not part of the data release.",
 } as const;
 
 /** Whole number tokens of a text: maximal runs of digits with "." or "," between digits. */

@@ -36,8 +36,8 @@
   button sets `q` to `"FTIR"` and the result changes to the quoted rule.
 - Browse shows the "Techniques" group with all/any; `#/browse?view=platforms&tech=ir_spectroscopy` lists the IR set;
   the URL round-trips; a `tech` value in a URL loaded before `techniques.json` is kept and applied once it loads.
-- The REQ-009 sentence is on Home (near the expansion line), Browse (filter group), the platform reasons' note,
-  About, `llms.txt`, the technique pages and the MCP instructions.
+- The REQ-009 sentence is on Home (near the expansion line), Browse (filter group), `llms.txt`, the technique pages
+  and the MCP instructions. (About was dropped on 2026-11-13 at the researcher's request: no separate paragraph.)
 - At 375 px no page-level sideways scroll on Home and Browse with the expansion line shown; axe passes.
 
 ## AC-5 MCP (REQ-010)

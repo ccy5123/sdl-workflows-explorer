@@ -103,7 +103,6 @@ export function About({ index }: { index: IndexJson }) {
           <a href="#/ask">{LLM_ABOUT.pageLink}</a>.
         </p>
         <p>{LLM_ABOUT.caution}</p>
-        <p>{LLM_ABOUT.techniques}</p>
       </section>
       <section aria-labelledby="about-visitors" className="card panel">
         <h2 id="about-visitors">{VISITOR_ABOUT.heading}</h2>

@@ -194,7 +194,7 @@ describe("LLM_ABOUT (LLM-access plan, 2026-11-12)", () => {
   it("names the published package of mcp/, states no number and makes no claim of human checking", () => {
     const pkg = JSON.parse(readFileSync(join(import.meta.dirname, "..", "mcp", "package.json"), "utf8")) as { name: string };
     expect(LLM_ABOUT.mcpPackage).toBe(pkg.name);
-    const text = [LLM_ABOUT.lead, LLM_ABOUT.mcp, LLM_ABOUT.webBefore, LLM_ABOUT.webAfter, LLM_ABOUT.caution, LLM_ABOUT.techniques].join(" ");
+    const text = [LLM_ABOUT.lead, LLM_ABOUT.mcp, LLM_ABOUT.webBefore, LLM_ABOUT.webAfter, LLM_ABOUT.caution].join(" ");
     expect(numbersIn(text)).toEqual([]);
     expect(text).toContain("the release contains no human coding");
     expect(text).not.toMatch(/checked by|verified by|validated/i);
