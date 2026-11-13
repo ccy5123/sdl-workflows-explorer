@@ -17,8 +17,8 @@ async function insideViewport(page: Page, locator: Locator) {
 test("UI AC-25: Browse shows a filter bar of popover buttons instead of checkbox columns", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/#/browse");
-  // Three groups show at first; the other four fold under "More filters".
-  for (const legend of ["Field tag", "Module types", "Unit operations"]) {
+  // Four groups show at first (Techniques since SPEC-TECH-001); the other four fold under "More filters".
+  for (const legend of ["Field tag", "Module types", "Techniques", "Unit operations"]) {
     await expect(popoverButton(page, legend)).toHaveAttribute("aria-expanded", "false");
   }
   await expect(popoverButton(page, "Integration mode")).toHaveCount(0);
