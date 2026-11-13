@@ -58,6 +58,30 @@ export interface PlatformRow {
  */
 export interface SearchJson {
   module_names: Record<string, string[]>;
+  /**
+   * Per platform id, every module with a stated name as [module_id, name_in_paper, evidence text] in module order, so a
+   * search reason can name the module and the page it was read from (SPEC-TECH-001 REQ-004).
+   */
+  modules: Record<string, [string, string, string][]>;
+}
+
+/** One module the technique overlay tags (SPEC-TECH-001 REQ-004). */
+export interface TechniqueModule {
+  platform_id: string;
+  module_id: string;
+  techniques: string[];
+  name: string;
+  evidence: string;
+}
+
+/** public/data/techniques.json: the explorer's technique vocabulary and the tagged modules (SPEC-TECH-001). */
+export interface TechniquesJson {
+  vocabulary_version: string;
+  /** How the tags were made; shown wherever tags appear (REQ-009). */
+  provenance: string;
+  techniques: { id: string; label: string; definition: string; module_types: string[]; aliases: string[] }[];
+  compound_aliases: { alias: string; techniques: string[] }[];
+  modules: TechniqueModule[];
 }
 
 /** One author of the release's CITATION.cff (SPEC-SITE-001 REQ-001). */

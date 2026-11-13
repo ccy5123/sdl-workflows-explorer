@@ -8,6 +8,7 @@
     "build": "npm run fetch-release && npm run build-data && vite build",
     "fetch-release": "tsx scripts/fetch-release.ts",
     "build-data": "tsx scripts/build-data.ts",
+    "list-untagged": "tsx scripts/list-untagged.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",

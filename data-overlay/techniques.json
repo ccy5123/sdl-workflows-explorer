@@ -1,0 +1,159 @@
+{
+  "version": "1",
+  "note": "Measurement techniques of the explorer's instrument search (SPEC-TECH-001). An explorer-side layer, not part of the Zenodo release. Aliases are matched after removing case and every character that is not a letter or digit. An alias must name one technique only; words that span techniques (microscope, spectrometer, plate reader) are left out on purpose.",
+  "techniques": [
+    {
+      "id": "ir_spectroscopy",
+      "label": "IR spectroscopy",
+      "definition": "Infrared absorption spectroscopy (FT-IR, ATR-IR), in-line or off-line; not infrared heating, temperature or proximity sensing.",
+      "module_types": ["instrument_optical"],
+      "aliases": ["IR", "FTIR", "FT-IR", "FT/IR", "ATR-IR", "ATR-FTIR", "ReactIR", "FlowIR", "infrared", "infrared spectroscopy", "infrared spectrometer", "IR spectroscopy", "IR spectrometer"]
+    },
+    {
+      "id": "uv_vis_spectroscopy",
+      "label": "UV-Vis spectroscopy",
+      "definition": "Ultraviolet-visible (and near-infrared) absorption or transmission measurement by a spectrometer, spectrophotometer or absorbance plate reader; not a detector built into a chromatograph.",
+      "module_types": ["instrument_optical"],
+      "aliases": ["UV-Vis", "UV/Vis", "UV-Vis-NIR", "UV", "spectrophotometer", "spectrophotometry", "absorbance", "absorption spectroscopy", "UV-Vis spectroscopy"]
+    },
+    {
+      "id": "raman_spectroscopy",
+      "label": "Raman spectroscopy",
+      "definition": "Raman scattering spectroscopy, including Raman probes and Raman microscopes.",
+      "module_types": ["instrument_optical"],
+      "aliases": ["Raman", "Raman spectroscopy", "Raman spectrometer"]
+    },
+    {
+      "id": "fluorescence_photoluminescence",
+      "label": "Fluorescence / photoluminescence",
+      "definition": "Emission spectroscopy or intensity measurement (fluorescence, photoluminescence, luminescence), by a spectrometer or a plate reader in emission mode.",
+      "module_types": ["instrument_optical"],
+      "aliases": ["PL", "photoluminescence", "fluorescence", "fluorescence spectroscopy", "fluorescence spectrometer", "luminescence"]
+    },
+    {
+      "id": "dynamic_light_scattering",
+      "label": "Dynamic light scattering",
+      "definition": "Particle sizing by dynamic light scattering (DLS), including flow-through and plate DLS.",
+      "module_types": ["instrument_optical", "instrument_physical"],
+      "aliases": ["DLS", "dynamic light scattering", "light scattering", "Zetasizer", "NanoFlowSizer"]
+    },
+    {
+      "id": "nmr_spectroscopy",
+      "label": "NMR spectroscopy",
+      "definition": "Nuclear magnetic resonance spectroscopy, benchtop or high field, in-line or with an autosampler.",
+      "module_types": ["instrument_structural"],
+      "aliases": ["NMR", "nuclear magnetic resonance", "NMR spectroscopy", "NMR spectrometer", "Spinsolve"]
+    },
+    {
+      "id": "mass_spectrometry",
+      "label": "Mass spectrometry",
+      "definition": "Mass spectrometry (ESI, APCI, MALDI, quadrupole and others), alone or coupled to a chromatograph.",
+      "module_types": ["instrument_separation_ms"],
+      "aliases": ["MS", "MSD", "mass spectrometry", "mass spectrometer", "ESI", "ESI-MS", "APCI", "MALDI", "MALDI-ToF"]
+    },
+    {
+      "id": "liquid_chromatography",
+      "label": "Liquid chromatography (HPLC/UPLC)",
+      "definition": "Analytical liquid chromatography (HPLC, UPLC, UHPLC) with its detectors (UV, DAD, PDA, ELSD); size-exclusion chromatography has its own entry.",
+      "module_types": ["instrument_separation_ms"],
+      "aliases": ["LC", "HPLC", "UPLC", "UHPLC", "RRLC", "HIC", "liquid chromatography", "liquid chromatograph", "HPLC-DAD", "UPLC-DAD"]
+    },
+    {
+      "id": "gas_chromatography",
+      "label": "Gas chromatography",
+      "definition": "Gas chromatography (GC, GLC, headspace GC) with its detectors (FID, TCD).",
+      "module_types": ["instrument_separation_ms"],
+      "aliases": ["GC", "GLC", "HS-GC", "GC-FID", "GC-TCD", "gas chromatography", "gas chromatograph", "gas-liquid chromatograph"]
+    },
+    {
+      "id": "size_exclusion_chromatography",
+      "label": "Size-exclusion chromatography (GPC/SEC)",
+      "definition": "Size-exclusion or gel permeation chromatography for molar-mass distributions.",
+      "module_types": ["instrument_separation_ms"],
+      "aliases": ["GPC", "SEC", "size exclusion chromatography", "size-exclusion chromatography", "gel permeation chromatography"]
+    },
+    {
+      "id": "x_ray_diffraction",
+      "label": "X-ray diffraction",
+      "definition": "X-ray diffraction (powder, thin film, synchrotron wide-angle diffraction).",
+      "module_types": ["instrument_structural"],
+      "aliases": ["XRD", "PXRD", "X-ray diffraction", "diffractometer", "X-ray diffractometer", "powder diffraction"]
+    },
+    {
+      "id": "x_ray_scattering",
+      "label": "X-ray scattering",
+      "definition": "Small- and wide-angle or total X-ray scattering (SAXS, WAXS, PDF).",
+      "module_types": ["instrument_structural"],
+      "aliases": ["SAXS", "WAXS", "GISAXS", "GIWAXS", "X-ray scattering", "total scattering"]
+    },
+    {
+      "id": "x_ray_photoelectron_spectroscopy",
+      "label": "X-ray photoelectron spectroscopy",
+      "definition": "X-ray photoelectron spectroscopy (XPS).",
+      "module_types": ["instrument_structural"],
+      "aliases": ["XPS", "X-ray photoelectron spectroscopy", "photoelectron spectroscopy"]
+    },
+    {
+      "id": "x_ray_fluorescence",
+      "label": "X-ray fluorescence",
+      "definition": "X-ray fluorescence (XRF) for elemental composition, including XRF microscopes.",
+      "module_types": ["instrument_structural"],
+      "aliases": ["XRF", "X-ray fluorescence"]
+    },
+    {
+      "id": "electron_diffraction",
+      "label": "Electron diffraction",
+      "definition": "Electron diffraction of surfaces (RHEED, LEED).",
+      "module_types": ["instrument_structural"],
+      "aliases": ["RHEED", "LEED", "electron diffraction"]
+    },
+    {
+      "id": "electron_microscopy",
+      "label": "Electron microscopy",
+      "definition": "Scanning or transmission electron microscopy (SEM, TEM, STEM).",
+      "module_types": ["instrument_imaging"],
+      "aliases": ["SEM", "TEM", "STEM", "electron microscope", "electron microscopy", "scanning electron microscope", "transmission electron microscope"]
+    },
+    {
+      "id": "optical_microscopy_imaging",
+      "label": "Optical microscopy and camera imaging",
+      "definition": "Optical microscopes and cameras used to image samples (machine vision, colour, phase or droplet imaging, hyperspectral imaging).",
+      "module_types": ["instrument_imaging"],
+      "aliases": ["camera", "webcam", "optical microscope", "optical microscopy", "machine vision", "computer vision", "hyperspectral imaging"]
+    },
+    {
+      "id": "electrochemical_measurement",
+      "label": "Electrochemical measurement",
+      "definition": "Potentiostatic or galvanostatic measurement (voltammetry, impedance, battery cycling, conductivity cells).",
+      "module_types": ["instrument_electrochemical"],
+      "aliases": ["potentiostat", "galvanostat", "electrochemical", "electrochemistry", "electrochemical workstation", "voltammetry", "cyclic voltammetry", "impedance", "battery tester"]
+    },
+    {
+      "id": "weighing",
+      "label": "Weighing",
+      "definition": "Mass measurement by a balance or scale.",
+      "module_types": ["instrument_physical"],
+      "aliases": ["balance", "analytical balance", "weighing"]
+    },
+    {
+      "id": "ph_measurement",
+      "label": "pH measurement",
+      "definition": "pH measurement by an electrode or meter.",
+      "module_types": ["instrument_physical"],
+      "aliases": ["pH", "pH meter", "pH probe", "pH electrode"]
+    },
+    {
+      "id": "thickness_profilometry",
+      "label": "Film thickness and profilometry",
+      "definition": "Film thickness or surface profile measurement (reflectometry, ellipsometry, profilometry).",
+      "module_types": ["instrument_physical", "instrument_imaging"],
+      "aliases": ["film thickness", "profilometer", "profilometry", "ellipsometer", "ellipsometry", "Filmetrics"]
+    }
+  ],
+  "compound_aliases": [
+    { "alias": "LCMS", "techniques": ["liquid_chromatography", "mass_spectrometry"] },
+    { "alias": "HPLCMS", "techniques": ["liquid_chromatography", "mass_spectrometry"] },
+    { "alias": "UPLCMS", "techniques": ["liquid_chromatography", "mass_spectrometry"] },
+    { "alias": "GCMS", "techniques": ["gas_chromatography", "mass_spectrometry"] }
+  ]
+}

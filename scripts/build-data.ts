@@ -8,6 +8,7 @@ import { loadConfig } from "./lib/config";
 import { checkCounts, countDerived, formatProblems } from "./lib/counts";
 import { deriveAll, writeDerived } from "./lib/derive";
 import { writeLlms } from "./lib/llms";
+import { readOverlay } from "./lib/techniques";
 import { CACHE_DIR, verifiedReleaseDir } from "./fetch-release";
 
 export const OUT_DIR = "public/data";
@@ -18,7 +19,7 @@ function main(): void {
   rmSync(OUT_DIR, { recursive: true, force: true });
   rmSync(join(PUBLIC_DIR, "llms.txt"), { force: true });
   const releaseDir = verifiedReleaseDir(config, CACHE_DIR);
-  const derived = deriveAll(releaseDir);
+  const derived = deriveAll(releaseDir, readOverlay());
   const problems = checkCounts(config.counts, derived, releaseDir);
   if (problems.length > 0) {
     throw new Error(`count check failed (${problems.length} differences):\n${formatProblems(problems)}`);

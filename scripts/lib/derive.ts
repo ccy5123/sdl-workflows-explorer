@@ -33,6 +33,7 @@ import type {
   ReleaseDocs,
   ReleaseInfo,
   SearchJson,
+  TechniquesJson,
   SimulationJson,
   Step,
   TaxonomyExample,
@@ -44,6 +45,8 @@ import type {
 import { parseCitationCff } from "./citation";
 import { type CsvRow, nullIfEmpty, readCsv, splitList, toBool01, toInt } from "./csv";
 import { buildSimulation } from "./simulation";
+import { buildTechniques, type Overlay } from "./techniques";
+import { evidenceText } from "../../src/lib/home";
 
 export interface Derived {
   index: IndexJson;
@@ -54,6 +57,8 @@ export interface Derived {
   releaseDocs: ReleaseDocs;
   simulation: SimulationJson;
   search: SearchJson;
+  /** Present when an overlay was given (SPEC-TECH-001). */
+  techniques?: TechniquesJson;
 }
 
 // ---- CSV access -------------------------------------------------------------------------------
@@ -260,6 +265,12 @@ function buildSearch(graphs: GraphCore[]): SearchJson {
   return {
     module_names: Object.fromEntries(
       graphs.map((g) => [g.platform_id, [...new Set(g.modules.flatMap((m) => (m.name_in_paper ? [m.name_in_paper] : [])))]]),
+    ),
+    modules: Object.fromEntries(
+      graphs.map((g) => [
+        g.platform_id,
+        g.modules.flatMap((m): [string, string, string][] => (m.name_in_paper ? [[m.module_id, m.name_in_paper, evidenceText(m.evidence)]] : [])),
+      ]),
     ),
   };
 }
@@ -900,7 +911,7 @@ function buildBenchmark(
 // @MX:ANCHOR: [AUTO] deriveAll — single source of the derived JSON; used by build-data, the count check and tests
 // @MX:REASON: every view reads this output; field lists must stay in step with REQ-009, SPEC-BENCH-001 REQ-001/REQ-002
 // and src/data/types.ts
-export function deriveAll(releaseDir: string): Derived {
+export function deriveAll(releaseDir: string, overlay?: Overlay): Derived {
   const papers = readPapers(releaseDir);
   const graphs = readGraphs(releaseDir);
   const { rows: platformRows, campaigns } = readPlatformRows(releaseDir, graphs);
@@ -921,7 +932,7 @@ export function deriveAll(releaseDir: string): Derived {
   const taxonomy = buildTaxonomy(releaseDir, papers, platformRows, graphs);
   const { benchmark, items } = buildBenchmark(releaseDir, papers, platformRows, graphs, taxonomy.classes);
   const simulation = buildSimulation(releaseDir, graphs);
-  return {
+  const derived: Derived = {
     index,
     platformFiles,
     taxonomy,
@@ -931,6 +942,8 @@ export function deriveAll(releaseDir: string): Derived {
     simulation,
     search: buildSearch(graphs),
   };
+  if (overlay) derived.techniques = buildTechniques(derived, overlay);
+  return derived;
 }
 
 export function writeDerived(derived: Derived, outDir: string): void {
@@ -943,5 +956,6 @@ export function writeDerived(derived: Derived, outDir: string): void {
   write("release-docs.json", derived.releaseDocs);
   write("simulation.json", derived.simulation);
   write("search.json", derived.search);
+  if (derived.techniques) write("techniques.json", derived.techniques);
   for (const [paperId, file] of Object.entries(derived.platformFiles)) write(`platforms/${paperId}.json`, file);
 }
