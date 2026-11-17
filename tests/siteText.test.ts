@@ -238,7 +238,15 @@ describe.skipIf(!built)("home and about text against the pinned release (AC-4)",
     expect(about).toContain(
       `screened on titles (${a.screened_titles}), abstracts (${a.screened_second_stage}) and full texts (${a.screened_fulltexts})`,
     );
-    expect(card).toContain(`The ${c.candidates} candidates came from`);
+    // Every candidate is screened on its title, so the title count is the candidate total of the About text. The data
+    // card states the total (1.1.0, 1.2.0 as published) or, from the template fixed on 2026-11-17, the candidates of
+    // release 1.1.0 beside the alert candidates.
+    expect(a.screened_titles).toBe(c.candidates);
+    expect([
+      `The ${c.candidates} candidates came from`,
+      `The ${c.candidates - a.alert_candidates} candidates of release 1.1.0 came from`,
+    ].some((phrase) => card.includes(phrase))).toBe(true);
+    if (a.alert_candidates > 0) expect(card).toContain(`${a.alert_candidates} further candidates came from`);
     expect(about).toContain(`The ${c.candidates} candidates`);
   });
 
