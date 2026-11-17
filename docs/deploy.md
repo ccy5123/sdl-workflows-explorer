@@ -95,3 +95,39 @@ a new release. `tests/release-docs.test.ts` derives both releases and fails when
 previous one except the papers it adds (and earlier platforms joining an identity group, which it lists); such a
 release (a correction, a re-split benchmark) needs a person to read the change. `tests/siteText.test.ts` fails when
 the data card words a figure differently from the About text; fix the text from the data card, not the test.
+
+## Monthly release
+
+From release 1.3.0 on, the data release is published once a month (first week) by the scheduled task
+`sdl-db-monthly-release` of the sdl-db workspace, without an approval step; sdl-db `update/WEEKLY.md` ("Monthly
+release") gives the whole flow. The explorer part is `scripts/monthly-release.sh`; the task runs only its five steps
+(its tool guard allows no other command in this repository):
+
+1. **`prepare`** (before the Zenodo publish): from a clean `main`, `git pull --ff-only`, branch `release-<version>`,
+   the pin written by sdl-db's `update/release.py explorer-pin` (version, the draft's record id and reserved DOI, the
+   sha256 of sdl-db's local zip, the counts, and the `previous` release), `npm run fetch-release` with
+   `SDL_RELEASE_ZIP` set to that local zip, the pin committed, `npm run build-data`. It exits 3 when new modules need
+   technique tags and writes them to `.cache/untagged-<version>.csv` (from `npm run list-untagged`); the task has them
+   classified by subagents and adds the rows to `data-overlay/module-techniques.csv` (SPEC-TECH-001 REQ-012; unclear →
+   `none`, no new technique).
+2. **`check`** and **`e2e`**: `npm run build-data`, `npm run typecheck`, `npm test`, then `npm run e2e` (6 to 10
+   minutes; the task runs it in the background) and `npm run record-baselines`; the tag rows and
+   `tests/derived-baselines.json` are committed on the branch. Tests, e2e specs and the site text read their expected
+   values from the pinned release ("Pinning a new release" above), and `tests/release-docs.test.ts` compares it with
+   the `previous` release, so a new pin needs no hand edits; a failure here means something other than the added
+   papers changed, and the task stops before publishing (the Zenodo draft stays unpublished).
+3. **`finalize`** (after sdl-db's `zenodo-verify`): the pin must be the file Zenodo now serves (sdl-db
+   `update/releases.json`); the cached copy is dropped and `fetch-release` downloads it from Zenodo; build-data,
+   typecheck and vitest again; fast-forward `main` to the branch, push, `gh workflow run pages.yml`, `gh run watch`
+   on that run, and the live `data/index.json` must name the version.
+4. **`abort`**: back to `main`; the branch keeps the state reached (uncommitted pin or tag changes committed as
+   `wip`). The task runs it when it stops before the merge. It never retries a publish; after the Zenodo publish a
+   failure leaves the site on the old version and is reported.
+
+Variables for tests and dry runs only (the task sets none): `SDLDB` (sdl-db folder), `GH` (a stand-in for `gh`),
+`LIVE_URL`, `SKIP_LIVE=1`, and `SDL_RELEASE_ZIP` (passed through to `fetch-release` in `finalize`). A dry run uses a
+clone of this repository with a local bare repository as `origin`, a copy of sdl-db with the Zenodo mock
+(`update/zenodo_mock.py`), `GH` pointing at a stub and `SKIP_LIVE=1`.
+
+The MCP npm package in `mcp/` is not part of the monthly release: after the site moves, bump its minor version and
+publish it by hand (npm 2FA).
