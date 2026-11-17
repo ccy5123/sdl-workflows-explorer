@@ -42,6 +42,7 @@ import type {
   TaxonomySource,
   TaxonomyVocabulary,
 } from "../../src/data/types";
+import { readAboutFacts } from "./about";
 import { parseCitationCff } from "./citation";
 import { type CsvRow, nullIfEmpty, readCsv, splitList, toBool01, toInt } from "./csv";
 import { buildSimulation } from "./simulation";
@@ -927,7 +928,7 @@ export function deriveAll(releaseDir: string, overlay?: Overlay): Derived {
   };
   const release = readRelease(releaseDir);
   const releaseDocs = readReleaseDocs(releaseDir, release);
-  const index = { release, counts, papers, platforms: platformRows };
+  const index: IndexJson = { release, counts, about: readAboutFacts(releaseDir), papers, platforms: platformRows };
   const platformFiles = buildPlatformFiles(papers, graphs, campaigns);
   const taxonomy = buildTaxonomy(releaseDir, papers, platformRows, graphs);
   const { benchmark, items } = buildBenchmark(releaseDir, papers, platformRows, graphs, taxonomy.classes);

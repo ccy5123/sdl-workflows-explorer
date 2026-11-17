@@ -32,11 +32,17 @@ for (const route of ROUTES) {
   });
 }
 
-/** Installs a focusin recorder that reads each focused element's outline at the moment it receives focus. */
+/**
+ * Installs a focusin recorder that reads each focused element's outline at the moment it receives focus, and counts
+ * the Tab presses until the footer's last link first takes focus (`__reachedAt`, 0 while it has not).
+ */
 const recordFocus = (page: Page) =>
   page.evaluate(() => {
-    const w = window as unknown as { __focus: { what: string; style: string; width: number }[] };
+    const w = window as unknown as { __focus: { what: string; style: string; width: number }[]; __reachedAt: number };
     w.__focus = [];
+    w.__reachedAt = 0;
+    const links = document.querySelectorAll("footer.site-footer a");
+    const last = links[links.length - 1];
     document.addEventListener("focusin", (e) => {
       const el = e.target as HTMLElement;
       const s = getComputedStyle(el);
@@ -45,29 +51,39 @@ const recordFocus = (page: Page) =>
         style: s.outlineStyle,
         width: parseFloat(s.outlineWidth),
       });
+      if (el === last && w.__reachedAt === 0) w.__reachedAt = w.__focus.length;
     });
   });
 
 const TABBABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Time budget of the walk: one Tab press costs about 60 ms on an idle machine and up to ten times that when the
+ * machine is loaded and the whole suite runs in parallel (measured on #/browse?view=platforms, the longest walk:
+ * about 900 stops with release 1.2.0, growing with each release's platforms). The budget follows the page's count.
+ */
+const PER_PRESS_MS = 600;
+const BASE_MS = 60_000;
+/** Presses between two reads of the recorder, so the walk needs about one round trip per press. */
+const CHUNK = 20;
+
 for (const route of ROUTES) {
   for (const theme of THEMES) {
     test(`AC-10: visible focus and no trap on ${route.hash} (${theme})`, async ({ page }) => {
-      test.setTimeout(240_000);
+      test.setTimeout(BASE_MS);
       await open(page, route.hash, theme);
       await recordFocus(page);
       const n = await page.locator(TABBABLE).count();
-      const last = page.locator("footer.site-footer a").last();
-      let reached = false;
-      for (let i = 0; i < n + 5; i++) {
-        await page.keyboard.press("Tab");
-        if (await last.evaluate((el) => el === document.activeElement)) {
-          reached = true;
-          break;
-        }
+      test.setTimeout(BASE_MS + (n + 5) * PER_PRESS_MS);
+      const reachedAt = () => page.evaluate(() => (window as unknown as { __reachedAt: number }).__reachedAt);
+      let presses = 0;
+      while (presses < n + 5 && (await reachedAt()) === 0) {
+        for (let k = 0; k < CHUNK && presses < n + 5; k++, presses++) await page.keyboard.press("Tab");
       }
-      expect(reached, `footer's last link not reached within ${n + 5} presses`).toBe(true);
+      // The walk stops pressing at n + 5, so a recorded focus on the footer's last link was reached within n + 5 presses.
+      const reached = (await reachedAt()) > 0;
+      expect(reached, `footer's last link not reached within ${n + 5} presses (${presses} pressed)`).toBe(true);
       const focus = await page.evaluate(
         () => (window as unknown as { __focus: { what: string; style: string; width: number }[] }).__focus,
       );

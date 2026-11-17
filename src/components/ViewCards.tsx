@@ -98,7 +98,7 @@ function TrendsPreview({ index }: { index: IndexJson }) {
         <span>{middle.label}</span>
         <span>{last.label}, partial</span>
       </div>
-      <span className="vc-caption">{yearsCaption(Number(last.label))}</span>
+      <span className="vc-caption">{yearsCaption(Number(last.label), index.about.alert_candidates)}</span>
     </div>
   );
 }

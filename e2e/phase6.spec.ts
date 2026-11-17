@@ -1,6 +1,7 @@
 // UI AC-42 to AC-46: the phase 6 leftovers of SPEC-UI-001, in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
 import type { Core } from "cytoscape";
+import { R } from "./expected";
 
 type Win = Window & { __cy?: Core; __wfCy?: Core };
 
@@ -248,7 +249,7 @@ test("UI AC-52: Browse tables fit their box at 1440 px; narrower, they scroll in
   expect(await first.evaluate((tr) => getComputedStyle(tr).display)).toBe("flex");
   await expect(first.locator("td.card-title")).toContainText("Autonomous closed-loop");
   await main(page).getByLabel("Sort").selectOption({ label: "Year, high to low" });
-  await expect(main(page).locator('[data-table="papers"] tbody tr').first().locator("td.card-aside")).toHaveText("2026");
+  await expect(main(page).locator('[data-table="papers"] tbody tr').first().locator("td.card-aside")).toHaveText(String(Math.max(...R.papers.map((p) => p.year))));
   // The cards come 25 at a time; a filter starts again from the first 25.
   const cards = main(page).locator('[data-table="papers"] tbody tr');
   await expect(cards).toHaveCount(25);

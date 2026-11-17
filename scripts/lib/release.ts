@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sha256, verifyManifest } from "./checksum";
-import type { ReleaseConfig } from "./config";
+import type { ReleasePin } from "./config";
 import { safeExtract } from "./extract";
 
 export const CACHE_DIR = ".cache/release";
@@ -14,7 +14,7 @@ export const MARKER_NAME = "verified.json";
 export const USER_AGENT = "sdl-workflows-explorer/0.1.0 (+https://github.com/ccy5123/sdl-workflows-explorer)";
 
 export interface FetchOptions {
-  config: ReleaseConfig;
+  config: ReleasePin;
   /** Holds the downloaded zip, `extract/<top>/` and the marker file. */
   cacheDir: string;
   /** Path given by SDL_RELEASE_ZIP; when set it is always used and verified, never the network. */
@@ -29,11 +29,11 @@ interface Marker {
   sha256: string;
 }
 
-function topFolder(config: ReleaseConfig): string {
+function topFolder(config: ReleasePin): string {
   return config.file_name.replace(/\.zip$/, "");
 }
 
-function extractedDir(config: ReleaseConfig, cacheDir: string): string {
+function extractedDir(config: ReleasePin, cacheDir: string): string {
   return join(cacheDir, "extract", topFolder(config));
 }
 
@@ -47,7 +47,7 @@ function readMarker(cacheDir: string): Marker | null {
   }
 }
 
-function markerMatches(config: ReleaseConfig, cacheDir: string): boolean {
+function markerMatches(config: ReleasePin, cacheDir: string): boolean {
   const marker = readMarker(cacheDir);
   return marker !== null && marker.version === config.version && marker.sha256 === config.sha256;
 }
@@ -60,7 +60,7 @@ function discardVerified(cacheDir: string): void {
 }
 
 async function download(
-  config: ReleaseConfig,
+  config: ReleasePin,
   cacheDir: string,
   log: (m: string) => void,
   userAgent: string,
@@ -129,7 +129,7 @@ export async function fetchRelease(options: FetchOptions): Promise<string> {
 }
 
 /** The verified extraction for build-data; re-runs the MANIFEST check. */
-export function verifiedReleaseDir(config: ReleaseConfig, cacheDir: string): string {
+export function verifiedReleaseDir(config: ReleasePin, cacheDir: string): string {
   if (!markerMatches(config, cacheDir)) {
     throw new Error(`no verified release ${config.version} in ${cacheDir}; run npm run fetch-release first`);
   }

@@ -1,13 +1,22 @@
 // SPEC-SITE-001 AC-1, AC-2: release documents (CITATION.cff, DATA_CARD.md) derived into release-docs.json. The
-// real-data cases read public/data/ and skip with a message when build-data has not run.
-import { createHash } from "node:crypto";
-import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// real-data cases read public/data/ and skip with a message when build-data has not run. The last block compares the
+// pinned release with the previous release named in release.config.json.
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import { deriveAll } from "../scripts/lib/derive";
+import { beforeAll, describe, expect, it } from "vitest";
+import { readCsv } from "../scripts/lib/csv";
+import { deriveAll, type Derived } from "../scripts/lib/derive";
 import type { IndexJson, ReleaseDocs } from "../src/data/types";
 import { tempDir } from "./fixtures/zip";
-import { PINNED_DOI, PINNED_VERSION } from "./pinned-release";
+import {
+  PINNED_DOI,
+  PINNED_RELEASE_DIR,
+  PINNED_VERSION,
+  PREVIOUS_RELEASE_DIR,
+  PREVIOUS_VERSION,
+  previousReleaseAvailable,
+} from "./pinned-release";
+import { pinnedReleaseExtracted } from "./release-expect";
 
 const MINI = "tests/fixtures/release-mini";
 const DATA_DIR = "public/data";
@@ -94,123 +103,155 @@ describe.skipIf(!built)("release-docs.json of the pinned release (AC-1)", () => 
     expect(docs.data_card.startsWith(`# Data card: sdl-workflows ${PINNED_VERSION}`)).toBe(true);
   });
 
-  // Release 1.2.0 against the previous release (SPEC-RELEASE-001 REQ-003, AC-3). Each case pins the 1.2.0 file, then
-  // reverts the changes the 1.2.0 CHANGELOG names (the rows of the 7 papers it adds, and the identity group I025 that
-  // joins Bai2026a/P2 with Pilon2026/P1 to P7) and compares the result with the 1.1.0 file. Those 1.1.0 hashes were
-  // computed by deriving release 1.1.0 (SHA-256 673b2dbb…) with this code, which reproduces the 1.1.0 baselines
-  // (index.json a452131e…, taxonomy.json 677615d0…, benchmark.json 585ca400…, benchmark-items.json 0f12de15…, platform
-  // files b4212f2b…). Fields the release recomputes with the added rows (usage counts and examples, item summaries) are
-  // left out of that comparison and pinned by the derive tests; the benchmark's tasks and reference results are kept in
-  // it, since 1.2.0 leaves them as in 1.1.0.
-  const sha = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
-  const file = (rel: string) => sha(readFileSync(join(DATA_DIR, rel)));
-  const json = (rel: string) => JSON.parse(readFileSync(join(DATA_DIR, rel), "utf8")) as Record<string, unknown>;
-  // The papers 1.2.0 adds (CHANGELOG 1.2.0).
-  const ADDED = ["Agostini2026", "Bai2026a", "Che2026", "Leutner2026", "Pan2026", "Qin2026", "Regnier2026"];
-  const isAdded = (id: string) => ADDED.includes(id.split("/")[0]!);
-  type Row = { paper_id: string; platform_id?: string; identity_id?: string | null };
-  /** Puts a platform of the new group I025 back to its own 1.1.0 identity; returns 1 when it did. */
-  const revertIdentity = (p: Row) => {
-    if (p.identity_id !== "I025") return 0;
-    expect(p.paper_id).toBe("Pilon2026");
-    p.identity_id = p.platform_id!;
-    return 1;
+});
+
+// The pinned release against the previous release named in release.config.json (SPEC-RELEASE-001 REQ-003, AC-3):
+// both are derived with this code, the rows of the papers the pinned release adds are taken out, and what is left must
+// equal the previous release. The only other change allowed is the expected kind a new paper brings: an earlier
+// platform joining a platform identity group (its identity_id and shared_with), which each case lists. Fields the
+// release recomputes with the added rows (counts, usage counts and examples, item summaries, the excluded split count
+// and the exclusion reasons) are checked against the added papers or left to the derive tests. The added papers sit in
+// no chrono2023 split, so the benchmark's tasks and reference results stay those of the previous release.
+// Skips with a message when the config names no previous release (as when 1.1.0 is pinned) or fetch-release has not
+// fetched it.
+const comparable = PREVIOUS_VERSION !== null && previousReleaseAvailable() && pinnedReleaseExtracted();
+if (PREVIOUS_VERSION === null) console.warn("release-docs.test.ts: release.config.json names no previous release; the release-to-release check skips");
+else if (!comparable) {
+  console.warn(`release-docs.test.ts: previous release ${PREVIOUS_VERSION} not fetched; run \`npm run fetch-release\` (SDL_PREVIOUS_RELEASE_ZIP=<zip> for a local copy)`);
+}
+
+describe.skipIf(!comparable)(`release ${PINNED_VERSION} against the previous release ${PREVIOUS_VERSION}`, () => {
+  let cur: Derived;
+  let prev: Derived;
+  let added: string[];
+  let kept: Set<string>;
+  /** Earlier platforms whose identity group changed: platform id -> [previous, pinned] identity_id and shared_with. */
+  const identityChanges = new Map<string, { from: [string | null, string[]]; to: [string | null, string[]] }>();
+  const isKept = (id: string) => kept.has(id.split("/")[0]!);
+  const semver = (v: string) => v.split(".").map(Number).reduce((n, x) => n * 1000 + x, 0);
+
+  beforeAll(() => {
+    cur = deriveAll(PINNED_RELEASE_DIR);
+    prev = deriveAll(PREVIOUS_RELEASE_DIR!);
+    const before = new Set(prev.index.papers.map((p) => p.paper_id));
+    added = cur.index.papers.map((p) => p.paper_id).filter((id) => !before.has(id));
+    kept = before;
+    const prevFiles = prev.platformFiles;
+    for (const [paper, file] of Object.entries(cur.platformFiles)) {
+      if (!kept.has(paper)) continue;
+      for (const p of file.platforms) {
+        const q = prevFiles[paper]?.platforms.find((x) => x.platform_id === p.platform_id);
+        if (q && (p.identity_id !== q.identity_id || JSON.stringify(p.shared_with) !== JSON.stringify(q.shared_with))) {
+          identityChanges.set(p.platform_id, { from: [q.identity_id, q.shared_with], to: [p.identity_id, p.shared_with] });
+        }
+      }
+    }
+    console.log(
+      `release ${PINNED_VERSION} against ${PREVIOUS_VERSION}: ${added.length} added papers (${added.join(", ")}); ` +
+        `identity group changes of earlier platforms: ${[...identityChanges].map(([id, c]) => `${id} ${c.from[0]} -> ${c.to[0]} shared with ${c.to[1].join("+")}`).join("; ") || "none"}`,
+    );
+  });
+
+  /** A clone of a pinned row or platform with an earlier platform's identity put back as the previous release had it. */
+  const revertIdentity = <T extends { platform_id: string; identity_id: string | null; shared_with?: string[] }>(p: T): T => {
+    const c = identityChanges.get(p.platform_id);
+    if (!c) return p;
+    const out = { ...p, identity_id: c.from[0] };
+    if ("shared_with" in p) out.shared_with = c.from[1];
+    return out;
   };
 
-  it("adds the platform files of the 7 papers and changes Pilon2026 only in the identity group", () => {
-    const dir = join(DATA_DIR, "platforms");
-    const names = readdirSync(dir).sort();
-    expect(names).toHaveLength(244);
-    for (const p of ADDED) expect(names).toContain(`${p}.json`);
-    expect(sha(Buffer.concat(names.map((n) => readFileSync(join(dir, n)))))).toBe(
-      "c9000e02006b546803db5c67931d4dd3ecd46aa3444ca842e78098d1c46cca4b",
+  it("is a later release that keeps every paper of the previous one; the CHANGELOG names the added papers", () => {
+    expect(semver(PINNED_VERSION)).toBeGreaterThan(semver(PREVIOUS_VERSION!));
+    const now = new Set(cur.index.papers.map((p) => p.paper_id));
+    expect([...kept].filter((id) => !now.has(id))).toEqual([]);
+    const log = readFileSync(join(PINNED_RELEASE_DIR, "CHANGELOG.md"), "utf8");
+    const section = log.slice(log.indexOf(`## ${PINNED_VERSION} `), log.indexOf(`## ${PREVIOUS_VERSION} `));
+    expect(section.length).toBeGreaterThan(0);
+    for (const id of added) expect(section, id).toContain(id);
+  });
+
+  it("changes earlier platforms only by joining an identity group of two or more platforms", () => {
+    const members = new Map<string, string[]>();
+    for (const l of cur.index.platforms) if (l.identity_id) members.set(l.identity_id, [...(members.get(l.identity_id) ?? []), l.platform_id]);
+    for (const [id, c] of identityChanges) {
+      const group = members.get(c.to[0]!) ?? [];
+      expect(group, id).toContain(id);
+      expect(group.length, id).toBeGreaterThan(1);
+      // shared_with names the other papers of the group, as the pinned release records it.
+      const papers = [...new Set(group.map((g) => g.split("/")[0]!))].filter((p) => p !== id.split("/")[0]).sort();
+      expect(c.to[1], id).toEqual(papers);
+    }
+  });
+
+  it("adds the platform files of the added papers and leaves every earlier file as it was, but for identity groups", () => {
+    expect(Object.keys(cur.platformFiles).sort()).toEqual([...Object.keys(prev.platformFiles), ...added].sort());
+    for (const [paper, file] of Object.entries(prev.platformFiles)) {
+      const now = cur.platformFiles[paper]!;
+      expect({ ...now, platforms: now.platforms.map(revertIdentity) }, paper).toEqual(file);
+    }
+  });
+
+  it("changes index.json only in the release, the counts, the about figures, the added rows and identity groups", () => {
+    expect(cur.index.papers.filter((p) => kept.has(p.paper_id))).toEqual(prev.index.papers);
+    expect(cur.index.platforms.filter((l) => isKept(l.platform_id)).map(revertIdentity)).toEqual(prev.index.platforms);
+    const rows = cur.index.platforms.filter((l) => !isKept(l.platform_id));
+    const files = added.flatMap((p) => cur.platformFiles[p]!.platforms);
+    const sum = (k: "modules" | "steps" | "connections") => files.reduce((n, p) => n + p[k].length, 0);
+    const delta = (k: keyof Derived["index"]["counts"]) => cur.index.counts[k] - prev.index.counts[k];
+    expect([delta("papers"), delta("platforms"), delta("modules"), delta("steps"), delta("connections")]).toEqual([
+      added.length, rows.length, sum("modules"), sum("steps"), sum("connections"),
+    ]);
+    expect(delta("candidates")).toBeGreaterThanOrEqual(added.length);
+    expect(cur.index.release.version).toBe(PINNED_VERSION);
+    expect(prev.index.release.version).toBe(PREVIOUS_VERSION);
+    const { version: _v, released_on: _r, doi: _d, ...release } = cur.index.release;
+    const { version: _pv, released_on: _pr, doi: _pd, ...prevRelease } = prev.index.release;
+    expect(release).toEqual(prevRelease);
+  });
+
+  it("puts the rows of the added papers in benchmark-items.json as excluded and leaves the other rows as they were", () => {
+    for (const [task, t] of Object.entries(cur.benchmarkItems)) {
+      const fresh = t.rows.filter((r) => !isKept(String(r[0])));
+      expect(new Set(fresh.map((r) => r[1])), task).toEqual(new Set(fresh.length ? ["excluded"] : []));
+      expect({ ...t, rows: t.rows.filter((r) => isKept(String(r[0]))) }, task).toEqual(prev.benchmarkItems[task]);
+    }
+  });
+
+  it("changes benchmark.json only by the excluded added papers; tasks, split and reference results stay", () => {
+    const b = cur.benchmark;
+    const p = prev.benchmark;
+    const fresh = b.platforms.filter((x) => !isKept(x.platform_id));
+    expect(new Set(fresh.map((x) => x.split))).toEqual(new Set(fresh.length ? ["excluded"] : []));
+    expect(b.platforms.filter((x) => isKept(x.platform_id))).toEqual(p.platforms);
+    expect(b.split_counts).toEqual({ ...p.split_counts, excluded: p.split_counts.excluded + added.length });
+    // Every earlier reason keeps its papers; the added papers come under their own reason or an earlier one.
+    const reasonOf = new Map(
+      readCsv(join(PINNED_RELEASE_DIR, "modes/benchmark/split.csv")).map((r) => [r.paper_id!, r.exclusion_reason ?? ""]),
     );
-    const read = (n: string) => JSON.parse(readFileSync(join(dir, n), "utf8")) as { platforms: (Row & { shared_with: string[] })[] };
-    const bai = read("Bai2026a.json").platforms.find((p) => p.platform_id === "Bai2026a/P2")!;
-    expect([bai.identity_id, bai.shared_with]).toEqual(["I025", ["Pilon2026"]]);
-    const files = names.filter((n) => !isAdded(n.replace(/\.json$/, ""))).map(read);
-    let reverted = 0;
-    for (const p of files.flatMap((f) => f.platforms)) {
-      if (p.identity_id !== "I025") continue;
-      expect(p.shared_with).toEqual(["Bai2026a"]);
-      p.shared_with = [];
-      reverted += revertIdentity(p);
-    }
-    expect(reverted).toBe(7);
-    expect(sha(JSON.stringify(files))).toBe("12be30169bcbcaf6e0031de13499a61aebc06dbc0859bab6dd4808f044e82070");
-  });
-
-  it("adds the 7 papers' rows to benchmark-items.json as excluded and leaves the other rows as in 1.1.0", () => {
-    expect(file("benchmark-items.json")).toBe("37034f666bbeeebf6f2c4619311af4df417a3269484e08cb8dc5f6c2ffe0e09f");
-    const items = json("benchmark-items.json") as Record<string, { rows: (string | number)[][] }>;
-    const added: Record<string, number> = {};
-    for (const [task, t] of Object.entries(items)) {
-      const rows = t.rows.filter((r) => isAdded(String(r[0])));
-      expect(new Set(rows.map((r) => r[1]))).toEqual(new Set(["excluded"]));
-      added[task] = rows.length;
-      t.rows = t.rows.filter((r) => !isAdded(String(r[0])));
-    }
-    expect(added).toEqual({ "chrono2023-module_type": 68, "chrono2023-transfer_mode": 16 });
-    // The 1.1.0 file itself.
-    expect(sha(JSON.stringify(items))).toBe("0f12de153f14285d8ac5b7abe8ab2de2f3dd6dce8a8159317f0e5f336994950d");
-  });
-
-  it("changes index.json only in the release object, the counts, the added papers and the identity group", () => {
-    expect(file("index.json")).toBe("b78de7345ddd2b5c51f4999411e69906c48e1c66e38e32e1e5e9730328b986f1");
-    const { release, counts, ...rest } = json("index.json") as { release: unknown; counts: unknown; papers: Row[]; platforms: Row[] };
-    expect(rest.papers.filter((r) => isAdded(r.paper_id)).map((r) => r.paper_id)).toEqual(ADDED);
-    expect(rest.platforms.filter((r) => isAdded(r.paper_id))).toHaveLength(10);
-    rest.papers = rest.papers.filter((r) => !isAdded(r.paper_id));
-    rest.platforms = rest.platforms.filter((r) => !isAdded(r.paper_id));
-    expect(rest.platforms.reduce((n, r) => n + revertIdentity(r), 0)).toBe(7);
-    expect(sha(JSON.stringify(rest))).toBe("bf3ed8a8bb5660660b57f3fe8c6a81fdee999d07918c6a868602cfac26d2b178");
-    // 7 papers more, with their 10 platforms, 50 modules, 68 steps and 43 connections (24 of them material), and the
-    // 368 candidates of the alerts.
-    expect(counts).toEqual({
-      papers: 244,
-      platforms: 289,
-      modules: 1647,
-      steps: 2678,
-      connections: 1724,
-      material_connections: 1098,
-      candidates: 2540,
-    });
-    expect(release).toEqual({
-      version: "1.2.0",
-      released_on: "2026-11-17",
-      doi: "10.5281/zenodo.24088968",
-      taxonomy_version: "v1",
-      license: "data: CC-BY-4.0; code: MIT",
-    });
+    const want = new Map(p.exclusion_reasons.map((e) => [e.reason, e.n]));
+    for (const id of added) want.set(reasonOf.get(id)!, (want.get(reasonOf.get(id)!) ?? 0) + 1);
+    expect(new Map(b.exclusion_reasons.map((e) => [e.reason, e.n]))).toEqual(want);
+    const { split_counts: _s, exclusion_reasons: _e, summaries: _m, platforms: _p, ...rest } = b;
+    const { split_counts: _ps, exclusion_reasons: _pe, summaries: _pm, platforms: _pp, ...prevRest } = p;
+    // benchmark_id, split_rule, tasks, reference_results and their text.
+    expect(rest).toEqual(prevRest);
   });
 
   it("changes taxonomy.json only in the usage counts and examples", () => {
-    expect(file("taxonomy.json")).toBe("603cac0ce1056c2640c0b921734db1627066a6dbe3e4587a61d44f803e79779c");
-    const t = json("taxonomy.json") as { classes: Record<string, unknown>[] };
-    // Usage counts and examples follow from the added papers; tests/taxonomy-derive.test.ts pins them.
-    for (const c of t.classes) for (const k of ["n_items", "n_platforms", "n_papers", "examples"]) delete c[k];
-    expect(sha(JSON.stringify(t))).toBe("fb360e05be4e3a38cdf207d29dd08dfbc55b328919052b630544ce09ad02f7c7");
+    const strip = (t: Derived["taxonomy"]) => ({
+      ...t,
+      classes: t.classes.map(({ n_items: _i, n_platforms: _l, n_papers: _p, examples: _x, ...c }) => c),
+    });
+    expect(strip(cur.taxonomy)).toEqual(strip(prev.taxonomy));
   });
 
-  it("changes benchmark.json only by the 7 excluded papers; tasks, split and reference results stay those of 1.1.0", () => {
-    expect(file("benchmark.json")).toBe("f504ef51f4f42ec29b3f195e7e26018de2eafc38522ecb07c43e56cf137909ec");
-    const b = json("benchmark.json") as {
-      split_counts: Record<string, number>;
-      exclusion_reasons: { reason: string; n: number }[];
-      platforms: { platform_id: string; split: string }[];
-    } & Record<string, unknown>;
-    const added = b.platforms.filter((p) => isAdded(p.platform_id));
-    expect(added).toHaveLength(10);
-    expect(new Set(added.map((p) => p.split))).toEqual(new Set(["excluded"]));
-    b.platforms = b.platforms.filter((p) => !isAdded(p.platform_id));
-    expect(b.exclusion_reasons.shift()).toEqual({
-      reason: "added after release 1.1.0 by the weekly update; the chrono2023 split keeps the 1.1.0 papers",
-      n: 7,
-    });
-    expect(b.split_counts).toEqual({ train: 135, test: 98, excluded: 11 });
-    b.split_counts.excluded = 4;
-    // The item summaries count the added excluded items; tests/benchmark-derive.test.ts pins them.
-    delete b.summaries;
-    expect(sha(JSON.stringify(b))).toBe("975e1ac6878a8c44fd027db9f3ecdf09b7e6565e61d87fe9481943fb3522fc7f");
+  it("adds the timing data and layouts of the added papers to simulation.json and leaves the rest", () => {
+    const s = cur.simulation;
+    const q = prev.simulation;
+    expect([s.unit_operations, s.module_types, s.transfer_modes]).toEqual([q.unit_operations, q.module_types, q.transfer_modes]);
+    for (const k of ["durations", "throughputs", "transfer_times", "platforms"] as const) {
+      expect((s[k] as { platform_id: string }[]).filter((x) => isKept(x.platform_id)), k).toEqual(q[k]);
+    }
   });
 });

@@ -31,6 +31,7 @@ import {
   type Bin,
   type Split,
 } from "../src/lib/trends";
+import { expectedOffered, expectedRelease, pinnedReleaseExtracted, type ExpRelease, type Filter } from "./release-expect";
 import { dataAvailable, readIndex, warnIfMissing } from "./viewer-data";
 
 warnIfMissing("trends.test.ts");
@@ -254,8 +255,13 @@ describe("caption and note texts (AC-8)", () => {
   });
 });
 
-describe.skipIf(!dataAvailable)("offered values, links and count tables on the real index (AC-4 to AC-6)", () => {
-  const index = dataAvailable ? readIndex() : { papers: [], platforms: [] };
+// The real-index cases compare the dashboard's counts with those tests/release-expect.ts takes from the release's CSV
+// files: a cell counts the rows of its bin's years under the state with the split value added (REQ-008: added to an
+// mt or tm selection in match mode "all", else in its place).
+const realData = dataAvailable && pinnedReleaseExtracted();
+
+describe.skipIf(!realData)("offered values, links and count tables on the real index (AC-4 to AC-6)", () => {
+  const index = realData ? readIndex() : { papers: [], platforms: [] };
   const offered = offeredValues(index);
   const S = (query: string) => decodeTrends(query, offered);
   const table = (query: string) => {
@@ -265,70 +271,80 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
   const row = (t: ReturnType<typeof countTable>, v: string | number) => t.counts[t.values.indexOf(v)];
   const countLine = (s: FilterState) => matchingPapers(s, index.papers, index.platforms).length;
 
+  const r = realData ? expectedRelease() : (null as unknown as ExpRelease);
+  const want = realData ? expectedOffered(r) : (null as unknown as ReturnType<typeof expectedOffered>);
+  const bins = realData ? r.yearBins() : [];
+  const yearsOf = (label: string) => bins.find((b) => b.label === label)!.years;
+  type View = "papers" | "platforms";
+  const n = (f: Filter, view: View = "papers") => (view === "papers" ? r.countPapers(f) : r.countPlatforms(f));
+  /** The filter of a cell: the base filter with the split value added or put in place, and the bin's years. */
+  const cell = (base: Filter, split: string, value: string | number, years: Filter["years"]): Filter => {
+    const keepsSelection = (split === "mt" && base.mtMatch !== "any") || (split === "tm" && base.tmMatch !== "any");
+    const selected = ((base as Record<string, unknown>)[split] as (string | number)[] | undefined) ?? [];
+    const values = keepsSelection ? [...new Set([...selected, value])] : [value];
+    return { ...base, [split]: values, years };
+  };
+  const perBin = (f: Filter, view: View = "papers") => bins.map((b) => n({ ...f, years: b.years }, view));
+
   it("offers the values of AC-4", () => {
-    expect(offeredSplitValues("im", DEFAULT_STATE, offered)).toEqual([
-      "fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped",
-    ]);
-    expect(offeredSplitValues("sw", DEFAULT_STATE, offered)).toEqual([1, 2, 3]);
-    expect(offeredSplitValues("hw", DEFAULT_STATE, offered)).toEqual([1, 2, 3]);
-    expect(offeredSplitValues("field", DEFAULT_STATE, offered)).toHaveLength(9);
+    expect(offeredSplitValues("im", DEFAULT_STATE, offered)).toEqual(want.im);
+    expect(offeredSplitValues("sw", DEFAULT_STATE, offered)).toEqual(want.sw);
+    expect(offeredSplitValues("hw", DEFAULT_STATE, offered)).toEqual(want.hw);
+    expect(offeredSplitValues("field", DEFAULT_STATE, offered)).toEqual(want.field);
     const mt = offeredSplitValues("mt", DEFAULT_STATE, offered);
-    expect([mt.length, mt[0], mt.at(-1)]).toEqual([22, "assembly_unit", "unmapped"]);
-    expect(offeredSplitValues("tm", DEFAULT_STATE, offered)).toEqual([
-      "fixed_tubing", "human_transfer", "mobile_robot", "robot_arm_gantry", "unmapped",
-    ]);
+    expect(mt).toEqual(want.mt);
+    expect([mt[0], mt.at(-1)]).toEqual(["assembly_unit", "unmapped"]);
+    expect(offeredSplitValues("tm", DEFAULT_STATE, offered)).toEqual(want.tm);
     expect(offeredSplitValues("im", S("im=robot_arm_gantry,mixed").state, offered)).toEqual(["mixed", "robot_arm_gantry"]);
     expect(offeredSplitValues("field", S("field=nanomaterials").state, offered)).toEqual(["nanomaterials"]);
-    expect(offeredSplitValues("mt", S("mt=flow_reactor,liquid_handler").state, offered)).toHaveLength(22);
+    expect(offeredSplitValues("mt", S("mt=flow_reactor,liquid_handler").state, offered)).toEqual(want.mt);
     expect(offeredSplitValues("mt", S("mt=flow_reactor,liquid_handler&mtMatch=any").state, offered)).toEqual([
       "flow_reactor", "liquid_handler",
     ]);
-    expect(offeredSplitValues("tm", S("mt=flow_reactor,liquid_handler&mtMatch=any").state, offered)).toHaveLength(5);
+    expect(offeredSplitValues("tm", S("mt=flow_reactor,liquid_handler&mtMatch=any").state, offered)).toEqual(want.tm);
   });
 
-  it.each<[string, string, string | number, number, number, string]>([
-    ["", "2021", "fixed_tubing", 9, 17, "#/browse?years=2021-2021&im=fixed_tubing"],
-    ["", "before 2015", "fixed_tubing", 15, 27, "#/browse?years=-2014&im=fixed_tubing"],
-    ["view=platforms", "2024", "robot_arm_gantry", 2, 36, "#/browse?view=platforms&years=2024-2024&im=robot_arm_gantry"],
-    ["split=sw", "2021", 2, 17, 17, "#/browse?years=2021-2021&sw=2"],
-    ["split=field", "2021", "catalysis", 1, 17, "#/browse?years=2021-2021&field=catalysis"],
-    ["split=field", "2025", "nanomaterials", 16, 39, "#/browse?years=2025-2025&field=nanomaterials"],
-    ["split=mt", "2025", "flow_reactor", 10, 39, "#/browse?years=2025-2025&mt=flow_reactor"],
-    ["view=platforms&split=mt", "2025", "flow_reactor", 10, 41, "#/browse?view=platforms&years=2025-2025&mt=flow_reactor"],
-    ["mt=flow_reactor,liquid_handler&split=mt", "2024", "instrument_optical", 1, 4, "#/browse?years=2024-2024&mt=flow_reactor,instrument_optical,liquid_handler"],
-    ["mt=flow_reactor,liquid_handler&split=mt", "2024", "flow_reactor", 4, 4, "#/browse?years=2024-2024&mt=flow_reactor,liquid_handler"],
-    ["mt=flow_reactor,liquid_handler&mtMatch=any&split=mt", "2024", "flow_reactor", 15, 23, "#/browse?years=2024-2024&mt=flow_reactor&mtMatch=any"],
-    ["mt=flow_reactor,liquid_handler&mtMatch=any&split=mt", "2024", "liquid_handler", 12, 23, "#/browse?years=2024-2024&mt=liquid_handler&mtMatch=any"],
-  ])("trends ?%s, %s, %s → %i of %i, %s", (query, label, value, count, n, link) => {
-    const { state: s, split } = S(query);
-    const t = countTable(s, split, index);
+  const FR_LH: Filter = { mt: ["flow_reactor", "liquid_handler"] };
+  const FR_LH_ANY: Filter = { ...FR_LH, mtMatch: "any" };
+  it.each<[string, Filter, View, string, string, string | number, string]>([
+    ["", {}, "papers", "2021", "im", "fixed_tubing", "#/browse?years=2021-2021&im=fixed_tubing"],
+    ["", {}, "papers", "before 2015", "im", "fixed_tubing", "#/browse?years=-2014&im=fixed_tubing"],
+    ["view=platforms", {}, "platforms", "2024", "im", "robot_arm_gantry", "#/browse?view=platforms&years=2024-2024&im=robot_arm_gantry"],
+    ["split=sw", {}, "papers", "2021", "sw", 2, "#/browse?years=2021-2021&sw=2"],
+    ["split=field", {}, "papers", "2021", "field", "catalysis", "#/browse?years=2021-2021&field=catalysis"],
+    ["split=field", {}, "papers", "2025", "field", "nanomaterials", "#/browse?years=2025-2025&field=nanomaterials"],
+    ["split=mt", {}, "papers", "2025", "mt", "flow_reactor", "#/browse?years=2025-2025&mt=flow_reactor"],
+    ["view=platforms&split=mt", {}, "platforms", "2025", "mt", "flow_reactor", "#/browse?view=platforms&years=2025-2025&mt=flow_reactor"],
+    ["mt=flow_reactor,liquid_handler&split=mt", FR_LH, "papers", "2024", "mt", "instrument_optical", "#/browse?years=2024-2024&mt=flow_reactor,instrument_optical,liquid_handler"],
+    ["mt=flow_reactor,liquid_handler&split=mt", FR_LH, "papers", "2024", "mt", "flow_reactor", "#/browse?years=2024-2024&mt=flow_reactor,liquid_handler"],
+    ["mt=flow_reactor,liquid_handler&mtMatch=any&split=mt", FR_LH_ANY, "papers", "2024", "mt", "flow_reactor", "#/browse?years=2024-2024&mt=flow_reactor&mtMatch=any"],
+    ["mt=flow_reactor,liquid_handler&mtMatch=any&split=mt", FR_LH_ANY, "papers", "2024", "mt", "liquid_handler", "#/browse?years=2024-2024&mt=liquid_handler&mtMatch=any"],
+  ])("trends ?%s: the cell of %s, %s and its link", (query, base, view, label, split, value, link) => {
+    const { state: s, split: sp } = S(query);
+    expect(sp).toBe(split);
+    const t = countTable(s, sp, index);
     const i = t.bins.findIndex((b) => b.label === label);
-    expect(row(t, value)![i]).toBe(count);
-    expect(t.n[i]).toBe(n);
-    expect(browseHash(linkState(s, t.bins[i]!, split, value))).toBe(link);
+    const years = yearsOf(label);
+    expect(row(t, value)![i]).toBe(n(cell(base, split, value, years), view));
+    expect(t.n[i]).toBe(n({ ...base, years }, view));
+    expect(row(t, value)![i]).toBeGreaterThan(0);
+    expect(browseHash(linkState(s, t.bins[i]!, sp, value))).toBe(link);
   });
 
   it("gives the bin link state of 2010–2014 under years=2010-&split=tm", () => {
     const t = table("years=2010-&split=tm");
     expect(t.bins[0]!.label).toBe("2010–2014");
     expect(t.bins[0]!.years).toEqual({ from: 2010, to: 2014 });
-    expect(t.n[0]).toBe(11);
+    expect(t.n[0]).toBe(n({ years: [2010, 2014] }));
   });
 
   it("gives the unfiltered bin totals and the full im table (AC-6)", () => {
-    expect(table("").n).toEqual([27, 4, 5, 3, 12, 7, 16, 17, 18, 26, 27, 39, 43]);
-    expect(table("view=platforms").n).toEqual([28, 4, 6, 4, 24, 8, 22, 17, 20, 27, 36, 41, 52]);
+    expect(table("").bins.map((b) => b.label)).toEqual(bins.map((b) => b.label));
+    expect(table("").n).toEqual(perBin({}));
+    expect(table("view=platforms").n).toEqual(perBin({}, "platforms"));
     const t = table("");
-    expect(t.values).toEqual(["fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped"]);
-    expect(t.counts).toEqual([
-      [15, 2, 4, 1, 11, 4, 8, 9, 9, 10, 9, 9, 9],
-      [1, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 2, 1],
-      [2, 2, 1, 2, 1, 2, 3, 3, 5, 7, 14, 13, 13],
-      [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 3],
-      [2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3],
-      [7, 0, 0, 0, 0, 1, 4, 4, 1, 7, 2, 12, 13],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    ]);
+    expect(t.values).toEqual(want.im);
+    expect(t.counts).toEqual(want.im.map((v) => perBin({ im: [v] })));
   });
 
   it("sums every column of an exclusive split to its n", () => {
@@ -341,38 +357,40 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
   });
 
   it("gives the filtered tables of AC-6", () => {
+    const CAT: Filter = { field: ["catalysis"] };
     const papers = table("years=2018-2024&field=catalysis");
     const platforms = table("view=platforms&years=2018-2024&field=catalysis");
-    expect(papers.bins.map((b) => b.label)).toEqual(["2018", "2019", "2020", "2021", "2022", "2023", "2024"]);
-    expect(papers.n).toEqual([1, 2, 1, 1, 1, 2, 3]);
-    expect(platforms.n).toEqual([1, 2, 1, 1, 1, 2, 3]);
-    expect(papers.values).toHaveLength(7);
-    expect(row(papers, "fixed_tubing")).toEqual([1, 2, 0, 1, 0, 0, 1]);
-    expect(row(papers, "mixed")).toEqual([0, 0, 0, 0, 0, 2, 1]);
-    expect(row(papers, "mobile_robot")).toEqual([0, 0, 1, 0, 1, 0, 1]);
-    for (const v of ["human_transfer", "none", "robot_arm_gantry", "unmapped"]) expect(row(papers, v)).toEqual([0, 0, 0, 0, 0, 0, 0]);
-    expect(countLine(S("years=2018-2024&field=catalysis").state)).toBe(11);
+    const years = [2018, 2019, 2020, 2021, 2022, 2023, 2024];
+    expect(papers.bins.map((b) => b.label)).toEqual(years.map(String));
+    expect(papers.n).toEqual(years.map((y) => n({ ...CAT, years: [y, y] })));
+    expect(platforms.n).toEqual(years.map((y) => n({ ...CAT, years: [y, y] }, "platforms")));
+    expect(papers.values).toEqual(want.im);
+    for (const v of want.im) expect(row(papers, v), v).toEqual(years.map((y) => n({ ...CAT, im: [v], years: [y, y] })));
+    expect(countLine(S("years=2018-2024&field=catalysis").state)).toBe(n({ ...CAT, years: [2018, 2024] }));
 
     const all = table("mt=flow_reactor,liquid_handler&split=mt");
-    expect(all.n).toEqual([1, 1, 1, 0, 4, 3, 1, 0, 1, 1, 4, 0, 4]);
-    expect(all.values).toHaveLength(22);
+    expect(all.n).toEqual(perBin(FR_LH));
+    expect(all.values).toEqual(want.mt);
     expect(row(all, "flow_reactor")).toEqual(all.n);
     expect(row(all, "liquid_handler")).toEqual(all.n);
-    expect(countLine(S("mt=flow_reactor,liquid_handler").state)).toBe(21);
+    expect(countLine(S("mt=flow_reactor,liquid_handler").state)).toBe(n(FR_LH));
 
     const any = table("mt=flow_reactor,liquid_handler&mtMatch=any&split=mt");
-    expect(any.n).toEqual([23, 3, 4, 2, 11, 6, 10, 12, 12, 18, 23, 31, 25]);
-    expect(row(any, "flow_reactor")).toEqual([13, 3, 4, 2, 11, 4, 6, 7, 7, 9, 15, 10, 10]);
-    expect(row(any, "liquid_handler")).toEqual([11, 1, 1, 0, 4, 5, 5, 5, 6, 10, 12, 22, 19]);
-    expect(countLine(S("mt=flow_reactor,liquid_handler&mtMatch=any").state)).toBe(180);
+    expect(any.n).toEqual(perBin(FR_LH_ANY));
+    expect(row(any, "flow_reactor")).toEqual(perBin({ mt: ["flow_reactor"] }));
+    expect(row(any, "liquid_handler")).toEqual(perBin({ mt: ["liquid_handler"] }));
+    expect(countLine(S("mt=flow_reactor,liquid_handler&mtMatch=any").state)).toBe(n(FR_LH_ANY));
 
     const im = table("im=mixed,robot_arm_gantry");
     expect(im.values).toEqual(["mixed", "robot_arm_gantry"]);
-    expect(im.n[0]).toBe(9);
-    expect(countLine(S("im=mixed,robot_arm_gantry").state)).toBe(119);
+    expect(im.n).toEqual(perBin({ im: ["mixed", "robot_arm_gantry"] }));
+    expect(countLine(S("im=mixed,robot_arm_gantry").state)).toBe(n({ im: ["mixed", "robot_arm_gantry"] }));
 
     for (const t of [papers, all, any, im]) expect(t.n.reduce((a, b) => a + b, 0)).toBe(t.total);
-    expect([papers.total, all.total, any.total, im.total]).toEqual([11, 21, 180, 119]);
+    expect([papers.total, all.total, any.total, im.total]).toEqual([
+      n({ ...CAT, years: [2018, 2024] }), n(FR_LH), n(FR_LH_ANY), n({ im: ["mixed", "robot_arm_gantry"] }),
+    ]);
+    expect(any.total).toBeGreaterThan(all.total);
   });
 });
 
@@ -386,14 +404,13 @@ describe("unit-operation filter on the dashboard (SPEC-TAXO-001 AC-8)", () => {
     expect(SPLITS).toEqual(["im", "field", "sw", "hw", "mt", "tm"]);
   });
 
-  it.skipIf(!dataAvailable)("counts 5 papers for #/trends?uo=sonicate and links the same browse state", () => {
+  it.skipIf(!realData)("counts the papers of #/trends?uo=sonicate and links the same browse state", () => {
     const index = readIndex();
     const { state: s } = decodeTrends("uo=sonicate", offeredValues(index));
-    expect(rowCount(s, index)).toBe(5);
+    expect(rowCount(s, index)).toBe(expectedRelease().countPapers({ uo: ["sonicate"] }));
     expect(browseHash(s)).toBe("#/browse?uo=sonicate");
   });
 });
-
 // SPEC-RELEASE-001 REQ-009: autonomy written out in the split labels.
 describe("split labels (SPEC-RELEASE-001)", () => {
   it("writes software and hardware autonomy in full", () => {

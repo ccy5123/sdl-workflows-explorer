@@ -1,5 +1,23 @@
 // AC-9 to AC-16: the browser and the comparison in Chromium against the e2e build (SPEC-BROWSE-001).
 import { expect, test, type Page } from "@playwright/test";
+import { PAPERS, PLATFORMS, R, papersOf, platformsOf, type Filter } from "./expected";
+
+// Counts of the pinned release under the filters these tests set (e2e/expected.ts counts them from the release CSVs).
+const CAT_FLOW: Filter = { years: [2018, 2024], field: ["catalysis"], mt: ["flow_reactor"] };
+const FR_LH: Filter = { mt: ["flow_reactor", "liquid_handler"] };
+/** First rows after sorting; the table sorts stably, so ties keep the paper and platform id order of index.json. */
+const SORTED = (() => {
+  const years = R.papers.map((p) => p.year);
+  const steps = new Map<string, number>();
+  for (const s of R.csv("core/step.csv")) steps.set(s.platform_id!, (steps.get(s.platform_id!) ?? 0) + 1);
+  const most = Math.max(...steps.values());
+  return {
+    firstByYear: R.papers.find((p) => p.year === Math.min(...years))!.paper_id,
+    lastByYear: R.papers.find((p) => p.year === Math.max(...years))!.paper_id,
+    fewestSteps: Math.min(...steps.values()),
+    mostSteps: R.platforms.find((l) => steps.get(l.platform_id) === most)!.platform_id,
+  };
+})();
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -74,11 +92,11 @@ test("AC-9: a filtered URL opens the browser", async ({ page }) => {
   await expect(await filterBox(page, "Module types", "flow_reactor")).toBeChecked();
   await expect(await matchRadio(page, "Module types", "all")).toBeChecked();
   await page.keyboard.press("Escape");
-  await expect(countLine(page)).toHaveText("6 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf(CAT_FLOW));
   await expect(countLine(page)).toHaveAttribute("aria-live", "polite");
 
   await tableSwitch(page, "Papers").click();
-  await expect(countLine(page)).toHaveText("6 of 244 papers");
+  await expect(countLine(page)).toHaveText(papersOf(CAT_FLOW));
   expect(await hash(page)).toBe("#/browse?years=2018-2024&field=catalysis&mt=flow_reactor");
 
   await expect(await filterBox(page, "Software autonomy", /^3\b.*closed-loop iteration over an algorithm-generated search space/)).toBeVisible();
@@ -104,11 +122,11 @@ test("AC-10: filters write the URL without adding history entries", async ({ pag
   await page.goto("/");
   await page.getByRole("navigation").getByRole("link", { name: "Browse", exact: true }).click();
   // The Browse tab opens the platform table.
-  await expect(countLine(page)).toHaveText("289 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf());
   const length = await page.evaluate(() => history.length);
   await tableSwitch(page, "Platforms").click();
   await search(page).pressSequentially("chemspeed");
-  await expect(countLine(page)).toHaveText("9 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf({ q: "chemspeed" }));
   expect(await hash(page)).toBe("#/browse?view=platforms&q=chemspeed");
   expect(await page.evaluate(() => history.length)).toBe(length);
 
@@ -118,11 +136,11 @@ test("AC-10: filters write the URL without adding history entries", async ({ pag
 
 test("AC-10: the Browse link resets a filtered browser", async ({ page }) => {
   await page.goto("/#/browse?view=platforms&q=chemspeed");
-  await expect(countLine(page)).toHaveText("9 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf({ q: "chemspeed" }));
   await page.getByRole("navigation").getByRole("link", { name: "Browse", exact: true }).click();
   await expect(search(page)).toHaveValue("");
   await expect(tableSwitch(page, "Platforms")).toHaveAttribute("aria-pressed", "true");
-  await expect(countLine(page)).toHaveText("289 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf());
   expect(await hash(page)).toBe("#/browse?view=platforms");
 });
 
@@ -145,13 +163,13 @@ test("AC-10: year inputs that cannot apply stay out of the URL", async ({ page }
   await page.getByLabel("From", { exact: true }).pressSequentially("2024");
   await page.getByLabel("To", { exact: true }).pressSequentially("2018");
   await expect(page.getByText("From year is after To year")).toBeVisible();
-  await expect(countLine(page)).toHaveText("244 of 244 papers");
+  await expect(countLine(page)).toHaveText(papersOf());
   expect(await hash(page)).not.toContain("years");
 
   await page.goto("/#/browse?view=platforms");
   await page.goto("/#/browse");
   await page.getByLabel("From", { exact: true }).pressSequentially("201");
-  await expect(countLine(page)).toHaveText("244 of 244 papers");
+  await expect(countLine(page)).toHaveText(papersOf());
   expect(await hash(page)).not.toContain("years");
 });
 
@@ -159,7 +177,7 @@ test("AC-10: Clear all keeps the table and the selection", async ({ page }) => {
   await page.goto("/#/browse?view=platforms&years=2020-2024&mt=flow_reactor&mtMatch=any&q=Aand2024");
   await selectBox(page, "Aand2024/P1").check();
   await button(page, "Clear all").click();
-  await expect(countLine(page)).toHaveText("289 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf());
   expect(await hash(page)).toBe("#/browse?view=platforms");
   await expect(page.getByLabel("From", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("To", { exact: true })).toHaveValue("");
@@ -174,21 +192,21 @@ test("AC-10: Clear all keeps the table and the selection", async ({ page }) => {
 
 test("AC-11: the match control switches between all and any", async ({ page }) => {
   await page.goto("/#/browse?view=platforms&mt=flow_reactor,liquid_handler");
-  await expect(countLine(page)).toHaveText("28 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf(FR_LH));
   await (await matchRadio(page, "Module types", "any")).check();
-  await expect(countLine(page)).toHaveText("216 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf({ ...FR_LH, mtMatch: "any" }));
   expect(await hash(page)).toContain("mtMatch=any");
   await page.keyboard.press("Escape");
   await tableSwitch(page, "Papers").click();
-  await expect(countLine(page)).toHaveText("180 of 244 papers");
+  await expect(countLine(page)).toHaveText(papersOf({ ...FR_LH, mtMatch: "any" }));
   await (await matchRadio(page, "Module types", "all")).check();
-  await expect(countLine(page)).toHaveText("21 of 244 papers");
+  await expect(countLine(page)).toHaveText(papersOf(FR_LH));
   expect(await hash(page)).not.toContain("mtMatch");
 });
 
 test("AC-12: sorting and the column chooser by keyboard", async ({ page }) => {
   await page.goto("/#/browse");
-  await expect(rows(page, "papers")).toHaveCount(244);
+  await expect(rows(page, "papers")).toHaveCount(PAPERS);
   await tabUntil(page, () => {
     const el = document.activeElement;
     return !!el && el.matches("th button") && el.textContent === "Year";
@@ -196,13 +214,13 @@ test("AC-12: sorting and the column chooser by keyboard", async ({ page }) => {
   const yearHeader = page.locator('.browse [data-table="papers"] thead th', { hasText: /^Year$/ });
   await page.keyboard.press("Enter");
   await expect(yearHeader).toHaveAttribute("aria-sort", "ascending");
-  expect(await cell(page, "papers", "Paper")).toBe("King1974");
+  expect(await cell(page, "papers", "Paper")).toBe(SORTED.firstByYear);
   await page.keyboard.press("Enter");
   await expect(yearHeader).toHaveAttribute("aria-sort", "descending");
-  expect(await cell(page, "papers", "Paper")).toBe("Adesiji2026a");
+  expect(await cell(page, "papers", "Paper")).toBe(SORTED.lastByYear);
   await page.keyboard.press("Enter");
   await expect(yearHeader).toHaveAttribute("aria-sort", "none");
-  expect(await cell(page, "papers", "Paper")).toBe("Aand2024");
+  expect(await cell(page, "papers", "Paper")).toBe(R.papers[0]!.paper_id);
 
   await (await columnBox(page, "Paper table columns", "Venue")).press("Space");
   await expect(page.locator('.browse [data-table="papers"] thead th', { hasText: /^Venue$/ })).toHaveCount(0);
@@ -211,12 +229,12 @@ test("AC-12: sorting and the column chooser by keyboard", async ({ page }) => {
   await page.keyboard.press("Escape");
 
   await page.goto("/#/browse?view=platforms");
-  await expect(rows(page, "platforms")).toHaveCount(289);
+  await expect(rows(page, "platforms")).toHaveCount(PLATFORMS);
   await button(page, "Steps").focus();
   await page.keyboard.press("Enter");
-  expect(await cell(page, "platforms", "Steps")).toBe("4");
+  expect(await cell(page, "platforms", "Steps")).toBe(String(SORTED.fewestSteps));
   await page.keyboard.press("Enter");
-  expect(await cell(page, "platforms", "Platform")).toBe("HamediRad2019/P1");
+  expect(await cell(page, "platforms", "Platform")).toBe(SORTED.mostSteps);
   await button(page, "Name").focus();
   await page.keyboard.press("Enter");
   await expect(page.locator('.browse [data-table="platforms"] thead th', { hasText: /^Name$/ })).toHaveAttribute("aria-sort", "ascending");
@@ -259,10 +277,10 @@ test("AC-13: selecting platforms for comparison", async ({ page }) => {
   await expect(compare).toHaveText("Compare (3)");
   await expect(compare).toBeEnabled();
   await search(page).fill("");
-  await expect(rows(page, "platforms")).toHaveCount(289);
+  await expect(rows(page, "platforms")).toHaveCount(PLATFORMS);
   const table = page.locator('.browse [data-table="platforms"]');
   await expect(table.locator('input[type="checkbox"]:checked')).toHaveCount(3);
-  await expect(table.locator('input[type="checkbox"]:not(:checked):disabled')).toHaveCount(286);
+  await expect(table.locator('input[type="checkbox"]:not(:checked):disabled')).toHaveCount(PLATFORMS - 3);
 
   const before = await hash(page);
   await compare.focus();
@@ -377,7 +395,7 @@ test("Follow-up (SPEC-UI-001 REQ-025): at desktop width the filter bar sits abov
   await expect(group(page, "Field tag")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(group(page, "Field tag")).toBeHidden();
-  await expect(countLine(page)).toHaveText("23 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf({ field: ["catalysis"] }));
   expect(await hash(page)).toBe("#/browse?view=platforms&field=catalysis");
 });
 
@@ -422,20 +440,20 @@ test("SPEC-TAXO-001 AC-14: the unit-operation filter", async ({ page }) => {
   expect(buttons.indexOf("Techniques")).toBe(buttons.indexOf("Module types") + 1);
   expect(buttons.indexOf("Unit operations")).toBe(buttons.indexOf("Techniques") + 1);
   await openFilter(page, "Unit operations");
-  await expect(group(page, "Unit operations").getByRole("checkbox")).toHaveCount(31);
+  await expect(group(page, "Unit operations").getByRole("checkbox")).toHaveCount(new Set(R.platforms.flatMap((l) => l.uo)).size);
   expect(await page.locator(".filter-popover-panel legend").allTextContents()).toEqual(["Unit operations", "Unit operations match"]);
   await expect(await matchRadio(page, "Unit operations", "all")).toBeChecked();
   await (await filterBox(page, "Unit operations", "sonicate")).check();
-  await expect(countLine(page)).toHaveText("5 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf({ uo: ["sonicate"] }));
   expect(await hash(page)).toBe("#/browse?view=platforms&uo=sonicate");
   await (await filterBox(page, "Unit operations", "mix")).check();
-  await expect(countLine(page)).toHaveText("0 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf({ uo: ["mix", "sonicate"] }));
   await (await matchRadio(page, "Unit operations", "any")).check();
-  await expect(countLine(page)).toHaveText("114 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf({ uo: ["mix", "sonicate"], uoMatch: "any" }));
   expect(await hash(page)).toBe("#/browse?view=platforms&uo=mix,sonicate&uoMatch=any");
   await expect(filterButton(page, "Unit operations")).toHaveText("Unit operations · 2");
   await button(page, "Clear all").click();
-  await expect(countLine(page)).toHaveText("289 of 289 platforms");
+  await expect(countLine(page)).toHaveText(platformsOf());
   expect(await hash(page)).toBe("#/browse?view=platforms");
   expect(errors).toEqual([]);
 });

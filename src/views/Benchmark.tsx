@@ -325,7 +325,7 @@ function ItemsByPlatform({ data, index }: { data: BenchmarkJson; index: IndexJso
   const phone = useMedia(PHONE_QUERY);
   const names = useMemo(() => new Map(index.platforms.map((p) => [p.platform_id, p.platform_name])), [index]);
   const all = platformRows(data, split);
-  // On a phone the 279 rows fold away, with a search and 25 rows at a time (the desktop table is unchanged).
+  // On a phone the platform rows fold away, with a search and 25 rows at a time (the desktop table is unchanged).
   const q = query.trim().toLowerCase();
   const matched = phone && q ? all.filter((r) => `${r.platform_id} ${names.get(r.platform_id) ?? ""}`.toLowerCase().includes(q)) : all;
   const rows = phone ? matched.slice(0, shown) : matched;

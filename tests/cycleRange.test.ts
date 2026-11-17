@@ -19,6 +19,7 @@ import {
 import { WORKFLOW_ABOUT } from "../src/lib/siteText";
 import { catalogOf, DEFAULT_STATE, type Catalog, type WorkflowState } from "../src/lib/workflowState";
 import { tempDir } from "./fixtures/zip";
+import { expectedDurations, expectedRelease, expectedThroughputs, medianOf, type ExpDuration } from "./release-expect";
 
 const row = (step_id: string, uo: string, seconds: number, extra: Partial<DurationRow> = {}): DurationRow => ({
   step_id, platform_id: step_id.split("/").slice(0, 2).join("/"), paper_id: step_id.split("/")[0]!, doi: "10.1/x",
@@ -125,7 +126,7 @@ describe("AC-13: no verdict words in the text the builder writes", () => {
   });
 
   it("the About section on the workflow builder", () => {
-    expect([WORKFLOW_ABOUT.heading, ...WORKFLOW_ABOUT.paragraphs].filter((p) => VERDICT_WORDS.test(p))).toEqual([]);
+    expect([WORKFLOW_ABOUT.heading, ...WORKFLOW_ABOUT.paragraphs(4)].filter((p) => VERDICT_WORDS.test(p))).toEqual([]);
   });
 
   it("checks every new source file that exists", () => {
@@ -138,46 +139,72 @@ const config = loadConfig();
 const localZip = process.env.SDL_RELEASE_ZIP || undefined;
 const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NAME));
 
-describe.skipIf(!available)("AC-11 to AC-13 on the real 1.2.0 release", () => {
+// The expected values are counted from the release's step_timing and process_values tables (tests/release-expect.ts).
+describe.skipIf(!available)("AC-11 to AC-13 on the real pinned release", () => {
   let sim: SimulationJson;
   let c: Catalog;
   let g: Map<string, DurationRow[]>;
   let j: Map<string, DurationRow>;
+  let durations: ExpDuration[];
+  let releaseDir: string;
   beforeAll(async () => {
     const cacheDir = localZip ? join(tempDir(), "release") : CACHE_DIR;
-    sim = deriveAll(await fetchRelease({ config, cacheDir, localZip })).simulation;
+    releaseDir = await fetchRelease({ config, cacheDir, localZip });
+    sim = deriveAll(releaseDir).simulation;
     c = catalogOf(sim);
     g = singleStepGroups(sim.durations);
     j = new Map(sim.durations.filter((d) => d.joint).map((d) => [d.step_id, d]));
+    durations = expectedDurations(expectedRelease(releaseDir));
   });
   const real = (uos: string[], extra: Partial<WorkflowState> = {}): WorkflowState => ({
     ...DEFAULT_STATE, steps: uos.map((uo) => ({ uo, module: 1 })), modules: [{ type: "unmapped", devices: 1 }], ...extra,
   });
+  /** The single-step durations of a unit operation in seconds: all, and those without a bound. */
+  const single = (uo: string) => {
+    const all = durations.filter((d) => d.uo === uo && d.joint === null);
+    return { all: all.map((d) => d.seconds), used: all.filter((d) => !d.bound).map((d) => d.seconds) };
+  };
+  const range = (xs: number[]) => ({ low: Math.min(...xs), mid: medianOf(xs), high: Math.max(...xs) });
 
-  it("react_flow: n = 88 recorded, 87 used; 0.1755, 360, 3900 s; 360 s median with bounds", () => {
+  it("react_flow: n recorded and used; lowest, median and highest, without and with the bounds", () => {
+    const want = single("react_flow");
+    expect(want.all.length).toBeGreaterThan(want.used.length);
     const r = cycleRange(real(["react_flow"]), stepSources(real(["react_flow"]), c, g, j));
-    expect([r.steps[0]!.recorded.length, r.steps[0]!.used.length]).toEqual([88, 87]);
-    expect(r.cycle).toEqual({ low: 0.1755, mid: 360, high: 3900 });
+    expect([r.steps[0]!.recorded.length, r.steps[0]!.used.length]).toEqual([want.all.length, want.used.length]);
+    expect(r.cycle).toEqual(range(want.used));
     const b = real(["react_flow"], { bounds: true });
-    expect(cycleRange(b, stepSources(b, c, g, j)).cycle).toEqual({ low: 0.1755, mid: 360, high: 3900 });
+    expect(cycleRange(b, stepSources(b, c, g, j)).cycle).toEqual(range(want.all));
   });
 
-  it("react_thermal: 70 recorded, 68 used, with markers", () => {
+  it("react_thermal: recorded and used, with markers", () => {
+    const want = single("react_thermal");
     const rows = g.get("react_thermal")!;
-    expect([rows.length, rows.filter((d) => d.bound === null).length]).toEqual([70, 68]);
+    expect([rows.length, rows.filter((d) => d.bound === null).length]).toEqual([want.all.length, want.used.length]);
+    expect(want.all.length).toBeGreaterThan(want.used.length);
   });
 
-  it("[dispense_liquid, react_thermal] is offered the 4 recorded joint durations", () => {
-    expect(jointOffers(real(["dispense_liquid", "react_thermal"]), sim.durations).get(1)).toHaveLength(4);
+  it("[dispense_liquid, react_thermal] is offered the recorded joint durations that start with those steps", () => {
+    const want = durations.filter(
+      (d) => d.joint !== null && (d.joint.join() === "dispense_liquid" || d.joint.join() === "dispense_liquid,react_thermal"),
+    );
+    expect(want.length).toBeGreaterThan(0);
+    expect(jointOffers(real(["dispense_liquid", "react_thermal"]), sim.durations).get(1)).toHaveLength(want.length);
   });
 
-  it("dispense_solid has no recorded single-step duration", () => {
-    const r = cycleRange(real(["dispense_solid"]), stepSources(real(["dispense_solid"]), c, g, j));
-    expect(r.missing).toEqual([1]);
+  it("a unit operation with no recorded single-step duration is missing", () => {
+    const recorded = new Set(durations.filter((d) => d.joint === null).map((d) => d.uo));
+    const none = sim.unit_operations.map((u) => u.id).filter((id) => !recorded.has(id));
+    expect(none.length).toBeGreaterThan(0);
+    for (const uo of none) {
+      const r = cycleRange(real([uo]), stepSources(real([uo]), c, g, j));
+      expect(r.missing, uo).toEqual([1]);
+    }
   });
 
-  it("throughputs: measured and nominal with a per-day value, and 9 without", () => {
+  it("throughputs: measured and nominal with a per-day value, and those without", () => {
+    const want = expectedThroughputs(expectedRelease(releaseDir));
     const t = throughputGroups(sim.throughputs);
-    expect([t.measured.length + t.nominal.length, t.notConverted.length]).toEqual([130, 9]);
+    expect([t.measured.length + t.nominal.length, t.notConverted.length]).toEqual([want.perDay, want.notConverted]);
+    expect(t.notConverted.length).toBeGreaterThan(0);
   });
 });

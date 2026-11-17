@@ -1,5 +1,16 @@
 // SPEC-SIM-001 AC-5 to AC-8 and the outputs of AC-9 to AC-16 in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
+import { R, expectedDurations, uoLabel } from "./expected";
+
+// Step durations of the pinned release, counted from its timing table (e2e/expected.ts).
+const DURATIONS = expectedDurations(R);
+const single = (uo: string) => DURATIONS.filter((d) => d.uo === uo && d.joint === null);
+/** A unit operation with no recorded single-step duration (dispense_solid in 1.2.0), or null when every one has one. */
+const NO_DURATION = (() => {
+  const all = R.csv("core/unit_operation.csv").map((u) => u.unit_operation!).filter((u) => u !== "unmapped");
+  const none = all.filter((u) => single(u).length === 0);
+  return none.includes("dispense_solid") ? "dispense_solid" : (none[0] ?? null);
+})();
 import { NAV_TAB_LINKS } from "./routes";
 
 function trackErrors(page: Page): string[] {
@@ -127,23 +138,30 @@ test("AC-9, AC-10: similar platforms, sorting, more rows and the compare link", 
 
 test("AC-11, AC-12: missing duration, entered value, distributions, sources and joint durations", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/#/workflow?s=dispense_solid~1&m=solid_dispenser");
   const m = main(page);
-  const result = m.locator('[data-result="range"]');
-  await expect(result).toContainText("No cycle time yet: step 1 (Dispense solid) has no recorded duration");
-  await expect(result.locator('[data-value="cycle"]')).toHaveCount(0);
-  await fill(page, "Your duration for step 1, seconds (empty: use the recorded values)", "120");
-  await expect(result.locator('[data-value="cycle"]')).toHaveText("2 min");
-  await expect(result).toContainText("These include the duration entered for step 1.");
-  await expect(m.locator('table[data-table="wf-range"] tbody tr').first()).toContainText("entered value");
+  if (NO_DURATION !== null) {
+    await page.goto(`/#/workflow?s=${NO_DURATION}~1&m=solid_dispenser`);
+    const result = m.locator('[data-result="range"]');
+    await expect(result).toContainText(`No cycle time yet: step 1 (${uoLabel(NO_DURATION)}) has no recorded duration`);
+    await expect(result.locator('[data-value="cycle"]')).toHaveCount(0);
+    await fill(page, "Your duration for step 1, seconds (empty: use the recorded values)", "120");
+    await expect(result.locator('[data-value="cycle"]')).toHaveText("2 min");
+    await expect(result).toContainText("These include the duration entered for step 1.");
+    await expect(m.locator('table[data-table="wf-range"] tbody tr').first()).toContainText("entered value");
+  }
 
   await page.goto("/#/workflow?s=dispense_liquid~1,react_thermal~2&m=liquid_handler,thermal_unit");
   const step2 = m.locator('section[data-step="2"]');
-  await expect(step2.locator(".wf-n")).toContainText("n = 70 recorded; 68 used, 2 bounds left out");
+  const thermal = single("react_thermal");
+  const left = thermal.filter((d) => d.bound).length;
+  expect(left).toBeGreaterThan(0);
+  await expect(step2.locator(".wf-n")).toContainText(
+    `n = ${thermal.length} recorded; ${thermal.length - left} used, ${left} bound${left > 1 ? "s" : ""} left out`,
+  );
   await expect(step2.locator(".wf-strip svg")).toHaveCount(1);
   await step2.locator(".wf-sources summary").click();
   const sources = step2.locator('table[data-table="wf-sources"] tbody tr');
-  await expect(sources).toHaveCount(70);
+  await expect(sources).toHaveCount(thermal.length);
   await expect(sources.first().locator('a[href^="#/platform/"]')).toHaveCount(1);
   await expect(sources.first().locator('a[href^="https://doi.org/"]')).toHaveCount(1);
   await expect(step2.locator('table[data-table="wf-sources"]')).toContainText("≤");
@@ -151,7 +169,10 @@ test("AC-11, AC-12: missing duration, entered value, distributions, sources and 
   const step1 = m.locator('section[data-step="1"]');
   await step1.locator(".wf-offers summary").click();
   const offers = step1.locator(".wf-offers li");
-  await expect(offers).toHaveCount(4);
+  // Joint durations starting with step 1's unit operation, or covering steps 1 and 2.
+  const offered = DURATIONS.filter((d) => d.joint && ["dispense_liquid", "dispense_liquid,react_thermal"].includes(d.joint.join()));
+  expect(offered.length).toBeGreaterThan(0);
+  await expect(offers).toHaveCount(offered.length);
   await offers.first().getByRole("button").click();
   await expect(m.locator('table[data-table="wf-range"] tbody tr').nth(0)).toContainText("joint duration");
   await expect(m.locator('table[data-table="wf-range"] tbody tr').nth(1)).toContainText("inside a joint duration");

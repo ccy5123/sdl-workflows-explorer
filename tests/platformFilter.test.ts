@@ -91,8 +91,8 @@ describe.skipIf(!dataAvailable)("filterPlatforms on the real index (AC-8)", () =
     ? readIndex().platforms.map((p) => ({ ...p, module_names: search.module_names[p.platform_id] ?? [] }))
     : [];
 
-  it("returns all 289 platform rows for an empty filter", () => {
-    expect(filterPlatforms(platforms, "")).toHaveLength(289);
+  it("returns every platform row for an empty filter", () => {
+    expect(filterPlatforms(platforms, "")).toHaveLength(readIndex().counts.platforms);
   });
 
   it("returns Aand2024/P1 for aand2024", () => {

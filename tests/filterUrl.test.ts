@@ -9,6 +9,7 @@ import {
   type Offered,
 } from "../src/lib/filterState";
 import { browseHash, decodeFilters, encodeFilters } from "../src/lib/filterUrl";
+import { expectedOffered, pinnedReleaseExtracted } from "./release-expect";
 import { dataAvailable, readIndex, warnIfMissing } from "./viewer-data";
 
 warnIfMissing("filterUrl.test.ts");
@@ -217,8 +218,10 @@ describe("uo and uoMatch in the URL (SPEC-TAXO-001 AC-6)", () => {
   });
 });
 
-describe.skipIf(!dataAvailable)("decodeFilters and offeredValues on the real index (AC-3)", () => {
+// The offered values are compared with the values present in the release's CSV files (tests/release-expect.ts).
+describe.skipIf(!dataAvailable || !pinnedReleaseExtracted())("decodeFilters and offeredValues on the real index (AC-3)", () => {
   const offered = dataAvailable ? offeredValues(readIndex()) : OFFERED;
+  const want = dataAvailable && pinnedReleaseExtracted() ? expectedOffered() : null;
 
   it("drops unknown parameters and values not offered", () => {
     expect(
@@ -227,31 +230,21 @@ describe.skipIf(!dataAvailable)("decodeFilters and offeredValues on the real ind
   });
 
   it("offers the values present in index.json", () => {
-    expect(offered.field).toEqual([
-      "analytical_chemistry",
-      "battery_electrochem",
-      "biology_biochem",
-      "catalysis",
-      "chemistry_synthesis",
-      "materials_inorganic",
-      "materials_polymer_soft",
-      "materials_thin_film",
-      "nanomaterials",
-    ]);
-    expect(offered.im).toEqual(["fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped"]);
-    expect(offered.sw).toEqual([1, 2, 3]);
-    expect(offered.hw).toEqual([1, 2, 3]);
-    expect(offered.mt).toHaveLength(22);
-    expect(offered.mt[0]).toBe("assembly_unit");
-    expect(offered.mt[21]).toBe("unmapped");
+    expect(offered.field).toEqual(want!.field);
+    expect(offered.field).toContain("catalysis");
+    expect(offered.im).toEqual(want!.im);
+    expect(offered.sw).toEqual(want!.sw);
+    expect(offered.hw).toEqual(want!.hw);
+    expect(offered.mt).toEqual(want!.mt);
     expect(offered.mt).toEqual([...offered.mt].sort());
-    expect(offered.tm).toEqual(["fixed_tubing", "human_transfer", "mobile_robot", "robot_arm_gantry", "unmapped"]);
+    expect(offered.mt.at(-1)).toBe("unmapped");
+    expect(offered.tm).toEqual(want!.tm);
+    expect(offered.tm).not.toContain("data_transfer");
   });
 
-  it("offers the 31 unit operations in alphabetical order (SPEC-TAXO-001 AC-6)", () => {
-    expect(offered.uo).toHaveLength(31);
+  it("offers the unit operations in use in alphabetical order (SPEC-TAXO-001 AC-6)", () => {
+    expect(offered.uo).toEqual(want!.uo);
     expect(offered.uo).toEqual([...offered.uo].sort());
     expect(offered.uo[0]).toBe("analyze_data");
-    expect(offered.uo[30]).toBe("wash_extract");
   });
 });

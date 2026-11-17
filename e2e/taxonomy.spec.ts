@@ -2,6 +2,15 @@
 import { expect, test, type Page } from "@playwright/test";
 import { NAV_TAB_LINKS, openDataPage } from "./routes";
 import { PINNED_VERSION } from "../tests/pinned-release";
+import { PAPERS, PLATFORMS, R, expectedTaxonomyUse, papersOf, platformsOf } from "./expected";
+
+// Usage counts and examples of the pinned release, counted from its tables (e2e/expected.ts); the class lists and the
+// correspondence belong to taxonomy v1, which every release keeps.
+const USE = expectedTaxonomyUse(R);
+const use = (key: string) => USE.get(key)!;
+const n = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+const FLOW = use("module_type/flow_reactor");
+const FLOW_FIRST = FLOW.examples[0]!;
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -116,10 +125,12 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   }
   // Class links show the readable name; the code follows outside the link (SPEC-UI-001 phase 5).
   const flow = region(page, "Module types").locator("tbody tr", { has: link(page, "Flow reactor") });
-  await expect(flow).toContainText("142 modules");
+  await expect(flow).toContainText(n(FLOW.n_items, "module"));
   await expect(flow.getByRole("link")).toHaveAttribute("href", "#/taxonomy/module_type/flow_reactor");
   await expect(flow.locator(".taxo-code")).toHaveText("flow_reactor");
-  await expect(region(page, "Field tags").locator("tbody tr", { has: link(page, "Catalysis") })).toContainText("23 papers");
+  await expect(region(page, "Field tags").locator("tbody tr", { has: link(page, "Catalysis") })).toContainText(
+    n(use("field_tag/catalysis").n_items, "paper"),
+  );
   const families = region(page, "Unit operations").getByRole("heading", { level: 3 });
   await expect(families).toHaveText([
     "Family: Analyze (analyze)", "Family: Form (form)", "Family: Handle (handle)", "Family: Measure (measure)",
@@ -208,38 +219,39 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   await expect(h1(page, "Flow reactor")).toBeVisible();
   await expect(page.locator(".taxo-facts")).toContainText("Module type");
   const counts = region(page, "Counts");
-  await expect(counts).toContainText("142 modules");
-  expect(await followCount(page, "130 platforms")).toBe("130 of 289 platforms");
-  expect(await followCount(page, "101 papers")).toBe("101 of 244 papers");
+  await expect(counts).toContainText(n(FLOW.n_items, "module"));
+  // The class page's counts and the browser's count lines are counted apart; both must agree with the release.
+  expect(await followCount(page, n(FLOW.n_platforms, "platform"))).toBe(platformsOf({ mt: ["flow_reactor"] }));
+  expect(await followCount(page, n(FLOW.n_papers, "paper"))).toBe(papersOf({ mt: ["flow_reactor"] }));
   const first = region(page, "Example platforms").getByRole("listitem").first();
-  await expect(first.getByRole("link")).toHaveText("Bedard2018/P11");
-  await expect(first).toContainText("(3 modules)");
+  await expect(first.getByRole("link")).toHaveText(FLOW_FIRST[0]);
+  await expect(first).toContainText(`(${n(FLOW_FIRST[1]!, "module")})`);
   await first.getByRole("link").click();
-  expect(await hash(page)).toBe("#/platform/Bedard2018/P11");
-  await expect(
-    h1(page, "Reconfigurable continuous-flow system, ketene generation and [2+2] cycloaddition configuration"),
-  ).toBeVisible();
+  expect(await hash(page)).toBe(`#/platform/${FLOW_FIRST[0]}`);
+  // Bedard2018/P11, "Reconfigurable continuous-flow system, ketene generation and [2+2] cycloaddition configuration", in 1.2.0.
+  await expect(h1(page, R.platforms.find((l) => l.platform_id === FLOW_FIRST[0])!.name!)).toBeVisible();
 
   await page.goto("/#/taxonomy/field_tag/catalysis");
   await expect(h1(page, "Catalysis")).toBeVisible();
-  await expect(region(page, "Counts").getByRole("listitem")).toHaveText(["23 platforms", "23 papers"]);
-  expect(await followCount(page, "23 platforms")).toBe("23 of 289 platforms");
-  expect(await followCount(page, "23 papers")).toBe("23 of 244 papers");
+  const cat = use("field_tag/catalysis");
+  await expect(region(page, "Counts").getByRole("listitem")).toHaveText([n(cat.n_platforms, "platform"), n(cat.n_papers, "paper")]);
+  expect(await followCount(page, n(cat.n_platforms, "platform"))).toBe(platformsOf({ field: ["catalysis"] }));
+  expect(await followCount(page, n(cat.n_papers, "paper"))).toBe(papersOf({ field: ["catalysis"] }));
   const examples = region(page, "Example platforms");
-  await expect(examples.getByRole("link")).toHaveText(["Amara2015/P1", "Bai2023a/P1", "Baumgartner2019/P1", "Bennett2024/P1", "Brody2026/P1"]);
+  await expect(examples.getByRole("link")).toHaveText(cat.examples.map(([id]) => id));
   const items = await examples.getByRole("listitem").allTextContents();
   expect(items.filter((t) => /\(\d+ (papers?|modules?|connections?|steps?)\)$/.test(t))).toEqual([]);
   await expect(examples).toContainText("The first five platforms with this field tag, in platform id order.");
 
   await page.goto("/#/taxonomy/transfer_mode/data_transfer");
-  await expect(region(page, "Counts")).toContainText("626 connections");
-  await expect(link(page, "289 platforms")).toHaveAttribute("href", "#/browse?view=platforms");
-  await expect(link(page, "244 papers")).toHaveAttribute("href", "#/browse");
+  await expect(region(page, "Counts")).toContainText(n(use("transfer_mode/data_transfer").n_items, "connection"));
+  await expect(link(page, `${PLATFORMS} platforms`)).toHaveAttribute("href", "#/browse?view=platforms");
+  await expect(link(page, `${PAPERS} papers`)).toHaveAttribute("href", "#/browse");
   await expect(region(page, "Counts")).toContainText(
-    "data_transfer is not offered by the browser's filters. It is recorded on all 289 platforms, so these links open the full lists.",
+    `data_transfer is not offered by the browser's filters. It is recorded on all ${PLATFORMS} platforms, so these links open the full lists.`,
   );
-  expect(await followCount(page, "289 platforms")).toBe("289 of 289 platforms");
-  expect(await followCount(page, "244 papers")).toBe("244 of 244 papers");
+  expect(await followCount(page, `${PLATFORMS} platforms`)).toBe(platformsOf());
+  expect(await followCount(page, `${PAPERS} papers`)).toBe(papersOf());
   expect(errors).toEqual([]);
 });
 
@@ -248,12 +260,13 @@ test("AC-12: unit operation, unused field tag and four-example pages", async ({ 
   await page.goto("/#/taxonomy/unit_operation/sonicate");
   await expect(page.locator(".taxo-facts")).toContainText("Unit operation");
   await expect(page.locator(".taxo-facts")).toContainText("mix");
-  await expect(region(page, "Counts")).toContainText("11 steps");
-  expect(await followCount(page, "5 platforms")).toBe("5 of 289 platforms");
-  expect(await followCount(page, "5 papers")).toBe("5 of 244 papers");
+  const son = use("unit_operation/sonicate");
+  await expect(region(page, "Counts")).toContainText(n(son.n_items, "step"));
+  expect(await followCount(page, n(son.n_platforms, "platform"))).toBe(platformsOf({ uo: ["sonicate"] }));
+  expect(await followCount(page, n(son.n_papers, "paper"))).toBe(papersOf({ uo: ["sonicate"] }));
   const first = region(page, "Example platforms").getByRole("listitem").first();
-  await expect(first.getByRole("link")).toHaveText("Zhao2026/P1");
-  await expect(first).toContainText("(6 steps)");
+  await expect(first.getByRole("link")).toHaveText(son.examples[0]![0]);
+  await expect(first).toContainText(`(${n(son.examples[0]![1]!, "step")})`);
 
   await page.goto("/#/taxonomy/field_tag/unmapped");
   await expect(region(page, "Counts").getByRole("listitem")).toHaveText(["0 platforms", "0 papers"]);
@@ -261,10 +274,13 @@ test("AC-12: unit operation, unused field tag and four-example pages", async ({ 
   await expect(region(page, "Counts")).toContainText("No platform uses this class, so the browser has no filter for it.");
   await expect(region(page, "Example platforms")).toContainText("No platform uses this class.");
 
-  await page.goto("/#/taxonomy/module_type/assembly_unit");
+  // A class with fewer than five platforms lists them all (assembly_unit: four in 1.2.0).
+  const fewest = [...USE].filter(([k, u]) => k.startsWith("module_type/") && u.examples.length > 0).sort((a, b) => a[1].examples.length - b[1].examples.length)[0]!;
+  expect(fewest[1].examples.length).toBeLessThan(5);
+  await page.goto(`/#/taxonomy/${fewest[0]}`);
   const items = region(page, "Example platforms").getByRole("listitem");
-  await expect(items.getByRole("link")).toHaveText(["Dai2025/P1", "Gao2026/P1", "Toyama2025/P1", "Yik2025/P1"]);
-  for (let i = 0; i < 4; i++) await expect(items.nth(i)).toContainText("(1 module)");
+  await expect(items.getByRole("link")).toHaveText(fewest[1].examples.map(([id]) => id));
+  for (const [i, [, k]] of fewest[1].examples.entries()) await expect(items.nth(i)).toContainText(`(${n(k!, "module")})`);
   expect(errors).toEqual([]);
 });
 
@@ -474,8 +490,8 @@ test("AC-16: keyboard reaches and opens the taxonomy links", async ({ page }) =>
   await tabToLink(page, "Flow reactor");
   await page.keyboard.press("Enter");
   await expect(h1(page, "Flow reactor")).toBeVisible();
-  await tabToLink(page, "130 platforms");
-  await tabToLink(page, "Bedard2018/P11");
+  await tabToLink(page, n(FLOW.n_platforms, "platform"));
+  await tabToLink(page, FLOW_FIRST[0]);
   await tabToLink(page, "XDL");
 });
 

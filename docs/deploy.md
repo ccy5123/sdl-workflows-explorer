@@ -60,3 +60,38 @@ repeat steps 2 and 3 if the record ever gets a different file.
    (step 8 of `docs/plan.md`).
 
 To rebuild later without a new release, run step 7 again.
+
+## Pinning a new release
+
+`release.config.json` pins the release the site shows, and names the release published before it:
+
+```json
+{
+  "version": "1.3.0", "doi": "10.5281/zenodo.N", "record_id": "N", "file_name": "sdl-workflows-1.3.0.zip",
+  "url": "https://zenodo.org/api/records/N/files/sdl-workflows-1.3.0.zip/content", "sha256": "<64 hex>",
+  "counts": { "papers": 0, "platforms": 0, "modules": 0, "steps": 0, "connections": 0, "material_connections": 0, "candidates": 0 },
+  "previous": {
+    "version": "1.2.0", "doi": "10.5281/zenodo.24088968", "record_id": "24088968", "file_name": "sdl-workflows-1.2.0.zip",
+    "url": "https://zenodo.org/api/records/24088968/files/sdl-workflows-1.2.0.zip/content",
+    "sha256": "cb248b78cc2e8e0eff4d72885b8225cc65998c7f6d0ff53699c4f91ccd3b6dd4"
+  }
+}
+```
+
+`previous` is the old pin without `counts` (optional; without it the release-to-release check skips). Then:
+
+```bash
+SDL_RELEASE_ZIP=<new zip> SDL_PREVIOUS_RELEASE_ZIP=<previous zip> npm run fetch-release   # either variable optional
+npm run build-data
+npm run typecheck && npm test && npm run e2e
+npm run record-baselines   # once everything passes; commit tests/derived-baselines.json with the pin
+```
+
+`fetch-release` verifies the pinned release into `.cache/release/` and the previous one into
+`.cache/release/previous/`; without the variables it downloads them from Zenodo. The tests and e2e specs take every
+count the release decides from the release itself (`tests/release-expect.ts`, `e2e/expected.ts`), and the home and
+About text take theirs from `index.json` (`about`, counted by `scripts/lib/about.ts`); nothing in them is edited for
+a new release. `tests/release-docs.test.ts` derives both releases and fails when the new one changes anything of the
+previous one except the papers it adds (and earlier platforms joining an identity group, which it lists); such a
+release (a correction, a re-split benchmark) needs a person to read the change. `tests/siteText.test.ts` fails when
+the data card words a figure differently from the About text; fix the text from the data card, not the test.

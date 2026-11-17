@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { PaperRow, PlatformRow, SearchJson } from "../src/data/types";
 import { matchingPapers, matchingPlatforms } from "../src/lib/filterApply";
 import { DEFAULT_STATE, type FilterState } from "../src/lib/filterState";
+import { expectedRelease, pinnedReleaseExtracted, type Filter } from "./release-expect";
 import { dataAvailable, readIndex, warnIfMissing } from "./viewer-data";
 
 warnIfMissing("filterApply.test.ts");
@@ -162,26 +163,46 @@ describe("unit-operation filter on the fixture (SPEC-TAXO-001 AC-7)", () => {
   });
 });
 
-describe.skipIf(!dataAvailable)("unit-operation filter counts on the real index (SPEC-TAXO-001 AC-7)", () => {
-  const index = dataAvailable ? readIndex() : { papers: [], platforms: [] };
+// The real-index cases compare the site's filter with the counts tests/release-expect.ts takes from the release's CSV
+// files under the rules of SPEC-BROWSE-001 §2 (written again there, not imported from src/lib).
+const realData = dataAvailable && pinnedReleaseExtracted();
+const toFilter = (patch: Partial<FilterState>): Filter => ({
+  ...patch,
+  years: patch.years ? [patch.years.from, patch.years.to] : undefined,
+});
+const expectedCount = (patch: Partial<FilterState>) => {
+  const r = expectedRelease();
+  return [r.countPapers(toFilter(patch)), r.countPlatforms(toFilter(patch))];
+};
+
+describe.skipIf(!realData)("unit-operation filter counts on the real index (SPEC-TAXO-001 AC-7)", () => {
+  const index = realData ? readIndex() : { papers: [], platforms: [] };
   const count = (patch: Partial<FilterState>) => {
     const r = run(patch, index.papers, index.platforms);
     return [r.papers.length, r.platforms.length];
   };
 
-  it.each<[string, Partial<FilterState>, number, number]>([
-    ["uo sonicate", { uo: ["sonicate"] }, 5, 5],
-    ["uo mix, sonicate, all", { uo: ["mix", "sonicate"] }, 0, 0],
-    ["uo mix, sonicate, any", { uo: ["mix", "sonicate"], uoMatch: "any" }, 101, 114],
-    ["mt liquid_handler and uo dispense_solid", { mt: ["liquid_handler"], uo: ["dispense_solid"] }, 16, 18],
-    ["uo clean_equipment, dispense_liquid", { uo: ["clean_equipment", "dispense_liquid"] }, 64, 77],
-  ])("%s", (_name, patch, papers, platforms) => {
-    expect(count(patch)).toEqual([papers, platforms]);
+  it.each<[string, Partial<FilterState>]>([
+    ["uo sonicate", { uo: ["sonicate"] }],
+    ["uo mix, sonicate, all", { uo: ["mix", "sonicate"] }],
+    ["uo mix, sonicate, any", { uo: ["mix", "sonicate"], uoMatch: "any" }],
+    ["mt liquid_handler and uo dispense_solid", { mt: ["liquid_handler"], uo: ["dispense_solid"] }],
+    ["uo clean_equipment, dispense_liquid", { uo: ["clean_equipment", "dispense_liquid"] }],
+  ])("%s", (_name, patch) => {
+    expect(count(patch)).toEqual(expectedCount(patch));
+  });
+
+  it("the cases tell all from any and are not empty", () => {
+    expect(expectedCount({ uo: ["sonicate"] })[1]).toBeGreaterThan(0);
+    expect(expectedCount({ uo: ["mix", "sonicate"], uoMatch: "any" })[1]).toBeGreaterThan(expectedCount({ uo: ["mix", "sonicate"] })[1]!);
   });
 
   it("counts the remaining browse URLs of AC-7", () => {
-    expect(count({ tm: ["mobile_robot"], uo: ["handle_sample"] })[1]).toBe(4);
-    expect(count({ years: { from: 2018, to: 2024 }, field: ["catalysis"], uo: ["react_thermal"] })[0]).toBe(3);
+    const urls: Partial<FilterState>[] = [
+      { tm: ["mobile_robot"], uo: ["handle_sample"] },
+      { years: { from: 2018, to: 2024 }, field: ["catalysis"], uo: ["react_thermal"] },
+    ];
+    for (const patch of urls) expect(count(patch)).toEqual(expectedCount(patch));
   });
 
   it("needs one platform with both unit operations: Roch2020 is excluded", () => {
@@ -190,38 +211,47 @@ describe.skipIf(!dataAvailable)("unit-operation filter counts on the real index 
   });
 });
 
-describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => {
+describe.skipIf(!realData)("filter counts on the real index (AC-5)", () => {
   // The index as Browse searches it: each platform with its module names from search.json.
-  const names: SearchJson["module_names"] = dataAvailable
+  const names: SearchJson["module_names"] = realData
     ? JSON.parse(readFileSync(join(import.meta.dirname, "..", "public", "data", "search.json"), "utf8")).module_names
     : {};
-  const raw = dataAvailable ? readIndex() : { papers: [], platforms: [] };
+  const raw = realData ? readIndex() : { papers: [], platforms: [] };
   const index = { papers: raw.papers, platforms: raw.platforms.map((p) => ({ ...p, module_names: names[p.platform_id] ?? [] })) };
   const count = (patch: Partial<FilterState>) => {
     const r = run(patch, index.papers, index.platforms);
     return [r.papers.length, r.platforms.length];
   };
 
-  it.each<[string, Partial<FilterState>, number, number]>([
-    ["default", {}, 244, 289],
-    ["years 2018-2024", { years: { from: 2018, to: 2024 } }, 123, 154],
-    ["years from 2026", { years: { from: 2026, to: null } }, 43, 52],
-    ["years to 2014", { years: { from: null, to: 2014 } }, 27, 28],
-    ["field catalysis, nanomaterials", { field: ["catalysis", "nanomaterials"] }, 67, 70],
-    ["im mixed", { im: ["mixed"] }, 68, 92],
-    ["im fixed_tubing, mobile_robot", { im: ["fixed_tubing", "mobile_robot"] }, 106, 126],
-    ["sw 3", { sw: [3] }, 4, 4],
-    ["hw 1, 3", { hw: [1, 3] }, 10, 10],
-    ["mt flow_reactor", { mt: ["flow_reactor"] }, 101, 130],
-    ["mt flow_reactor, liquid_handler, all", { mt: ["flow_reactor", "liquid_handler"] }, 21, 28],
-    ["mt flow_reactor, liquid_handler, any", { mt: ["flow_reactor", "liquid_handler"], mtMatch: "any" }, 180, 216],
-    ["tm fixed_tubing, robot_arm_gantry, all", { tm: ["fixed_tubing", "robot_arm_gantry"] }, 23, 26],
-    ["tm fixed_tubing, robot_arm_gantry, any", { tm: ["fixed_tubing", "robot_arm_gantry"], tmMatch: "any" }, 219, 262],
-    ["mt flow_reactor and tm robot_arm_gantry", { mt: ["flow_reactor"], tm: ["robot_arm_gantry"] }, 10, 10],
-    ["q chemspeed", { q: "chemspeed" }, 7, 9],
-    ["years 2018-2024, field catalysis, mt flow_reactor", { years: { from: 2018, to: 2024 }, field: ["catalysis"], mt: ["flow_reactor"] }, 6, 6],
-  ])("%s → %i papers, %i platforms", (_name, patch, papers, platforms) => {
-    expect(count(patch)).toEqual([papers, platforms]);
+  it.each<[string, Partial<FilterState>]>([
+    ["default", {}],
+    ["years 2018-2024", { years: { from: 2018, to: 2024 } }],
+    ["years from 2026", { years: { from: 2026, to: null } }],
+    ["years to 2014", { years: { from: null, to: 2014 } }],
+    ["field catalysis, nanomaterials", { field: ["catalysis", "nanomaterials"] }],
+    ["im mixed", { im: ["mixed"] }],
+    ["im fixed_tubing, mobile_robot", { im: ["fixed_tubing", "mobile_robot"] }],
+    ["sw 3", { sw: [3] }],
+    ["hw 1, 3", { hw: [1, 3] }],
+    ["mt flow_reactor", { mt: ["flow_reactor"] }],
+    ["mt flow_reactor, liquid_handler, all", { mt: ["flow_reactor", "liquid_handler"] }],
+    ["mt flow_reactor, liquid_handler, any", { mt: ["flow_reactor", "liquid_handler"], mtMatch: "any" }],
+    ["tm fixed_tubing, robot_arm_gantry, all", { tm: ["fixed_tubing", "robot_arm_gantry"] }],
+    ["tm fixed_tubing, robot_arm_gantry, any", { tm: ["fixed_tubing", "robot_arm_gantry"], tmMatch: "any" }],
+    ["mt flow_reactor and tm robot_arm_gantry", { mt: ["flow_reactor"], tm: ["robot_arm_gantry"] }],
+    ["q chemspeed", { q: "chemspeed" }],
+    ["years 2018-2024, field catalysis, mt flow_reactor", { years: { from: 2018, to: 2024 }, field: ["catalysis"], mt: ["flow_reactor"] }],
+  ])("%s: the release's papers and platforms", (_name, patch) => {
+    expect(count(patch)).toEqual(expectedCount(patch));
+  });
+
+  it("the default counts are the release's papers and platforms; all and any differ", () => {
+    expect(count({})).toEqual([raw.papers.length, raw.platforms.length]);
+    expect(count({})).toEqual(expectedCount({}));
+    const all = expectedCount({ mt: ["flow_reactor", "liquid_handler"] });
+    const any = expectedCount({ mt: ["flow_reactor", "liquid_handler"], mtMatch: "any" });
+    expect(all[1]).toBeGreaterThan(0);
+    expect(any[1]).toBeGreaterThan(all[1]!);
   });
 
   it("excludes Zhang2025b when its values sit on different platforms", () => {
@@ -233,19 +263,15 @@ describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => 
     expect(any).toContain("Zhang2025b");
   });
 
-  it("matches nine platforms for 'chemspeed': three by name, six by a Chemspeed module", () => {
-    expect(run({ q: "chemspeed" }, index.papers, index.platforms).platforms).toEqual([
-      "Christensen2021/P1",
-      "Moosavi2019/P1",
-      "Ramirez2024/P1",
-      "Sim2024/P1",
-      "StriethKalthoff2024/P1",
-      "StriethKalthoff2024/P2",
-      "StriethKalthoff2024/P3",
-      "Vescovi2023/P2",
-      "Wu2025c/P1",
-    ]);
-    // Without the module names (search.json not loaded) only the three named ones match.
-    expect(run({ q: "chemspeed" }, raw.papers, raw.platforms).platforms).toHaveLength(3);
+  it("matches the platforms named Chemspeed and those with a Chemspeed module for 'chemspeed'", () => {
+    const r = expectedRelease();
+    const want = r.platformsMatching({ q: "chemspeed" }).map((l) => l.platform_id);
+    // Nine in 1.2.0: three by name, six by a Chemspeed module only.
+    for (const id of ["Christensen2021/P1", "Moosavi2019/P1", "StriethKalthoff2024/P1", "Vescovi2023/P2"]) expect(want).toContain(id);
+    expect(run({ q: "chemspeed" }, index.papers, index.platforms).platforms).toEqual(want);
+    // Without the module names (search.json not loaded) only those with Chemspeed in the name, id or paper match.
+    const named = r.platforms.filter((l) => [l.platform_id, l.paper_id, l.name ?? ""].some((f) => f.toLowerCase().includes("chemspeed")));
+    expect(named.length).toBeLessThan(want.length);
+    expect(run({ q: "chemspeed" }, raw.papers, raw.platforms).platforms).toEqual(named.map((l) => l.platform_id));
   });
 });

@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadConfig, validateConfig } from "../scripts/lib/config";
+import { loadConfig, type ReleasePin, validateConfig } from "../scripts/lib/config";
 
 const repoConfig = JSON.parse(readFileSync("release.config.json", "utf8")) as Record<string, unknown>;
 
@@ -12,23 +12,52 @@ function copy(): Record<string, unknown> {
 }
 
 describe("release config", () => {
-  it("loads the repository config with version, pinned hash and the seven counts", () => {
+  // The pinned values themselves are checked against the release by tests/release.test.ts (counts) and fetch-release
+  // (sha256); here the pin and its previous release must name one Zenodo record consistently.
+  const consistent = (pin: ReleasePin) => {
+    expect(pin.file_name).toBe(`sdl-workflows-${pin.version}.zip`);
+    expect(pin.doi).toBe(`10.5281/zenodo.${pin.record_id}`);
+    expect(pin.url).toBe(`https://zenodo.org/api/records/${pin.record_id}/files/${pin.file_name}/content`);
+    expect(pin.sha256).toMatch(/^[0-9a-f]{64}$/);
+  };
+  const semver = (v: string) => v.split(".").map(Number).reduce((n, x) => n * 1000 + x, 0);
+
+  it("loads the repository config: one Zenodo record named consistently, and the seven counts", () => {
     const cfg = loadConfig("release.config.json");
-    expect(cfg.version).toBe("1.2.0");
-    expect(cfg.sha256).toBe("cb248b78cc2e8e0eff4d72885b8225cc65998c7f6d0ff53699c4f91ccd3b6dd4");
-    expect(cfg.counts).toEqual({
-      papers: 244,
-      platforms: 289,
-      modules: 1647,
-      steps: 2678,
-      connections: 1724,
-      material_connections: 1098,
-      candidates: 2540,
-    });
-    expect(cfg.doi).toBe("10.5281/zenodo.24088968");
-    expect(cfg.record_id).toBe("24088968");
-    expect(cfg.file_name).toBe("sdl-workflows-1.2.0.zip");
-    expect(cfg.url).toBe("https://zenodo.org/api/records/24088968/files/sdl-workflows-1.2.0.zip/content");
+    consistent(cfg);
+    expect(Object.keys(cfg.counts)).toEqual([
+      "papers", "platforms", "modules", "steps", "connections", "material_connections", "candidates",
+    ]);
+    expect(cfg.counts.papers).toBeGreaterThan(0);
+    expect(cfg.counts.platforms).toBeGreaterThanOrEqual(cfg.counts.papers);
+    expect(cfg.counts.material_connections).toBeLessThanOrEqual(cfg.counts.connections);
+    expect(cfg.counts.candidates).toBeGreaterThanOrEqual(cfg.counts.papers);
+  });
+
+  it.skipIf(!repoConfig.previous)("names an earlier release as the previous one, on another record", () => {
+    const cfg = loadConfig("release.config.json");
+    consistent(cfg.previous!);
+    expect(semver(cfg.previous!.version)).toBeLessThan(semver(cfg.version));
+    expect(cfg.previous!.record_id).not.toBe(cfg.record_id);
+  });
+
+  it("accepts a config without a previous release and validates a previous block field by field", () => {
+    const none = copy();
+    delete none.previous;
+    expect(validateConfig(none).previous).toBeUndefined();
+    const pin = {
+      version: "0.9.0",
+      doi: "10.5281/zenodo.11",
+      record_id: "11",
+      file_name: "sdl-workflows-0.9.0.zip",
+      url: "https://zenodo.org/api/records/11/files/sdl-workflows-0.9.0.zip/content",
+      sha256: "a".repeat(64),
+    };
+    expect(validateConfig({ ...none, previous: pin }).previous).toEqual(pin);
+    expect(() => validateConfig({ ...none, previous: { ...pin, sha256: "abc" } })).toThrow(/"previous\.sha256"/);
+    expect(() => validateConfig({ ...none, previous: { ...pin, url: undefined } })).toThrow(/"previous\.url" is missing/);
+    expect(() => validateConfig({ ...none, previous: "1.1.0" })).toThrow(/"previous"/);
+    expect(() => validateConfig({ ...none, previous: { ...pin, version: none.version } })).toThrow(/"previous\.version"/);
   });
 
   it("rejects a malformed sha256, naming the field", () => {

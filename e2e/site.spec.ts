@@ -1,5 +1,6 @@
 // SPEC-SITE-001 AC-6, AC-7 and SPEC-UI-001 AC-8 to AC-10: the home and about pages in Chromium against the e2e build.
 import { expect, test, type Page } from "@playwright/test";
+import { ABOUT, LATEST_YEAR, PAPERS, PLATFORMS, platformsMatch } from "./expected";
 import { openDataPage } from "./routes";
 import type { IndexJson, ReleaseDocs, TaxonomyJson } from "../src/data/types";
 import { formatCitation } from "../src/lib/citation";
@@ -110,7 +111,7 @@ test("AC-9: hero search suggests platforms, Enter opens the first, and the list 
   const search = main.getByRole("searchbox", { name: SEARCH_LABEL });
   await expect(search).toBeFocused();
   await page.keyboard.type("Aand2024");
-  await expect(main.locator(".search-count")).toHaveText("1 of 289 platforms match");
+  await expect(main.locator(".search-count")).toHaveText(platformsMatch("Aand2024"));
   await expect(main.locator(".search-suggestions a")).toHaveAttribute("href", "#/platform/Aand2024/P1");
 
   await main.getByRole("button", { name: "Show the match in the list" }).click();
@@ -134,9 +135,9 @@ test("AC-9: the try chips fill the search; the list shows 20 rows, then all", as
   }
   const rows = main.locator('[data-list="platforms"] > li');
   await expect(rows).toHaveCount(20);
-  await main.getByRole("button", { name: "Show all 289 platforms" }).click();
-  await expect(rows).toHaveCount(289);
-  await expect(main.locator(".platform-row-year").first()).toHaveText("2026");
+  await main.getByRole("button", { name: `Show all ${PLATFORMS} platforms` }).click();
+  await expect(rows).toHaveCount(PLATFORMS);
+  await expect(main.locator(".platform-row-year").first()).toHaveText(String(LATEST_YEAR));
 });
 
 test("AC-10: the citation copy button writes the citation to the clipboard", async ({ page, context }) => {
@@ -192,15 +193,17 @@ test("AC-7: about page summary, limits and full data card", async ({ page }) => 
   const text = await ownText(page);
   for (const phrase of [
     "agreement between two language models", "not accuracy against human coding", "no human coding", "not every",
-    "3665 were made by a language model", "isolated manual steps", "preprint", "Paper text and abstracts", "notes",
+    `${ABOUT.decisionsModel} were made by a language model`, "isolated manual steps", "preprint", "Paper text and abstracts", "notes",
   ]) {
     expect(text, phrase).toContain(phrase);
   }
   expect(errors).toEqual([]);
 });
 
-// SPEC-RELEASE-001 AC-4: the About sections of release 1.2.0 and the home intro.
-test("release 1.2.0: About sections in order, timing and human-intervention text, home intro", async ({ page }) => {
+// SPEC-RELEASE-001 AC-4: the About sections of the pinned release and the home intro; the figures are counted from the
+// release tables (e2e/expected.ts), and the Google Scholar alerts are named only when the release holds candidates
+// from them (from 1.2.0 on).
+test("pinned release: About sections in order, timing and human-intervention text, home intro", async ({ page }) => {
   await page.goto("/#/about");
   const main = page.locator("main");
   await expect(main.locator("h2")).toHaveText([
@@ -217,19 +220,20 @@ test("release 1.2.0: About sections in order, timing and human-intervention text
   ]);
   const text = await ownText(page);
   for (const phrase of [
-    "465 step durations",
-    "235 of the 244 papers have at least one value",
+    `${ABOUT.stepDurations} step durations`,
+    `${ABOUT.papersWithTiming} of the ${PAPERS} papers have at least one value`,
     "0.870 for step duration",
     "agreement between two models, not accuracy",
     "reference values are not released",
-    "26 papers state a number",
-    "90 state none of these",
+    `${ABOUT.humanQuantified} papers state a number`,
+    `${ABOUT.humanNotReported} state none of these`,
     "No second reading exists",
     "free-text qualifiers",
     "the reference values of the timing data are not included",
   ]) {
     expect(text, phrase).toContain(phrase);
   }
+  expect(text.includes("Google Scholar alerts")).toBe(ABOUT.alertCandidates > 0);
   await page.goto("/#/");
   const sample = page.locator("main .home-card", { hasText: "About the sample" });
   await expect(sample).toContainText("batch sizes");

@@ -110,9 +110,53 @@ export interface ReleaseDocs {
   data_card: string;
 }
 
+/**
+ * Figures of the release's data card that the home and about pages state (SPEC-SITE-001 REQ-005), counted from the
+ * release tables by build-data (scripts/lib/about.ts); tests/siteText.test.ts checks them against DATA_CARD.md.
+ */
+export interface AboutFacts {
+  /** Candidates and papers from the Google Scholar alerts (after the searches of 20 October 2026); 0 in 1.1.0. */
+  alert_candidates: number;
+  alert_papers: number;
+  /** Candidates screened at each stage (titles, then the second stage on the summaries, then full texts), and the
+   *  screening decisions by who made them. The view data never carries the word for the second stage (derive.test.ts). */
+  screened_titles: number;
+  screened_second_stage: number;
+  screened_fulltexts: number;
+  screening_decisions: number;
+  decisions_model: number;
+  decisions_researcher: number;
+  /** Items marked uncertain by the second coding. */
+  steps_uncertain: number;
+  connections_uncertain: number;
+  /** Timing data: step_timing rows by quantity, joint durations, platform values by quantity, transfer times. */
+  step_durations: number;
+  samples_per_run: number;
+  joint_durations: number;
+  batch_sizes: number;
+  throughputs: number;
+  throughputs_measured: number;
+  throughputs_nominal: number;
+  costs: number;
+  transfer_times: number;
+  /** Papers with at least one timing value. */
+  papers_with_timing: number;
+  /** Human-intervention reporting: papers per category, and papers stating a run length without a person. */
+  human_quantified: number;
+  human_described: number;
+  human_none_stated: number;
+  human_not_reported: number;
+  human_run_length: number;
+  /** Main texts read as preprints, and those whose paper has a journal version with other pages. */
+  preprint_main_texts: number;
+  preprints_other_pages: number;
+}
+
 export interface IndexJson {
   release: ReleaseInfo;
   counts: Counts;
+  /** Figures of the data card for the home and about text, counted by build-data. */
+  about: AboutFacts;
   papers: PaperRow[];
   platforms: PlatformRow[];
 }

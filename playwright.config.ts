@@ -13,6 +13,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,
+  // The suite runs unattended for each monthly release, on a machine that may be busy with other work (simulations
+  // in the same VM); twice Playwright's defaults (30 s a test, 5 s an expect) keeps a slow page from failing a run.
+  // A test that needs more sets its own budget (e2e/a11y.spec.ts AC-10).
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   reporter: [["list"]],
   use: {
     baseURL: `http://localhost:${PORT}/`,

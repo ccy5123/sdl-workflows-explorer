@@ -5,7 +5,7 @@ import { HowItWorks } from "../components/HowItWorks";
 import { PHONE_QUERY, useMedia } from "../components/useMedia";
 import { useReleaseDocs } from "../components/useReleaseDocs";
 import type { IndexJson } from "../data/types";
-import { ABOUT_AUTHOR_LEAD, ABOUT_SECTIONS, AUTHOR, LLM_ABOUT, PREPRINT, WORKFLOW_ABOUT, aboutIntro } from "../lib/siteText";
+import { ABOUT_AUTHOR_LEAD, AUTHOR, LLM_ABOUT, PREPRINT, WORKFLOW_ABOUT, aboutIntro, aboutSections } from "../lib/siteText";
 import { VISITOR_ABOUT } from "../lib/visitors";
 
 /**
@@ -40,8 +40,9 @@ export function About({ index }: { index: IndexJson }) {
   const { docs, error } = useReleaseDocs();
   const phone = useMedia(PHONE_QUERY);
   const doiUrl = `https://doi.org/${index.release.doi}`;
+  const sections = aboutSections(index);
   const contents = [
-    ...ABOUT_SECTIONS.map((s) => ({ id: `about-${s.heading}`, text: s.heading })),
+    ...sections.map((s) => ({ id: `about-${s.heading}`, text: s.heading })),
     { id: "about-full-text", text: "Full text" },
     { id: "about-workflow", text: WORKFLOW_ABOUT.heading },
     { id: "about-llm", text: LLM_ABOUT.heading },
@@ -58,7 +59,7 @@ export function About({ index }: { index: IndexJson }) {
         {PREPRINT.aboutLead} <a href={`https://doi.org/${PREPRINT.doi}`}>the preprint on ChemRxiv</a>.
       </p>
       {phone && <Contents items={contents} />}
-      {ABOUT_SECTIONS.map((s) => (
+      {sections.map((s) => (
         <section key={s.heading} aria-labelledby={`about-${s.heading}`} className="card panel">
           <h2 id={`about-${s.heading}`}>{s.heading}</h2>
           <p>{s.text}</p>
@@ -81,7 +82,7 @@ export function About({ index }: { index: IndexJson }) {
         <h2 id="about-workflow">{WORKFLOW_ABOUT.heading}</h2>
         {/* The builder's method notes (SPEC-UI-001 phase 5); the link to the builder stays in view. */}
         <HowItWorks>
-          {WORKFLOW_ABOUT.paragraphs.map((p) => (
+          {WORKFLOW_ABOUT.paragraphs(index.about.transfer_times).map((p) => (
             <p key={p}>{p}</p>
           ))}
         </HowItWorks>

@@ -1,7 +1,9 @@
 // SPEC-TAXO-001 AC-1 to AC-3 on the real pinned release: unit operations on platform rows, per-class counts and
-// examples, structured correspondence, vocabularies, sources and relations (REQ-001 to REQ-003). The expected numbers
-// are those printed by .moai/specs/SPEC-TAXO-001/expected-counts.mjs. Uses the verified cache in .cache/release/, or
-// SDL_RELEASE_ZIP; skips with a message only when neither is available, as release.test.ts does.
+// examples, structured correspondence, vocabularies, sources and relations (REQ-001 to REQ-003). The usage counts and
+// examples are counted from the release tables by tests/release-expect.ts (the rules of
+// .moai/specs/SPEC-TAXO-001/expected-counts.mjs); the correspondence figures belong to taxonomy v1, which every release
+// keeps. Uses the verified cache in .cache/release/, or SDL_RELEASE_ZIP; skips with a message only when neither is
+// available, as release.test.ts does.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -11,6 +13,7 @@ import { readCsv } from "../scripts/lib/csv";
 import { deriveAll, type Derived } from "../scripts/lib/derive";
 import type { TaxonomyClass } from "../src/data/types";
 import { tempDir } from "./fixtures/zip";
+import { expectedRelease, expectedTaxonomyUse, type ExpClassUse, type ExpRelease } from "./release-expect";
 
 const config = loadConfig();
 const localZip = process.env.SDL_RELEASE_ZIP || undefined;
@@ -25,6 +28,8 @@ if (!available) {
 describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
   let releaseDir: string;
   let d: Derived;
+  let r: ExpRelease;
+  let use: Map<string, ExpClassUse>;
   const cls = (kind: string, name: string): TaxonomyClass =>
     d.taxonomy.classes.find((c) => c.class_kind === kind && c.class === name)!;
 
@@ -32,14 +37,18 @@ describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
     const cacheDir = localZip ? join(tempDir(), "release") : CACHE_DIR;
     releaseDir = await fetchRelease({ config, cacheDir, localZip });
     d = deriveAll(releaseDir);
+    r = expectedRelease(releaseDir);
+    use = expectedTaxonomyUse(r);
   });
 
-  it("AC-1: every platform row has 4 to 15 unit operations, 2209 in all, covering the 31 classes", () => {
+  it("AC-1: every platform row has the unit operations of its steps, covering the classes", () => {
     const lists = d.index.platforms.map((l) => l.unit_operations);
-    expect(lists).toHaveLength(289);
-    expect(Math.min(...lists.map((l) => l.length))).toBe(4);
-    expect(Math.max(...lists.map((l) => l.length))).toBe(15);
-    expect(lists.reduce((n, l) => n + l.length, 0)).toBe(2209);
+    expect(lists).toHaveLength(config.counts.platforms);
+    const want = new Map(r.platforms.map((l) => [l.platform_id, [...l.uo].sort()]));
+    for (const l of d.index.platforms) expect(l.unit_operations, l.platform_id).toEqual(want.get(l.platform_id));
+    // At least 4 per platform in every release so far (planning, analysis, and two physical steps or more).
+    expect(Math.min(...lists.map((l) => l.length))).toBeGreaterThanOrEqual(4);
+    expect(lists.reduce((n, l) => n + l.length, 0)).toBe([...want.values()].reduce((n, l) => n + l.length, 0));
     expect(d.index.platforms.find((l) => l.platform_id === "Aand2024/P1")!.unit_operations).toEqual([
       "analyze_data", "dispense_liquid", "handle_sample", "measure_optical", "plan_next_experiment", "react_photo_electro",
     ]);
@@ -49,7 +58,6 @@ describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
       .map((r) => r.class!)
       .sort();
     expect(union).toEqual(uoClasses);
-    expect(union).toHaveLength(31);
     expect(union[0]).toBe("analyze_data");
     expect(union.at(-1)).toBe("wash_extract");
     expect(union).toContain("unmapped");
@@ -57,62 +65,51 @@ describe.skipIf(!available)("SPEC-TAXO-001 on the real pinned release", () => {
 
   it("AC-2: classes per kind in classes.csv order and unchanged item sums", () => {
     const classes = d.taxonomy.classes;
-    expect(classes.map((c) => `${c.class_kind}/${c.class}`)).toEqual(
-      readCsv(join(releaseDir, "modes/taxonomy/classes.csv")).map((r) => `${r.class_kind}/${r.class}`),
-    );
+    const rows = readCsv(join(releaseDir, "modes/taxonomy/classes.csv"));
+    expect(classes.map((c) => `${c.class_kind}/${c.class}`)).toEqual(rows.map((r) => `${r.class_kind}/${r.class}`));
     const byKind = (kind: string) => classes.filter((c) => c.class_kind === kind);
-    expect([byKind("field_tag"), byKind("module_type"), byKind("transfer_mode"), byKind("unit_operation")].map((k) => k.length)).toEqual([
-      10, 22, 6, 31,
-    ]);
+    const kinds = ["field_tag", "module_type", "transfer_mode", "unit_operation"];
+    expect(kinds.map((k) => byKind(k).length)).toEqual(kinds.map((k) => rows.filter((r) => r.class_kind === k).length));
+    // Taxonomy v1: 10 field tags, 22 module types, 6 transfer modes, 31 unit operations.
+    expect(kinds.map((k) => byKind(k).length)).toEqual([10, 22, 6, 31]);
     const sum = (kind: string) => byKind(kind).reduce((n, c) => n + c.n_items, 0);
-    expect([sum("field_tag"), sum("module_type"), sum("transfer_mode"), sum("unit_operation")]).toEqual([277, 1647, 1724, 2678]);
+    expect(kinds.map(sum)).toEqual([
+      r.csv("core/paper_field_tag.csv").length, config.counts.modules, config.counts.connections, config.counts.steps,
+    ]);
   });
 
-  it("AC-2: n_items / n_platforms / n_papers of the chosen classes", () => {
-    const table: [string, string, number, number, number][] = [
-      ["field_tag", "catalysis", 23, 23, 23],
-      ["field_tag", "chemistry_synthesis", 89, 130, 89],
-      ["field_tag", "unmapped", 0, 0, 0],
-      ["module_type", "flow_reactor", 142, 130, 101],
-      ["module_type", "software", 371, 289, 244],
-      ["module_type", "assembly_unit", 4, 4, 4],
-      ["transfer_mode", "data_transfer", 626, 289, 244],
-      ["transfer_mode", "mobile_robot", 43, 10, 10],
-      ["transfer_mode", "unmapped", 8, 7, 7],
-      ["unit_operation", "sonicate", 11, 5, 5],
-      ["unit_operation", "dispense_liquid", 439, 257, 215],
-      ["unit_operation", "unmapped", 47, 41, 39],
-    ];
-    for (const [kind, name, items, platforms, papers] of table) {
-      const c = cls(kind, name);
-      expect([`${kind}/${name}`, c.n_items, c.n_platforms, c.n_papers]).toEqual([`${kind}/${name}`, items, platforms, papers]);
+  it("AC-2: n_items / n_platforms / n_papers of every class, as counted from the release tables", () => {
+    for (const c of d.taxonomy.classes) {
+      const want = use.get(`${c.class_kind}/${c.class}`)!;
+      expect([`${c.class_kind}/${c.class}`, c.n_items, c.n_platforms, c.n_papers]).toEqual([
+        `${c.class_kind}/${c.class}`, want.n_items, want.n_platforms, want.n_papers,
+      ]);
     }
+    // Classes on every platform and paper, and a class no paper carries.
+    for (const key of ["module_type/software", "transfer_mode/data_transfer"]) {
+      expect([use.get(key)!.n_platforms, use.get(key)!.n_papers]).toEqual([config.counts.platforms, config.counts.papers]);
+    }
+    expect(cls("field_tag", "unmapped")).toMatchObject({ n_items: 0, n_platforms: 0, n_papers: 0 });
   });
 
   it("AC-2: examples, ties in platform id order, and the classes with fewer than five", () => {
     const ex = (kind: string, name: string) => cls(kind, name).examples.map((e) => [e.platform_id, e.n]);
-    expect(ex("module_type", "flow_reactor")).toEqual([
-      ["Bedard2018/P11", 3], ["Nambiar2022/P2", 3], ["AbdelLatif2021/P1", 2], ["Bedard2018/P10", 2], ["Bedard2018/P6", 2],
-    ]);
-    expect(ex("module_type", "assembly_unit")).toEqual([["Dai2025/P1", 1], ["Gao2026/P1", 1], ["Toyama2025/P1", 1], ["Yik2025/P1", 1]]);
-    expect(ex("unit_operation", "sonicate")).toEqual([
-      ["Zhao2026/P1", 6], ["Pilz2023/P1", 2], ["Dave2022/P1", 1], ["Kim2026/P1", 1], ["Yang2026a/P1", 1],
-    ]);
-    expect(ex("transfer_mode", "mobile_robot")).toEqual([
-      ["Song2025/P1", 7], ["Wang2026a/P1", 7], ["Zhu2024/P1", 7], ["Burger2020/P1", 6], ["Yang2026a/P1", 5],
-    ]);
-    expect(ex("field_tag", "catalysis")).toEqual([
-      ["Amara2015/P1", null], ["Bai2023a/P1", null], ["Baumgartner2019/P1", null], ["Bennett2024/P1", null], ["Brody2026/P1", null],
-    ]);
+    for (const c of d.taxonomy.classes) expect(ex(c.class_kind, c.class), `${c.class_kind}/${c.class}`).toEqual(use.get(`${c.class_kind}/${c.class}`)!.examples);
+    // Ties keep platform id order (Bedard2018/P10 before P6 as strings), as in every release so far.
+    const flow = ex("module_type", "flow_reactor");
+    for (let i = 1; i < flow.length; i++) {
+      const [a, b] = [flow[i - 1]!, flow[i]!];
+      expect((a[1] as number) > (b[1] as number) || (a[1] === b[1] && String(a[0]) < String(b[0]))).toBe(true);
+    }
     expect(ex("field_tag", "unmapped")).toEqual([]);
     expect(
       d.taxonomy.classes.filter((c) => c.examples.length < 5).map((c) => `${c.class_kind}/${c.class}:${c.examples.length}`),
-    ).toEqual(["field_tag/unmapped:0", "module_type/assembly_unit:4", "module_type/commercial_integrated:4"]);
-    expect(cls("module_type", "flow_reactor").examples[0]!.platform_name).toBe(
-      "Reconfigurable continuous-flow system, ketene generation and [2+2] cycloaddition configuration",
+    ).toEqual(
+      [...use].filter(([, u]) => u.examples.length < 5).map(([key, u]) => `${key}:${u.examples.length}`),
     );
+    const first = cls("module_type", "flow_reactor").examples[0]!;
+    expect(first.platform_name).toBe(r.platforms.find((l) => l.platform_id === first.platform_id)!.name);
   });
-
   it("AC-3: which classes have a correspondence, and no raw rows at the top level", () => {
     const withCorr = d.taxonomy.classes.filter((c) => c.correspondence !== null);
     expect(withCorr).toHaveLength(56);

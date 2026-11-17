@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PINNED_DOI, pinnedExclusionReasons } from "./pinned-release";
+import { expectedBenchmark, expectedRelease, pinnedReleaseExtracted, SPLIT_NAMES, total } from "./release-expect";
 import type { BenchmarkItemsJson, BenchmarkJson, BenchmarkSummary, BenchmarkTask, IndexJson } from "../src/data/types";
 import {
   BACK_LINK_TEXT,
@@ -47,7 +48,8 @@ import {
 import { BANNED_SUBSTRINGS } from "../src/lib/trends";
 
 const DATA_DIR = join(import.meta.dirname, "..", "public", "data");
-const available = existsSync(join(DATA_DIR, "benchmark.json")) && existsSync(join(DATA_DIR, "benchmark-items.json"));
+const available =
+  existsSync(join(DATA_DIR, "benchmark.json")) && existsSync(join(DATA_DIR, "benchmark-items.json")) && pinnedReleaseExtracted();
 if (!available) console.warn("benchmark.test.ts: real-data tests skipped: public/data/ is absent (run `npm run build-data`)");
 const readJson = <T>(name: string): T => JSON.parse(readFileSync(join(DATA_DIR, name), "utf8")) as T;
 
@@ -280,6 +282,9 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
   const index = available ? readJson<IndexJson>("index.json") : (null as unknown as IndexJson);
   const decode = (q: string) => decodeExplorerQuery(q, b);
   const count = (s: ExplorerState) => filterItems(items[s.task]!, s).length;
+  // Expected values counted from the pinned release's split and item files (tests/release-expect.ts).
+  const expected = available ? expectedRelease() : (null as unknown as ReturnType<typeof expectedRelease>);
+  const bench = available ? expectedBenchmark(expected) : (null as unknown as ReturnType<typeof expectedBenchmark>);
 
   it("AC-6: defaults, the four-key query, dropped values and the last occurrence", () => {
     expect(decode("")).toEqual({ task: MT, split: null, label: null, platform: null });
@@ -305,23 +310,30 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
     const split = splitTable(b);
     const labelCells = b.tasks.flatMap((_, i) => labelRows(b, i).flatMap((r) => r.cells));
     const platformCells = platformRows(b, null).flatMap((r) => r.cells);
+    // Expected cells counted from the release's item files: a label or platform count is linked when it is not 0.
+    const nonZeroLabels = (task: string) =>
+      [...bench.tasks[task]!.labels.values()].reduce((n, c) => n + SPLIT_NAMES.filter((s) => c[s] > 0).length, 0);
+    const allLabels = (task: string) => bench.tasks[task]!.labels.size * 3;
+    const withItems = (task: string) => expected.platforms.filter((l) => bench.perPlatform(task, l.platform_id) > 0).length;
+    const linked = nonZeroLabels(MT) + nonZeroLabels(TM);
     expect(split.rows.flatMap((r) => r.cells)).toHaveLength(6);
     expect(split.total.cells).toHaveLength(2);
-    expect(labelCells.filter((c) => c.href !== null)).toHaveLength(74);
-    expect(labelRows(b, 0).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(60);
-    expect(labelRows(b, 1).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(14);
-    expect(labelCells.filter((c) => c.href === null)).toHaveLength(7);
-    expect(platformCells.filter((c, i) => i % 2 === 0 && c.href !== null)).toHaveLength(289);
-    expect(platformCells.filter((c, i) => i % 2 === 1 && c.href !== null)).toHaveLength(278);
-    expect(cells).toHaveLength(6 + 2 + 74 + 289 + 278);
+    expect(labelCells.filter((c) => c.href !== null)).toHaveLength(linked);
+    expect(labelRows(b, 0).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(nonZeroLabels(MT));
+    expect(labelRows(b, 1).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(nonZeroLabels(TM));
+    expect(labelCells.filter((c) => c.href === null)).toHaveLength(allLabels(MT) + allLabels(TM) - linked);
+    expect(platformCells.filter((c, i) => i % 2 === 0 && c.href !== null)).toHaveLength(withItems(MT));
+    expect(platformCells.filter((c, i) => i % 2 === 1 && c.href !== null)).toHaveLength(withItems(TM));
+    expect(cells).toHaveLength(6 + 2 + linked + withItems(MT) + withItems(TM));
     const wrong = cells.filter((c) => count(decode(queryOf(c.href!))) !== c.n).map((c) => `${c.href}: ${c.n}`);
     expect(wrong).toEqual([]);
+    // The test split is the one of release 1.1.0 (the papers added since are excluded), so its counts stay.
     expect(count({ task: MT, split: "test", label: null, platform: null })).toBe(1189);
     expect(count({ task: TM, split: "test", label: "mobile_robot", platform: null })).toBe(29);
     expect(count({ task: MT, split: null, label: null, platform: "Aand2024/P1" })).toBe(6);
-    expect(count({ task: TM, split: "excluded", label: null, platform: null })).toBe(31);
-    expect([items[MT]!.rows.length, items[TM]!.rows.length]).toEqual([2678, 997]);
-    expect(platformRows(b, "test")).toHaveLength(115);
+    expect(count({ task: TM, split: "excluded", label: null, platform: null })).toBe(bench.tasks[TM]!.items.excluded);
+    expect([items[MT]!.rows.length, items[TM]!.rows.length]).toEqual([total(bench.tasks[MT]!.items), total(bench.tasks[TM]!.items)]);
+    expect(platformRows(b, "test")).toHaveLength(bench.platforms.test);
   });
 
   it("AC-8: the reference rows of the pinned release", () => {
@@ -334,14 +346,15 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
   });
 
   it("AC-8: exclusion line, uncertain sentences, caption and the recorded lines", () => {
-    const [added, development] = pinnedExclusionReasons();
-    expect(b.exclusion_reasons.map(exclusionLine)).toEqual([`Excluded: 7 papers, ${added}.`, `Excluded: 4 papers, ${development}.`]);
+    expect(b.exclusion_reasons.map(exclusionLine)).toEqual(pinnedExclusionReasons().map((e) => `Excluded: ${e.n} papers, ${e.reason}.`));
+    const u = (task: string) => bench.tasks[task]!.uncertain;
     expect(b.summaries.map(uncertainSentence)).toEqual([
-      "22 labels occur among the items of this task. Items marked uncertain in the release: 171 train, 163 test, 17 excluded.",
-      "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 4 excluded.",
+      `22 labels occur among the items of this task. Items marked uncertain in the release: ${u(MT).train} train, ${u(MT).test} test, ${u(MT).excluded} excluded.`,
+      `5 labels occur among the items of this task. Items marked uncertain in the release: ${u(TM).train} train, ${u(TM).test} test, ${u(TM).excluded} excluded.`,
     ]);
+    expect([bench.tasks[MT]!.labels.size, bench.tasks[TM]!.labels.size]).toEqual([22, 5]);
     expect(benchmarkCaption(b)).toBe(
-      "Benchmark chrono2023 has 2 tasks over 244 papers. The data dictionary describes the split as: “Benchmark: " +
+      `Benchmark chrono2023 has 2 tasks over ${index.counts.papers} papers. The data dictionary describes the split as: “Benchmark: ` +
         "chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.” " +
         "The labels are the codings in the release, made by a language model, so top-1 accuracy measures agreement with those codings.",
     );
