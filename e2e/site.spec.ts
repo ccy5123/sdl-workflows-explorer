@@ -110,7 +110,7 @@ test("AC-9: hero search suggests platforms, Enter opens the first, and the list 
   const search = main.getByRole("searchbox", { name: SEARCH_LABEL });
   await expect(search).toBeFocused();
   await page.keyboard.type("Aand2024");
-  await expect(main.locator(".search-count")).toHaveText("1 of 279 platforms match");
+  await expect(main.locator(".search-count")).toHaveText("1 of 289 platforms match");
   await expect(main.locator(".search-suggestions a")).toHaveAttribute("href", "#/platform/Aand2024/P1");
 
   await main.getByRole("button", { name: "Show the match in the list" }).click();
@@ -134,8 +134,8 @@ test("AC-9: the try chips fill the search; the list shows 20 rows, then all", as
   }
   const rows = main.locator('[data-list="platforms"] > li');
   await expect(rows).toHaveCount(20);
-  await main.getByRole("button", { name: "Show all 279 platforms" }).click();
-  await expect(rows).toHaveCount(279);
+  await main.getByRole("button", { name: "Show all 289 platforms" }).click();
+  await expect(rows).toHaveCount(289);
   await expect(main.locator(".platform-row-year").first()).toHaveText("2026");
 });
 
@@ -192,15 +192,15 @@ test("AC-7: about page summary, limits and full data card", async ({ page }) => 
   const text = await ownText(page);
   for (const phrase of [
     "agreement between two language models", "not accuracy against human coding", "no human coding", "not every",
-    "3239 were made by a language model", "isolated manual steps", "preprint", "Paper text and abstracts", "notes",
+    "3665 were made by a language model", "isolated manual steps", "preprint", "Paper text and abstracts", "notes",
   ]) {
     expect(text, phrase).toContain(phrase);
   }
   expect(errors).toEqual([]);
 });
 
-// SPEC-RELEASE-001 AC-4: the About sections of release 1.1.0 and the home intro.
-test("release 1.1.0: About sections in order, timing and human-intervention text, home intro", async ({ page }) => {
+// SPEC-RELEASE-001 AC-4: the About sections of release 1.2.0 and the home intro.
+test("release 1.2.0: About sections in order, timing and human-intervention text, home intro", async ({ page }) => {
   await page.goto("/#/about");
   const main = page.locator("main");
   await expect(main.locator("h2")).toHaveText([
@@ -217,13 +217,13 @@ test("release 1.1.0: About sections in order, timing and human-intervention text
   ]);
   const text = await ownText(page);
   for (const phrase of [
-    "454 step durations",
-    "228 of the 237 papers have at least one value",
+    "465 step durations",
+    "235 of the 244 papers have at least one value",
     "0.870 for step duration",
     "agreement between two models, not accuracy",
     "reference values are not released",
-    "25 papers state a number",
-    "88 state none of these",
+    "26 papers state a number",
+    "90 state none of these",
     "No second reading exists",
     "free-text qualifiers",
     "the reference values of the timing data are not included",

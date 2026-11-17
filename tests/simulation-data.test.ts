@@ -15,20 +15,23 @@ const localZip = process.env.SDL_RELEASE_ZIP || undefined;
 const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NAME));
 if (!available) console.warn("simulation-data.test.ts skipped: no verified release cache and SDL_RELEASE_ZIP is not set");
 
-/** Hashes of the derived files that existed before SPEC-SIM-001, at the start-gate head 817c6ab (progress.md). */
+/**
+ * Hashes of the derived files that existed before SPEC-SIM-001, at the start-gate head 817c6ab (progress.md), re-baselined
+ * on release 1.2.0 (the values tests/benchmark-derive.test.ts and tests/release-docs.test.ts pin).
+ */
 const BASELINE: Record<string, string> = {
-  "benchmark-items.json": "0f12de153f14285d8ac5b7abe8ab2de2f3dd6dce8a8159317f0e5f336994950d",
-  "benchmark.json": "585ca40067f3d1d42091c70c8f69d6b0c4e936edbe5ae1e05aad9cc4d6395474",
-  "index.json": "a452131e2fc31e3b8c39dd4aa42c00dbd910712ac2034f0f89b1d19adbca8174",
-  "release-docs.json": "a734f38aea2fe831ab016d04cd3832761a81698510cc30d5638f628e8de70378",
-  "taxonomy.json": "677615d0272c7a7dd8c297ccf482c0d4ba743dbb9748bdc1bd6766ba98e7ab47",
-  "platforms/*.json": "b4212f2b4b91640dbdfeb66b0d69d8c944e0f2836a9e8f321d1f3829e50d841e",
+  "benchmark-items.json": "37034f666bbeeebf6f2c4619311af4df417a3269484e08cb8dc5f6c2ffe0e09f",
+  "benchmark.json": "f504ef51f4f42ec29b3f195e7e26018de2eafc38522ecb07c43e56cf137909ec",
+  "index.json": "b78de7345ddd2b5c51f4999411e69906c48e1c66e38e32e1e5e9730328b986f1",
+  "release-docs.json": "de0e670b90a69b7818c405f1d4030972a80e819d2b736c7694836154c2f229f8",
+  "taxonomy.json": "603cac0ce1056c2640c0b921734db1627066a6dbe3e4587a61d44f803e79779c",
+  "platforms/*.json": "c9000e02006b546803db5c67931d4dd3ecd46aa3444ca842e78098d1c46cca4b",
 };
 
 const sha = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
 
-describe.skipIf(!available || config.sha256 !== "673b2dbb4c79ef4eb8f7af8c298d640c1cf4e393ab78359bbce0b4cff7c897f6")(
-  "simulation.json on the real 1.1.0 release",
+describe.skipIf(!available || config.sha256 !== "cb248b78cc2e8e0eff4d72885b8225cc65998c7f6d0ff53699c4f91ccd3b6dd4")(
+  "simulation.json on the real 1.2.0 release",
   () => {
     let derived: Derived;
 
@@ -40,16 +43,16 @@ describe.skipIf(!available || config.sha256 !== "673b2dbb4c79ef4eb8f7af8c298d640
     it("AC-1: class lists, durations, throughputs, transfer times and layouts have the release's counts", () => {
       const sim = derived.simulation;
       expect([sim.unit_operations.length, sim.module_types.length, sim.transfer_modes.length]).toEqual([31, 22, 6]);
-      expect(sim.durations).toHaveLength(454);
-      expect(sim.durations.filter((d) => d.joint).length).toBe(57);
-      expect(sim.durations.filter((d) => !d.joint).length).toBe(397);
-      expect(sim.throughputs).toHaveLength(135);
-      expect(sim.throughputs.filter((t) => t.kind === "measured").length).toBe(91);
+      expect(sim.durations).toHaveLength(465);
+      expect(sim.durations.filter((d) => d.joint).length).toBe(61);
+      expect(sim.durations.filter((d) => !d.joint).length).toBe(404);
+      expect(sim.throughputs).toHaveLength(139);
+      expect(sim.throughputs.filter((t) => t.kind === "measured").length).toBe(95);
       expect(sim.throughputs.filter((t) => t.kind === "nominal").length).toBe(44);
-      expect(sim.throughputs.filter((t) => t.per_day !== null).length).toBe(126);
+      expect(sim.throughputs.filter((t) => t.per_day !== null).length).toBe(130);
       expect(sim.throughputs.filter((t) => t.per_day === null).length).toBe(9);
       expect(sim.transfer_times.map((t) => t.seconds)).toEqual([45.7, 6, 7, 30]);
-      expect(sim.platforms).toHaveLength(279);
+      expect(sim.platforms).toHaveLength(289);
     });
 
     it("AC-2: the derived files that existed before keep their start-gate hashes", () => {
@@ -60,7 +63,7 @@ describe.skipIf(!available || config.sha256 !== "673b2dbb4c79ef4eb8f7af8c298d640
         if (name !== "platforms/*.json") got[name] = sha(readFileSync(join(out, name)));
       }
       const files = readdirSync(join(out, "platforms")).sort();
-      expect(files).toHaveLength(237);
+      expect(files).toHaveLength(244);
       got["platforms/*.json"] = sha(Buffer.concat(files.map((f) => readFileSync(join(out, "platforms", f)))));
       expect(got).toEqual(BASELINE);
     });
@@ -69,11 +72,11 @@ describe.skipIf(!available || config.sha256 !== "673b2dbb4c79ef4eb8f7af8c298d640
       const by = new Map<string, number>();
       for (const d of derived.simulation.durations) if (!d.joint) by.set(d.unit_operation, (by.get(d.unit_operation) ?? 0) + 1);
       expect(by.size).toBe(28);
-      expect([...by.values()].reduce((a, b) => a + b, 0)).toBe(397);
+      expect([...by.values()].reduce((a, b) => a + b, 0)).toBe(404);
       expect([by.get("react_flow"), by.get("react_thermal"), by.get("measure_separation_ms"), by.get("measure_physical")])
-        .toEqual([87, 70, 35, 4]);
+        .toEqual([88, 70, 35, 4]);
       for (const uo of ["dispense_solid", "generate_instructions", "purify"]) expect(by.has(uo)).toBe(false);
-      expect([...by.values()].filter((n) => n < 10).length).toBe(17);
+      expect([...by.values()].filter((n) => n < 10).length).toBe(16);
       for (const d of derived.simulation.durations.filter((x) => x.joint)) {
         expect(d.joint!.step_ids[0]).toBe(d.step_id);
         expect(d.joint!.unit_operations).toHaveLength(d.joint!.step_ids.length);

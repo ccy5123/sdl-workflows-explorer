@@ -269,7 +269,7 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
     expect(offeredSplitValues("im", DEFAULT_STATE, offered)).toEqual([
       "fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped",
     ]);
-    expect(offeredSplitValues("sw", DEFAULT_STATE, offered)).toEqual([2, 3]);
+    expect(offeredSplitValues("sw", DEFAULT_STATE, offered)).toEqual([1, 2, 3]);
     expect(offeredSplitValues("hw", DEFAULT_STATE, offered)).toEqual([1, 2, 3]);
     expect(offeredSplitValues("field", DEFAULT_STATE, offered)).toHaveLength(9);
     const mt = offeredSplitValues("mt", DEFAULT_STATE, offered);
@@ -316,17 +316,17 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
   });
 
   it("gives the unfiltered bin totals and the full im table (AC-6)", () => {
-    expect(table("").n).toEqual([27, 4, 5, 3, 12, 7, 16, 17, 18, 26, 27, 39, 36]);
-    expect(table("view=platforms").n).toEqual([28, 4, 6, 4, 24, 8, 22, 17, 20, 27, 36, 41, 42]);
+    expect(table("").n).toEqual([27, 4, 5, 3, 12, 7, 16, 17, 18, 26, 27, 39, 43]);
+    expect(table("view=platforms").n).toEqual([28, 4, 6, 4, 24, 8, 22, 17, 20, 27, 36, 41, 52]);
     const t = table("");
     expect(t.values).toEqual(["fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped"]);
     expect(t.counts).toEqual([
-      [15, 2, 4, 1, 11, 4, 8, 9, 9, 10, 9, 9, 8],
+      [15, 2, 4, 1, 11, 4, 8, 9, 9, 10, 9, 9, 9],
       [1, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 2, 1],
-      [2, 2, 1, 2, 1, 2, 3, 3, 5, 7, 14, 13, 10],
+      [2, 2, 1, 2, 1, 2, 3, 3, 5, 7, 14, 13, 13],
       [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 3],
-      [2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2],
-      [7, 0, 0, 0, 0, 1, 4, 4, 1, 7, 2, 12, 11],
+      [2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3],
+      [7, 0, 0, 0, 0, 1, 4, 4, 1, 7, 2, 12, 13],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
     ]);
   });
@@ -354,25 +354,25 @@ describe.skipIf(!dataAvailable)("offered values, links and count tables on the r
     expect(countLine(S("years=2018-2024&field=catalysis").state)).toBe(11);
 
     const all = table("mt=flow_reactor,liquid_handler&split=mt");
-    expect(all.n).toEqual([1, 1, 1, 0, 4, 3, 1, 0, 1, 1, 4, 0, 2]);
+    expect(all.n).toEqual([1, 1, 1, 0, 4, 3, 1, 0, 1, 1, 4, 0, 4]);
     expect(all.values).toHaveLength(22);
     expect(row(all, "flow_reactor")).toEqual(all.n);
     expect(row(all, "liquid_handler")).toEqual(all.n);
-    expect(countLine(S("mt=flow_reactor,liquid_handler").state)).toBe(19);
+    expect(countLine(S("mt=flow_reactor,liquid_handler").state)).toBe(21);
 
     const any = table("mt=flow_reactor,liquid_handler&mtMatch=any&split=mt");
-    expect(any.n).toEqual([23, 3, 4, 2, 11, 6, 10, 12, 12, 18, 23, 31, 21]);
-    expect(row(any, "flow_reactor")).toEqual([13, 3, 4, 2, 11, 4, 6, 7, 7, 9, 15, 10, 8]);
-    expect(row(any, "liquid_handler")).toEqual([11, 1, 1, 0, 4, 5, 5, 5, 6, 10, 12, 22, 15]);
-    expect(countLine(S("mt=flow_reactor,liquid_handler&mtMatch=any").state)).toBe(176);
+    expect(any.n).toEqual([23, 3, 4, 2, 11, 6, 10, 12, 12, 18, 23, 31, 25]);
+    expect(row(any, "flow_reactor")).toEqual([13, 3, 4, 2, 11, 4, 6, 7, 7, 9, 15, 10, 10]);
+    expect(row(any, "liquid_handler")).toEqual([11, 1, 1, 0, 4, 5, 5, 5, 6, 10, 12, 22, 19]);
+    expect(countLine(S("mt=flow_reactor,liquid_handler&mtMatch=any").state)).toBe(180);
 
     const im = table("im=mixed,robot_arm_gantry");
     expect(im.values).toEqual(["mixed", "robot_arm_gantry"]);
     expect(im.n[0]).toBe(9);
-    expect(countLine(S("im=mixed,robot_arm_gantry").state)).toBe(114);
+    expect(countLine(S("im=mixed,robot_arm_gantry").state)).toBe(119);
 
     for (const t of [papers, all, any, im]) expect(t.n.reduce((a, b) => a + b, 0)).toBe(t.total);
-    expect([papers.total, all.total, any.total, im.total]).toEqual([11, 19, 176, 114]);
+    expect([papers.total, all.total, any.total, im.total]).toEqual([11, 21, 180, 119]);
   });
 });
 

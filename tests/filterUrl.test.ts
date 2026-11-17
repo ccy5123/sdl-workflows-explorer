@@ -239,7 +239,7 @@ describe.skipIf(!dataAvailable)("decodeFilters and offeredValues on the real ind
       "nanomaterials",
     ]);
     expect(offered.im).toEqual(["fixed_tubing", "human_transfer", "mixed", "mobile_robot", "none", "robot_arm_gantry", "unmapped"]);
-    expect(offered.sw).toEqual([2, 3]);
+    expect(offered.sw).toEqual([1, 2, 3]);
     expect(offered.hw).toEqual([1, 2, 3]);
     expect(offered.mt).toHaveLength(22);
     expect(offered.mt[0]).toBe("assembly_unit");

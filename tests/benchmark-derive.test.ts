@@ -11,7 +11,7 @@ import { CACHE_DIR, fetchRelease, MARKER_NAME } from "../scripts/fetch-release";
 import { loadConfig } from "../scripts/lib/config";
 import { deriveAll, type Derived } from "../scripts/lib/derive";
 import { tempDir } from "./fixtures/zip";
-import { pinnedExclusionReason } from "./pinned-release";
+import { pinnedExclusionReasons } from "./pinned-release";
 
 const config = loadConfig();
 const localZip = process.env.SDL_RELEASE_ZIP || undefined;
@@ -51,8 +51,11 @@ describe.skipIf(!available)("SPEC-BENCH-001 on the real pinned release", () => {
     expect(b.split_rule).toBe(
       "Benchmark: chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.",
     );
-    expect(b.split_counts).toEqual({ train: 135, test: 98, excluded: 4 });
-    expect(b.exclusion_reasons).toEqual([{ reason: pinnedExclusionReason(releaseDir), n: 4 }]);
+    expect(b.split_counts).toEqual({ train: 135, test: 98, excluded: 11 });
+    // 1.2.0 leaves its 7 added papers out of the split, under a reason of their own, after the 4 development papers.
+    const [added, development] = pinnedExclusionReasons(releaseDir);
+    expect(development).toBe("one of the 10 development papers of the coding instructions");
+    expect(b.exclusion_reasons).toEqual([{ reason: added, n: 7 }, { reason: development, n: 4 }]);
   });
 
   it("AC-1: two tasks with exactly the 15 fields, equal to the parsed task files", () => {
@@ -66,35 +69,35 @@ describe.skipIf(!available)("SPEC-BENCH-001 on the real pinned release", () => {
   it("AC-1: summaries of items, uncertain items and labels", () => {
     const [mt, tm] = d.benchmark.summaries;
     expect(mt!.task_id).toBe(MT);
-    expect(mt!.items).toEqual({ train: 1383, test: 1189, excluded: 38 });
-    expect(mt!.uncertain).toEqual({ train: 171, test: 163, excluded: 6 });
+    expect(mt!.items).toEqual({ train: 1383, test: 1189, excluded: 106 });
+    expect(mt!.uncertain).toEqual({ train: 171, test: 163, excluded: 17 });
     expect(mt!.labels).toHaveLength(22);
-    expect(mt!.labels[0]).toEqual({ label: "software", train: 362, test: 278, excluded: 9 });
+    expect(mt!.labels[0]).toEqual({ label: "software", train: 362, test: 278, excluded: 31 });
     expect(mt!.labels[21]).toEqual({ label: "assembly_unit", train: 0, test: 4, excluded: 0 });
     expect(tm!.task_id).toBe(TM);
-    expect(tm!.items).toEqual({ train: 542, test: 424, excluded: 15 });
-    expect(tm!.uncertain).toEqual({ train: 47, test: 51, excluded: 1 });
+    expect(tm!.items).toEqual({ train: 542, test: 424, excluded: 31 });
+    expect(tm!.uncertain).toEqual({ train: 47, test: 51, excluded: 4 });
     expect(tm!.labels).toEqual([
-      { label: "fixed_tubing", train: 298, test: 120, excluded: 3 },
-      { label: "robot_arm_gantry", train: 175, test: 187, excluded: 11 },
+      { label: "fixed_tubing", train: 298, test: 120, excluded: 10 },
+      { label: "robot_arm_gantry", train: 175, test: 187, excluded: 19 },
       { label: "human_transfer", train: 58, test: 83, excluded: 0 },
       { label: "mobile_robot", train: 10, test: 29, excluded: 1 },
-      { label: "unmapped", train: 1, test: 5, excluded: 0 },
+      { label: "unmapped", train: 1, test: 5, excluded: 1 },
     ]);
   });
 
-  it("AC-1: 279 platforms in id order with splits and per-task item counts", () => {
+  it("AC-1: 289 platforms in id order with splits and per-task item counts", () => {
     const p = d.benchmark.platforms;
-    expect(p).toHaveLength(279);
+    expect(p).toHaveLength(289);
     const ids = p.map((x) => x.platform_id);
     expect(ids).toEqual([...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
     const bySplit = (s: string) => p.filter((x) => x.split === s).length;
-    expect([bySplit("train"), bySplit("test"), bySplit("excluded")]).toEqual([160, 115, 4]);
+    expect([bySplit("train"), bySplit("test"), bySplit("excluded")]).toEqual([160, 115, 14]);
     expect(p.find((x) => x.platform_id === "Aand2024/P1")).toEqual({ platform_id: "Aand2024/P1", split: "test", n: [6, 3] });
     expect(p.find((x) => x.platform_id === "Zhu2024/P1")).toEqual({ platform_id: "Zhu2024/P1", split: "test", n: [14, 7] });
-    expect(p.filter((x) => x.n[1] === 0)).toHaveLength(10);
-    expect(p.reduce((s, x) => s + x.n[0]!, 0)).toBe(2610);
-    expect(p.reduce((s, x) => s + x.n[1]!, 0)).toBe(981);
+    expect(p.filter((x) => x.n[1] === 0)).toHaveLength(11);
+    expect(p.reduce((s, x) => s + x.n[0]!, 0)).toBe(2678);
+    expect(p.reduce((s, x) => s + x.n[1]!, 0)).toBe(997);
   });
 
   it("AC-1: reference_results keyed in file order with 8 fields; the text byte for byte (620 bytes)", () => {
@@ -110,19 +113,19 @@ describe.skipIf(!available)("SPEC-BENCH-001 on the real pinned release", () => {
     const items = d.benchmarkItems;
     expect(Object.keys(items)).toEqual([MT, TM]);
     expect(items[MT]!.columns).toHaveLength(8);
-    expect(items[MT]!.rows).toHaveLength(2610);
+    expect(items[MT]!.rows).toHaveLength(2678);
     expect(items[MT]!.rows[0]).toEqual([
       "Aand2024/P1/S1", "test", "fluidics", "chemistry_synthesis", "dispense_liquid", "START", "react_photo_electro", 0,
     ]);
     expect(items[TM]!.columns).toHaveLength(9);
-    expect(items[TM]!.rows).toHaveLength(981);
+    expect(items[TM]!.rows).toHaveLength(997);
     expect(items[TM]!.rows[0]).toEqual([
       "Aand2024/P1/E1", "test", "fixed_tubing", "chemistry_synthesis", "dispense_liquid", "react_photo_electro", "prepare", "react", 0,
     ]);
     const uncertainSum = (task: string) => items[task]!.rows.reduce((s, r) => s + (r[r.length - 1] as number), 0);
     expect(items[MT]!.rows.every((r) => typeof r[7] === "number")).toBe(true);
     expect(items[TM]!.rows.every((r) => typeof r[8] === "number")).toBe(true);
-    expect([uncertainSum(MT), uncertainSum(TM)]).toEqual([340, 99]);
+    expect([uncertainSum(MT), uncertainSum(TM)]).toEqual([351, 102]);
   });
 });
 
@@ -142,14 +145,14 @@ describe.skipIf(!built)("files after build-data (SPEC-BENCH-001 AC-4)", () => {
     expect(items).toBeLessThanOrEqual(500_000);
   });
 
-  // Baselines of release 1.1.0 (SPEC-RELEASE-001 AC-3); tests/release-docs.test.ts checks what changed from the previous release.
+  // Baselines of release 1.2.0 (SPEC-RELEASE-001 AC-3); tests/release-docs.test.ts checks what changed from the previous release.
   it("keeps index.json, taxonomy.json and the platform files at the baseline of the pinned release", () => {
     const dir = join(DATA_DIR, "platforms");
     const names = readdirSync(dir).sort();
-    expect(names).toHaveLength(237);
+    expect(names).toHaveLength(244);
     const platforms = sha256(Buffer.concat(names.map((n) => readFileSync(join(dir, n)))));
-    expect(sha256(readFileSync(join(DATA_DIR, "index.json")))).toBe("a452131e2fc31e3b8c39dd4aa42c00dbd910712ac2034f0f89b1d19adbca8174");
-    expect(sha256(readFileSync(join(DATA_DIR, "taxonomy.json")))).toBe("677615d0272c7a7dd8c297ccf482c0d4ba743dbb9748bdc1bd6766ba98e7ab47");
-    expect(platforms).toBe("b4212f2b4b91640dbdfeb66b0d69d8c944e0f2836a9e8f321d1f3829e50d841e");
+    expect(sha256(readFileSync(join(DATA_DIR, "index.json")))).toBe("b78de7345ddd2b5c51f4999411e69906c48e1c66e38e32e1e5e9730328b986f1");
+    expect(sha256(readFileSync(join(DATA_DIR, "taxonomy.json")))).toBe("603cac0ce1056c2640c0b921734db1627066a6dbe3e4587a61d44f803e79779c");
+    expect(platforms).toBe("c9000e02006b546803db5c67931d4dd3ecd46aa3444ca842e78098d1c46cca4b");
   });
 });

@@ -14,21 +14,21 @@ function copy(): Record<string, unknown> {
 describe("release config", () => {
   it("loads the repository config with version, pinned hash and the seven counts", () => {
     const cfg = loadConfig("release.config.json");
-    expect(cfg.version).toBe("1.1.0");
-    expect(cfg.sha256).toBe("673b2dbb4c79ef4eb8f7af8c298d640c1cf4e393ab78359bbce0b4cff7c897f6");
+    expect(cfg.version).toBe("1.2.0");
+    expect(cfg.sha256).toBe("cb248b78cc2e8e0eff4d72885b8225cc65998c7f6d0ff53699c4f91ccd3b6dd4");
     expect(cfg.counts).toEqual({
-      papers: 237,
-      platforms: 279,
-      modules: 1597,
-      steps: 2610,
-      connections: 1681,
-      material_connections: 1074,
-      candidates: 2172,
+      papers: 244,
+      platforms: 289,
+      modules: 1647,
+      steps: 2678,
+      connections: 1724,
+      material_connections: 1098,
+      candidates: 2540,
     });
-    expect(cfg.doi).toBe("10.5281/zenodo.23875743");
-    expect(cfg.record_id).toBe("23875743");
-    expect(cfg.file_name).toBe("sdl-workflows-1.1.0.zip");
-    expect(cfg.url).toBe("https://zenodo.org/api/records/23875743/files/sdl-workflows-1.1.0.zip/content");
+    expect(cfg.doi).toBe("10.5281/zenodo.24088968");
+    expect(cfg.record_id).toBe("24088968");
+    expect(cfg.file_name).toBe("sdl-workflows-1.2.0.zip");
+    expect(cfg.url).toBe("https://zenodo.org/api/records/24088968/files/sdl-workflows-1.2.0.zip/content");
   });
 
   it("rejects a malformed sha256, naming the field", () => {
@@ -45,8 +45,8 @@ describe("release config", () => {
 
   it.each([
     ["version", "1.0"],
-    ["doi", "zenodo.23875743"],
-    ["record_id", 23875743],
+    ["doi", "zenodo.24088968"],
+    ["record_id", 24088968],
     ["file_name", "sub/release.zip"],
     ["url", "http://zenodo.org/x.zip"],
     ["counts", "many"],

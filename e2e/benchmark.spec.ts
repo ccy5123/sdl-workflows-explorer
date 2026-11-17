@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { DATA_LINKS, openDataPage } from "./routes";
-import { PINNED_DOI, PINNED_RELEASE_DIR, PINNED_VERSION, pinnedExclusionReason } from "../tests/pinned-release";
+import { PINNED_DOI, PINNED_RELEASE_DIR, PINNED_VERSION, pinnedExclusionReasons } from "../tests/pinned-release";
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -24,7 +24,7 @@ const REFERENCE_TEXT = readFileSync(
   "utf8",
 );
 const CAPTION =
-  "Benchmark chrono2023 has 2 tasks over 237 papers. The data dictionary describes the split as: “Benchmark: chrono2023 " +
+  "Benchmark chrono2023 has 2 tasks over 244 papers. The data dictionary describes the split as: “Benchmark: chrono2023 " +
   "trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.” The labels are " +
   "the codings in the release, made by a language model, so top-1 accuracy measures agreement with those codings.";
 const MT_RULE = "every step that has a primary module (its first listed module); the label is that module's type";
@@ -75,16 +75,18 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
   expect(await cellTexts(page, 'table[aria-label="Split"] tbody tr')).toEqual([
     ["train", "135", "1383", "542"],
     ["test", "98", "1189", "424"],
-    ["excluded", "4", "38", "15"],
-    ["Total", "237", "2610", "981"],
+    ["excluded", "11", "106", "31"],
+    ["Total", "244", "2678", "997"],
   ]);
-  await expect(page.getByText(`Excluded: 4 papers, ${pinnedExclusionReason()}.`, { exact: true })).toBeVisible();
+  const [added, development] = pinnedExclusionReasons();
+  await expect(page.getByText(`Excluded: 7 papers, ${added}.`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`Excluded: 4 papers, ${development}.`, { exact: true })).toBeVisible();
 
   for (const [task, title, unit, rule, inputs, labels, sentence] of [
     [MT, MT_NAME, "step", MT_RULE, MT_INPUTS, 22,
-      "22 labels occur among the items of this task. Items marked uncertain in the release: 171 train, 163 test, 6 excluded."],
+      "22 labels occur among the items of this task. Items marked uncertain in the release: 171 train, 163 test, 17 excluded."],
     [TM, TM_NAME, "material connection", TM_RULE, TM_INPUTS, 5,
-      "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 1 excluded."],
+      "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 4 excluded."],
   ] as const) {
     const section = region(page, title);
     await expect(section.locator(".bench-task-id code")).toHaveText(task);
@@ -119,11 +121,11 @@ test("AC-10: the benchmark page in order, with the split table, tasks, reference
   );
 
   const platforms = region(page, "Items by platform");
-  await expect(countLine(page)).toHaveText("279 platforms");
-  await expect(platforms.locator("tbody tr")).toHaveCount(279);
+  await expect(countLine(page)).toHaveText("289 platforms");
+  await expect(platforms.locator("tbody tr")).toHaveCount(289);
   await expect(platformRow(page, "Aand2024/P1").locator('td[data-label="Name"]')).toHaveText("auto-optimization platform (AOP)");
   await platforms.getByLabel("Split").selectOption({ label: "Test" });
-  await expect(countLine(page)).toHaveText("115 of 279 platforms");
+  await expect(countLine(page)).toHaveText("115 of 289 platforms");
   await expect(platforms.locator("tbody tr")).toHaveCount(115);
   expect(await hash(page)).toBe("#/benchmark");
   expect(errors).toEqual([]);
@@ -144,17 +146,17 @@ test("AC-11: label, platform and count links", async ({ page }) => {
 
   await labelRow(page, TM_NAME, "mobile_robot").locator('td[data-label="Test"] a').click();
   await expect(page.locator(".benchmark h1")).toHaveText("Benchmark items");
-  await expect(countLine(page)).toHaveText("29 of 981 items");
+  await expect(countLine(page)).toHaveText("29 of 997 items");
   await page.goBack();
 
   await platformRow(page, "Aand2024/P1").locator('td[data-label="Module type items"] a').click();
-  await expect(countLine(page)).toHaveText("6 of 2610 items");
+  await expect(countLine(page)).toHaveText("6 of 2678 items");
   await page.goBack();
 
   await page.locator('table[aria-label="Split"] tbody tr', { has: page.locator("td", { hasText: /^excluded$/ }) })
     .locator('td[data-label="Module type items"] a')
     .click();
-  await expect(countLine(page)).toHaveText("38 of 2610 items");
+  await expect(countLine(page)).toHaveText("106 of 2678 items");
   expect(errors).toEqual([]);
 });
 
@@ -166,7 +168,7 @@ test("AC-12: the explorer, its controls, Show 100 more and the platform filter",
   await page.evaluate(() => {
     window.location.hash = "#/benchmark/items";
   });
-  await expect(countLine(page)).toHaveText("2610 of 2610 items");
+  await expect(countLine(page)).toHaveText("2678 of 2678 items");
   expect(await hash(page)).toBe(`#/benchmark/items?task=${MT}`);
   expect(await page.evaluate(() => history.length)).toBe(length + 1);
   await expect(h1(page, "Benchmark items")).toBeVisible();
@@ -189,11 +191,11 @@ test("AC-12: the explorer, its controls, Show 100 more and the platform filter",
   await expect(rows).toHaveCount(200);
 
   await page.getByLabel("Split").selectOption({ label: "Test" });
-  await expect(countLine(page)).toHaveText("1189 of 2610 items");
+  await expect(countLine(page)).toHaveText("1189 of 2678 items");
   await expect(rows).toHaveCount(100);
   expect(await hash(page)).toBe(`#/benchmark/items?task=${MT}&split=test`);
   await page.getByLabel("Label").selectOption("software");
-  await expect(countLine(page)).toHaveText("278 of 2610 items");
+  await expect(countLine(page)).toHaveText("278 of 2678 items");
 
   await page.getByLabel("Task").selectOption(TM);
   await expect(page.getByLabel("Label")).toHaveValue("");
@@ -206,16 +208,16 @@ test("AC-12: the explorer, its controls, Show 100 more and the platform filter",
   await expect(rows.first().locator('td[data-label="From family"]')).not.toHaveText("");
 
   await page.getByLabel("Split").selectOption({ label: "Excluded" });
-  await page.getByLabel("Label").selectOption("unmapped");
-  await expect(countLine(page)).toHaveText("0 of 981 items");
+  await page.getByLabel("Label").selectOption("human_transfer");
+  await expect(countLine(page)).toHaveText("0 of 997 items");
   await expect(page.getByText("No items match.", { exact: true })).toBeVisible();
   await expect(page.locator(".benchmark table")).toHaveCount(0);
 
   await page.goto(`/#/benchmark/items?task=${MT}&platform=Aand2024%2FP1`);
-  await expect(countLine(page)).toHaveText("6 of 2610 items");
+  await expect(countLine(page)).toHaveText("6 of 2678 items");
   await expect(page.getByText("Platform: Aand2024/P1")).toBeVisible();
   await page.getByRole("button", { name: "Remove platform", exact: true }).click();
-  await expect(countLine(page)).toHaveText("2610 of 2610 items");
+  await expect(countLine(page)).toHaveText("2678 of 2678 items");
   expect(await hash(page)).toBe(`#/benchmark/items?task=${MT}`);
   await expect(page.getByText("Platform: Aand2024/P1")).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -227,7 +229,7 @@ test("AC-12: back navigation returns to the page that opened the explorer", asyn
   await page.evaluate(() => {
     window.location.hash = "#/benchmark/items";
   });
-  await expect(countLine(page)).toHaveText("2610 of 2610 items");
+  await expect(countLine(page)).toHaveText("2678 of 2678 items");
   await page.goBack();
   expect(await hash(page)).toBe("#/");
   await expect(page.getByText(`Data version ${PINNED_VERSION}`)).toBeVisible();
@@ -247,7 +249,7 @@ test("AC-13: requests of each route", async ({ page }) => {
   const freshRequested: string[] = [];
   fresh.on("request", (r) => freshRequested.push(new URL(r.url()).pathname));
   await fresh.goto("/#/benchmark/items");
-  await expect(countLine(fresh)).toHaveText("2610 of 2610 items");
+  await expect(countLine(fresh)).toHaveText("2678 of 2678 items");
   expect(freshRequested.filter((p) => p.endsWith("/data/benchmark.json"))).toHaveLength(1);
   expect(freshRequested.filter((p) => p.endsWith("/data/benchmark-items.json"))).toHaveLength(1);
   expect(freshRequested.filter((p) => p.includes("/data/platforms/") || p.endsWith("/data/taxonomy.json"))).toEqual([]);
@@ -352,7 +354,7 @@ test("AC-15: no horizontal scroll at 375 px; stacked cells carry their column la
   expect(await noScroll()).toBe(true);
 
   await page.goto(`/#/benchmark/items?task=${TM}`);
-  await expect(countLine(page)).toHaveText("981 of 981 items");
+  await expect(countLine(page)).toHaveText("997 of 997 items");
   expect(await noScroll()).toBe(true);
   expect(await stacked()).toEqual([]);
 });
@@ -390,11 +392,11 @@ test("table words wrap only at spaces, hyphens, _ or / at 1280 px", async ({ pag
   expect(await brokenWords()).toEqual([]);
 
   await page.goto(`/#/benchmark/items?task=${MT}`);
-  await expect(countLine(page)).toHaveText("2610 of 2610 items");
+  await expect(countLine(page)).toHaveText("2678 of 2678 items");
   expect(await brokenWords()).toEqual([]);
 
   await page.goto(`/#/benchmark/items?task=${TM}`);
-  await expect(countLine(page)).toHaveText("981 of 981 items");
+  await expect(countLine(page)).toHaveText("997 of 997 items");
   expect(await brokenWords()).toEqual([]);
 });
 

@@ -172,9 +172,9 @@ describe.skipIf(!dataAvailable)("unit-operation filter counts on the real index 
   it.each<[string, Partial<FilterState>, number, number]>([
     ["uo sonicate", { uo: ["sonicate"] }, 5, 5],
     ["uo mix, sonicate, all", { uo: ["mix", "sonicate"] }, 0, 0],
-    ["uo mix, sonicate, any", { uo: ["mix", "sonicate"], uoMatch: "any" }, 98, 111],
+    ["uo mix, sonicate, any", { uo: ["mix", "sonicate"], uoMatch: "any" }, 101, 114],
     ["mt liquid_handler and uo dispense_solid", { mt: ["liquid_handler"], uo: ["dispense_solid"] }, 16, 18],
-    ["uo clean_equipment, dispense_liquid", { uo: ["clean_equipment", "dispense_liquid"] }, 61, 74],
+    ["uo clean_equipment, dispense_liquid", { uo: ["clean_equipment", "dispense_liquid"] }, 64, 77],
   ])("%s", (_name, patch, papers, platforms) => {
     expect(count(patch)).toEqual([papers, platforms]);
   });
@@ -203,21 +203,21 @@ describe.skipIf(!dataAvailable)("filter counts on the real index (AC-5)", () => 
   };
 
   it.each<[string, Partial<FilterState>, number, number]>([
-    ["default", {}, 237, 279],
+    ["default", {}, 244, 289],
     ["years 2018-2024", { years: { from: 2018, to: 2024 } }, 123, 154],
-    ["years from 2026", { years: { from: 2026, to: null } }, 36, 42],
+    ["years from 2026", { years: { from: 2026, to: null } }, 43, 52],
     ["years to 2014", { years: { from: null, to: 2014 } }, 27, 28],
-    ["field catalysis, nanomaterials", { field: ["catalysis", "nanomaterials"] }, 66, 68],
-    ["im mixed", { im: ["mixed"] }, 65, 86],
-    ["im fixed_tubing, mobile_robot", { im: ["fixed_tubing", "mobile_robot"] }, 105, 125],
+    ["field catalysis, nanomaterials", { field: ["catalysis", "nanomaterials"] }, 67, 70],
+    ["im mixed", { im: ["mixed"] }, 68, 92],
+    ["im fixed_tubing, mobile_robot", { im: ["fixed_tubing", "mobile_robot"] }, 106, 126],
     ["sw 3", { sw: [3] }, 4, 4],
-    ["hw 1, 3", { hw: [1, 3] }, 9, 9],
-    ["mt flow_reactor", { mt: ["flow_reactor"] }, 99, 127],
-    ["mt flow_reactor, liquid_handler, all", { mt: ["flow_reactor", "liquid_handler"] }, 19, 25],
-    ["mt flow_reactor, liquid_handler, any", { mt: ["flow_reactor", "liquid_handler"], mtMatch: "any" }, 176, 209],
-    ["tm fixed_tubing, robot_arm_gantry, all", { tm: ["fixed_tubing", "robot_arm_gantry"] }, 21, 24],
-    ["tm fixed_tubing, robot_arm_gantry, any", { tm: ["fixed_tubing", "robot_arm_gantry"], tmMatch: "any" }, 213, 253],
-    ["mt flow_reactor and tm robot_arm_gantry", { mt: ["flow_reactor"], tm: ["robot_arm_gantry"] }, 9, 9],
+    ["hw 1, 3", { hw: [1, 3] }, 10, 10],
+    ["mt flow_reactor", { mt: ["flow_reactor"] }, 101, 130],
+    ["mt flow_reactor, liquid_handler, all", { mt: ["flow_reactor", "liquid_handler"] }, 21, 28],
+    ["mt flow_reactor, liquid_handler, any", { mt: ["flow_reactor", "liquid_handler"], mtMatch: "any" }, 180, 216],
+    ["tm fixed_tubing, robot_arm_gantry, all", { tm: ["fixed_tubing", "robot_arm_gantry"] }, 23, 26],
+    ["tm fixed_tubing, robot_arm_gantry, any", { tm: ["fixed_tubing", "robot_arm_gantry"], tmMatch: "any" }, 219, 262],
+    ["mt flow_reactor and tm robot_arm_gantry", { mt: ["flow_reactor"], tm: ["robot_arm_gantry"] }, 10, 10],
     ["q chemspeed", { q: "chemspeed" }, 7, 9],
     ["years 2018-2024, field catalysis, mt flow_reactor", { years: { from: 2018, to: 2024 }, field: ["catalysis"], mt: ["flow_reactor"] }, 6, 6],
   ])("%s → %i papers, %i platforms", (_name, patch, papers, platforms) => {

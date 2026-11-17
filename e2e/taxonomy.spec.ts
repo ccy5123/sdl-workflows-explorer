@@ -116,7 +116,7 @@ test("AC-11: navigation, overview caption, sources, relations and class tables",
   }
   // Class links show the readable name; the code follows outside the link (SPEC-UI-001 phase 5).
   const flow = region(page, "Module types").locator("tbody tr", { has: link(page, "Flow reactor") });
-  await expect(flow).toContainText("139 modules");
+  await expect(flow).toContainText("142 modules");
   await expect(flow.getByRole("link")).toHaveAttribute("href", "#/taxonomy/module_type/flow_reactor");
   await expect(flow.locator(".taxo-code")).toHaveText("flow_reactor");
   await expect(region(page, "Field tags").locator("tbody tr", { has: link(page, "Catalysis") })).toContainText("23 papers");
@@ -208,9 +208,9 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   await expect(h1(page, "Flow reactor")).toBeVisible();
   await expect(page.locator(".taxo-facts")).toContainText("Module type");
   const counts = region(page, "Counts");
-  await expect(counts).toContainText("139 modules");
-  expect(await followCount(page, "127 platforms")).toBe("127 of 279 platforms");
-  expect(await followCount(page, "99 papers")).toBe("99 of 237 papers");
+  await expect(counts).toContainText("142 modules");
+  expect(await followCount(page, "130 platforms")).toBe("130 of 289 platforms");
+  expect(await followCount(page, "101 papers")).toBe("101 of 244 papers");
   const first = region(page, "Example platforms").getByRole("listitem").first();
   await expect(first.getByRole("link")).toHaveText("Bedard2018/P11");
   await expect(first).toContainText("(3 modules)");
@@ -223,8 +223,8 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   await page.goto("/#/taxonomy/field_tag/catalysis");
   await expect(h1(page, "Catalysis")).toBeVisible();
   await expect(region(page, "Counts").getByRole("listitem")).toHaveText(["23 platforms", "23 papers"]);
-  expect(await followCount(page, "23 platforms")).toBe("23 of 279 platforms");
-  expect(await followCount(page, "23 papers")).toBe("23 of 237 papers");
+  expect(await followCount(page, "23 platforms")).toBe("23 of 289 platforms");
+  expect(await followCount(page, "23 papers")).toBe("23 of 244 papers");
   const examples = region(page, "Example platforms");
   await expect(examples.getByRole("link")).toHaveText(["Amara2015/P1", "Bai2023a/P1", "Baumgartner2019/P1", "Bennett2024/P1", "Brody2026/P1"]);
   const items = await examples.getByRole("listitem").allTextContents();
@@ -232,14 +232,14 @@ test("AC-12: module type, field tag and transfer mode pages with matching count 
   await expect(examples).toContainText("The first five platforms with this field tag, in platform id order.");
 
   await page.goto("/#/taxonomy/transfer_mode/data_transfer");
-  await expect(region(page, "Counts")).toContainText("607 connections");
-  await expect(link(page, "279 platforms")).toHaveAttribute("href", "#/browse?view=platforms");
-  await expect(link(page, "237 papers")).toHaveAttribute("href", "#/browse");
+  await expect(region(page, "Counts")).toContainText("626 connections");
+  await expect(link(page, "289 platforms")).toHaveAttribute("href", "#/browse?view=platforms");
+  await expect(link(page, "244 papers")).toHaveAttribute("href", "#/browse");
   await expect(region(page, "Counts")).toContainText(
-    "data_transfer is not offered by the browser's filters. It is recorded on all 279 platforms, so these links open the full lists.",
+    "data_transfer is not offered by the browser's filters. It is recorded on all 289 platforms, so these links open the full lists.",
   );
-  expect(await followCount(page, "279 platforms")).toBe("279 of 279 platforms");
-  expect(await followCount(page, "237 papers")).toBe("237 of 237 papers");
+  expect(await followCount(page, "289 platforms")).toBe("289 of 289 platforms");
+  expect(await followCount(page, "244 papers")).toBe("244 of 244 papers");
   expect(errors).toEqual([]);
 });
 
@@ -249,8 +249,8 @@ test("AC-12: unit operation, unused field tag and four-example pages", async ({ 
   await expect(page.locator(".taxo-facts")).toContainText("Unit operation");
   await expect(page.locator(".taxo-facts")).toContainText("mix");
   await expect(region(page, "Counts")).toContainText("11 steps");
-  expect(await followCount(page, "5 platforms")).toBe("5 of 279 platforms");
-  expect(await followCount(page, "5 papers")).toBe("5 of 237 papers");
+  expect(await followCount(page, "5 platforms")).toBe("5 of 289 platforms");
+  expect(await followCount(page, "5 papers")).toBe("5 of 244 papers");
   const first = region(page, "Example platforms").getByRole("listitem").first();
   await expect(first.getByRole("link")).toHaveText("Zhao2026/P1");
   await expect(first).toContainText("(6 steps)");
@@ -474,7 +474,7 @@ test("AC-16: keyboard reaches and opens the taxonomy links", async ({ page }) =>
   await tabToLink(page, "Flow reactor");
   await page.keyboard.press("Enter");
   await expect(h1(page, "Flow reactor")).toBeVisible();
-  await tabToLink(page, "127 platforms");
+  await tabToLink(page, "130 platforms");
   await tabToLink(page, "Bedard2018/P11");
   await tabToLink(page, "XDL");
 });

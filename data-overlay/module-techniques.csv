@@ -3,6 +3,7 @@ Aand2024/P1/M3,none,HPLC pumps
 Aand2024/P1/M4,ir_spectroscopy,in-line FT-IR (Mettler-Toledo ReactIR 15 with flow cell)
 AbdelLatif2021/P1/M4,fluorescence_photoluminescence,"spectral monitoring module: custom flow cell with fiber-coupled UV LED and Flame spectrometer (Ocean Insight), PL spectroscopy"
 Adesiji2026a/P1/M2,optical_microscopy_imaging,elliptical imaging station (EIS) with Mokose UC40M camera
+Agostini2026/P1/M3,electrochemical_measurement,"custom 2 mL PMMA reactor with Pt working and mercury sulfate reference electrodes, read by Keysight 34465A digital multimeter (DMM)"
 Ahn2023/P1/M4,ir_spectroscopy,in-line FT-IR spectrometer (Jasco FT/IR-4600 with flow cell)
 Aka2019/P1/M2,none,HPLC pumps (JASCO PU2080)
 Aka2019/P1/M4,liquid_chromatography,online HPLC unit with 2-way 6-port switch valve (VICI Cheminert C2-3006D) and UV detector (JASCO UV 2075)
@@ -23,6 +24,8 @@ Bai2023a/P1/M11,x_ray_photoelectron_spectroscopy,PHI Quantera SXM Scanning X-ray
 Bai2023a/P1/M9,uv_vis_spectroscopy,plate reader (Tecan Infinite M Plex) for UV-Vis
 Bai2024a/P1/M3,liquid_chromatography,Shimadzu CBM-20A HPLC with four-way VICI switching valve (CI4W.06/.5 injector)
 Bai2024a/P2/M3,liquid_chromatography,Agilent 1260 Infinity II HPLC with 6-port 2-position VICI switch valve (60 nL sampling rotor)
+Bai2026a/P1/M4,uv_vis_spectroscopy,BioTek Cytation 5 multimode reader
+Bai2026a/P2/M5,nmr_spectroscopy,benchtop 1H NMR spectrometer (Spinsolve)
 Bateni2022/P1/M3,fluorescence_photoluminescence,"online NC characterization module / spectral monitoring module (two flow cells, UV LED, Ocean HDX spectrometer, optical switch)"
 Bateni2024/P1/M3,uv_vis_spectroscopy;fluorescence_photoluminescence,"in situ characterization module (flowcell with UV LED, DH-2000-BAL light source and Ocean HDX miniature spectrometer)"
 Baumgartner2018/P1/M3,liquid_chromatography;mass_spectrometry,online LC/MS (Agilent)
@@ -56,6 +59,9 @@ Chang2020/P1/M4,raman_spectroscopy,Raman spectrometer
 Chang2023/P1/M4,nmr_spectroscopy,Magritek NMR
 Chang2026/P1/M3,x_ray_diffraction,high-throughput wide-angle X-ray diffraction at CHESS ID3B (Dectris Eiger 1M detector)
 Chang2026/P1/M4,optical_microscopy_imaging,microscopy imaging (camera)
+Che2026/P1/M10,uv_vis_spectroscopy,INESA 721G Spectrophotometer
+Che2026/P1/M4,ph_measurement,LEICI PHSJ-3F pH Meter (with LEICI E-301-QC pH probe)
+Che2026/P1/M5,electrochemical_measurement,Chenhua CHI660F Electrochemical Workstation
 Cherkasov2018/P1/M1,none,"HPLC pumps (Knauer P120, Knauer P4.1S) with Bronkhorst mass-flow controllers and back-pressure regulator"
 Cherkasov2018/P1/M3,gas_chromatography,online GC (Shimadzu GC-2010) with modified autosampler and Lab Solutions software
 Christensen2021/P1/M3,liquid_chromatography,Agilent 1100 HPLC with photodiode array detector and custom on-deck sampling valve
@@ -202,6 +208,7 @@ Leonov2024/P1/M2,nmr_spectroscopy,benchtop NMR (Magritek Spinsolve 80 Carbon) wi
 Leonov2024/P2/M2,liquid_chromatography,HPLC (Agilent 1260 Infinity II) with sample loop switching valve (Rheodyne MX Series II)
 Leonov2024/P3/M2,liquid_chromatography,HPLC (Agilent 1260 Infinity II) with sample loop switching valve (Rheodyne MX Series II)
 Leonov2024/P4/M2,raman_spectroscopy,Raman spectrometer (OceanInsight QE Pro) with 785 nm laser and contactless probe
+Leutner2026/P1/M2,optical_microscopy_imaging,Kerr microscope (evico magnetics) with fields and currents applied to the sample
 Li2020/P1/M4,uv_vis_spectroscopy,"In situ spectrometer (DH-mini light source, USB2000+)"
 Li2020/P1/M6,none,CD spectrometer (JASCO J-1500)
 Li2025/P1/M2,none,"programmable DC power supply (ITECH) heating on manipulator, with infrared thermometer and ANN temperature control"
@@ -266,6 +273,7 @@ Olansky1978/P1/M3,uv_vis_spectroscopy,colorimeter with flowcell (502 nm)
 OrtizPerez2024/P1/M3,optical_microscopy_imaging,Nikon Eclipse Ti2 microscope (high content imaging)
 OrtizPerez2024/P1/M8,dynamic_light_scattering,Zetasizer Nano-ZS (DLS)
 OrtizPerez2024/P1/M9,uv_vis_spectroscopy,BioTek Synergy H1 microplate reader
+Pan2026/P1/M2,electrochemical_measurement,potentiostat (BioLogic) with miniaturized microelectrode bundle
 Pant2018/P1/M3,liquid_chromatography;mass_spectrometry,LC/MS/ELSD analytics (HPLC with MS/UV/ELSD and mass-triggered fraction collection)
 Pant2018/P1/M6,uv_vis_spectroscopy,integrated plate reader (SpectraMAX Paradigm)
 Pant2018/P1/M7,liquid_chromatography,"online CHI LogD assay (integrated HPLC/UV, Agilent Infinity 1260 with Valco injection valve)"
@@ -294,10 +302,16 @@ Poscharny2018/P1/M2,ir_spectroscopy,in-line ReactIR spectrometer (Mettler Toledo
 Poscharny2018/P1/M4,none,"HPLC pumps (Knauer K-120), valve controls (Upchurch Scientific V-1341), T-shaped micromixer"
 Putz2024/P1/M2,uv_vis_spectroscopy,"multimode plate-reader (Spark, Tecan)"
 Putz2025/P1/M3,uv_vis_spectroscopy,"multimode plate reader (Spark, Tecan)"
+Qin2026/P1/M2,uv_vis_spectroscopy,Absorbance 96 Automate plate reader (Byonoy)
 Quinn2024/P1/M2,electrochemical_measurement,"electrochemical attachment with potentiostat (Gamry Interface 1010E), Pt counter and Ag/Ag+ reference electrodes, ITO-bottom PDMS well as working electrode"
 Quinn2024/P1/M3,optical_microscopy_imaging,"telecentric lens (Edmund optics #52-271) with c-mount camera (Grasshopper 3, FLIR), electroluminescent panel for transmission"
 Ramezani2026/P1/M2,electrochemical_measurement,Gamry 1010E potentiostat with 3D-printed Pt||Pt electrode assembly on modified P1000 pipette
 Ramirez2024/P1/M10,gas_chromatography,online Agilent 8890B GCs
+Regnier2026/P1/M3,none,stackable flow electrochemical reactor (with dedicated power supply)
+Regnier2026/P1/M4,nmr_spectroscopy,in-line 19F NMR
+Regnier2026/P2/M3,none,flow electrochemical reactor (with dedicated power supply)
+Regnier2026/P2/M4,liquid_chromatography,in-line HPLC
+Regnier2026/P3/M3,liquid_chromatography,at-line HPLC
 Reizman2012/P1/M2,liquid_chromatography,"Waters HPLC (1525 binary pumps, Nova-Pak C18 column, 2996 PDA detector, Empower software, injection valve)"
 Reizman2015/P1/M5,liquid_chromatography;mass_spectrometry,"LC/MS (Agilent, 6120 quadrupole MS) with dual LC/MS injection valves"
 Reizman2016/P1/M4,liquid_chromatography;mass_spectrometry,"dual sample loop HPLC injection system (Gilson Valvemate II, Agilent G1158A) with HPLC-UV (Agilent G1365C) and MS (Agilent 6120 quadrupole)"

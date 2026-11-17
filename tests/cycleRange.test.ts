@@ -138,7 +138,7 @@ const config = loadConfig();
 const localZip = process.env.SDL_RELEASE_ZIP || undefined;
 const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NAME));
 
-describe.skipIf(!available)("AC-11 to AC-13 on the real 1.1.0 release", () => {
+describe.skipIf(!available)("AC-11 to AC-13 on the real 1.2.0 release", () => {
   let sim: SimulationJson;
   let c: Catalog;
   let g: Map<string, DurationRow[]>;
@@ -154,10 +154,10 @@ describe.skipIf(!available)("AC-11 to AC-13 on the real 1.1.0 release", () => {
     ...DEFAULT_STATE, steps: uos.map((uo) => ({ uo, module: 1 })), modules: [{ type: "unmapped", devices: 1 }], ...extra,
   });
 
-  it("react_flow: n = 87 recorded, 86 used; 0.1755, 351, 3900 s; 360 s median with bounds", () => {
+  it("react_flow: n = 88 recorded, 87 used; 0.1755, 360, 3900 s; 360 s median with bounds", () => {
     const r = cycleRange(real(["react_flow"]), stepSources(real(["react_flow"]), c, g, j));
-    expect([r.steps[0]!.recorded.length, r.steps[0]!.used.length]).toEqual([87, 86]);
-    expect(r.cycle).toEqual({ low: 0.1755, mid: 351, high: 3900 });
+    expect([r.steps[0]!.recorded.length, r.steps[0]!.used.length]).toEqual([88, 87]);
+    expect(r.cycle).toEqual({ low: 0.1755, mid: 360, high: 3900 });
     const b = real(["react_flow"], { bounds: true });
     expect(cycleRange(b, stepSources(b, c, g, j)).cycle).toEqual({ low: 0.1755, mid: 360, high: 3900 });
   });
@@ -178,6 +178,6 @@ describe.skipIf(!available)("AC-11 to AC-13 on the real 1.1.0 release", () => {
 
   it("throughputs: measured and nominal with a per-day value, and 9 without", () => {
     const t = throughputGroups(sim.throughputs);
-    expect([t.measured.length + t.nominal.length, t.notConverted.length]).toEqual([126, 9]);
+    expect([t.measured.length + t.nominal.length, t.notConverted.length]).toEqual([130, 9]);
   });
 });

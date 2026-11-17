@@ -333,7 +333,7 @@ const config = loadConfig();
 const localZip = process.env.SDL_RELEASE_ZIP || undefined;
 const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NAME));
 
-describe.skipIf(!available)("AC-8: start from a coded platform (real 1.1.0)", () => {
+describe.skipIf(!available)("AC-8: start from a coded platform (real 1.2.0)", () => {
   let sim: SimulationJson;
   let c: Catalog;
   const layoutOf = (id: string) => sim.platforms.find((p) => p.platform_id === id)!;

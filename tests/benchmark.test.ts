@@ -4,7 +4,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PINNED_DOI, pinnedExclusionReason } from "./pinned-release";
+import { PINNED_DOI, pinnedExclusionReasons } from "./pinned-release";
 import type { BenchmarkItemsJson, BenchmarkJson, BenchmarkSummary, BenchmarkTask, IndexJson } from "../src/data/types";
 import {
   BACK_LINK_TEXT,
@@ -307,20 +307,20 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
     const platformCells = platformRows(b, null).flatMap((r) => r.cells);
     expect(split.rows.flatMap((r) => r.cells)).toHaveLength(6);
     expect(split.total.cells).toHaveLength(2);
-    expect(labelCells.filter((c) => c.href !== null)).toHaveLength(69);
-    expect(labelRows(b, 0).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(56);
-    expect(labelRows(b, 1).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(13);
-    expect(labelCells.filter((c) => c.href === null)).toHaveLength(12);
-    expect(platformCells.filter((c, i) => i % 2 === 0 && c.href !== null)).toHaveLength(279);
-    expect(platformCells.filter((c, i) => i % 2 === 1 && c.href !== null)).toHaveLength(269);
-    expect(cells).toHaveLength(6 + 2 + 69 + 279 + 269);
+    expect(labelCells.filter((c) => c.href !== null)).toHaveLength(74);
+    expect(labelRows(b, 0).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(60);
+    expect(labelRows(b, 1).flatMap((r) => r.cells).filter((c) => c.href !== null)).toHaveLength(14);
+    expect(labelCells.filter((c) => c.href === null)).toHaveLength(7);
+    expect(platformCells.filter((c, i) => i % 2 === 0 && c.href !== null)).toHaveLength(289);
+    expect(platformCells.filter((c, i) => i % 2 === 1 && c.href !== null)).toHaveLength(278);
+    expect(cells).toHaveLength(6 + 2 + 74 + 289 + 278);
     const wrong = cells.filter((c) => count(decode(queryOf(c.href!))) !== c.n).map((c) => `${c.href}: ${c.n}`);
     expect(wrong).toEqual([]);
     expect(count({ task: MT, split: "test", label: null, platform: null })).toBe(1189);
     expect(count({ task: TM, split: "test", label: "mobile_robot", platform: null })).toBe(29);
     expect(count({ task: MT, split: null, label: null, platform: "Aand2024/P1" })).toBe(6);
-    expect(count({ task: TM, split: "excluded", label: null, platform: null })).toBe(15);
-    expect([items[MT]!.rows.length, items[TM]!.rows.length]).toEqual([2610, 981]);
+    expect(count({ task: TM, split: "excluded", label: null, platform: null })).toBe(31);
+    expect([items[MT]!.rows.length, items[TM]!.rows.length]).toEqual([2678, 997]);
     expect(platformRows(b, "test")).toHaveLength(115);
   });
 
@@ -334,13 +334,14 @@ describe.skipIf(!available)("real benchmark.json and benchmark-items.json (AC-6 
   });
 
   it("AC-8: exclusion line, uncertain sentences, caption and the recorded lines", () => {
-    expect(b.exclusion_reasons.map(exclusionLine)).toEqual([`Excluded: 4 papers, ${pinnedExclusionReason()}.`]);
+    const [added, development] = pinnedExclusionReasons();
+    expect(b.exclusion_reasons.map(exclusionLine)).toEqual([`Excluded: 7 papers, ${added}.`, `Excluded: 4 papers, ${development}.`]);
     expect(b.summaries.map(uncertainSentence)).toEqual([
-      "22 labels occur among the items of this task. Items marked uncertain in the release: 171 train, 163 test, 6 excluded.",
-      "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 1 excluded.",
+      "22 labels occur among the items of this task. Items marked uncertain in the release: 171 train, 163 test, 17 excluded.",
+      "5 labels occur among the items of this task. Items marked uncertain in the release: 47 train, 51 test, 4 excluded.",
     ]);
     expect(benchmarkCaption(b)).toBe(
-      "Benchmark chrono2023 has 2 tasks over 237 papers. The data dictionary describes the split as: “Benchmark: " +
+      "Benchmark chrono2023 has 2 tasks over 244 papers. The data dictionary describes the split as: “Benchmark: " +
         "chrono2023 trains on papers first public in 2023 or earlier and tests on papers first public in 2024 or later.” " +
         "The labels are the codings in the release, made by a language model, so top-1 accuracy measures agreement with those codings.",
     );

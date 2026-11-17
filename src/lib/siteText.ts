@@ -21,7 +21,8 @@ export const FILTER_LABEL = "Filter platforms by name, instrument or step";
 export const STATS_CAPTION = "Papers that passed the screening in the data card, not the whole field.";
 
 /** Caption of the papers-per-year preview; the date is the search date of the data card. */
-export const yearsCaption = (lastYear: number): string => `Papers per year; ${lastYear} covers the search to 20 October.`;
+export const yearsCaption = (lastYear: number): string =>
+  `Papers per year; ${lastYear} covers the search to 20 October and the Google Scholar alerts after it.`;
 
 export const fieldsCaption = (shown: number, inUse: number): string =>
   `Papers per field tag, top ${shown} of ${inUse}; a paper can carry several.`;
@@ -109,13 +110,16 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
   {
     heading: "How the papers were found",
     text:
-      "The 2172 candidates came from the reference lists of three reviews and from keyword searches of Crossref and " +
-      "arXiv, both run on 20 October 2026. They were screened on titles (2172), abstracts (655) and full texts (469). " +
+      "The candidates of release 1.1.0 came from the reference lists of three reviews and from keyword searches of " +
+      "Crossref and arXiv, both run on 20 October 2026. Since release 1.1.0, 368 further candidates came from the " +
+      "researcher's daily Google Scholar alerts (21 October 2026 onward) and were screened against the same criteria; " +
+      "7 of the 244 papers were added this way. The 2540 candidates were screened on titles (2540), abstracts (699) " +
+      "and full texts (488). " +
       "A paper was eligible when it is an original research paper; an algorithm chose the next experiment from " +
       "earlier results, at least once on the physical system; automated hardware ran the experiments, with isolated " +
-      "manual steps allowed; something was made or processed in the loop; and the hardware is described. 237 papers " +
-      "were eligible. Of the 3298 screening decisions, 3239 were made by a language model working from the written " +
-      "criteria and 59 by the researcher.",
+      "manual steps allowed; something was made or processed in the loop; and the hardware is described. 244 papers " +
+      "were eligible. Of the 3729 screening decisions, 3665 were made by a language model working from the written " +
+      "criteria and 64 by the researcher.",
   },
   {
     heading: "How the papers were coded",
@@ -133,8 +137,8 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     heading: "How far the labels can be trusted",
     text:
       "A second coding of every paper by the same model with the same instructions was compared with the released " +
-      "coding item by item; items without a counterpart of the same class are marked uncertain (340 of 2610 steps " +
-      "and 155 of 1681 connections). For 30 papers, a different model, Claude Fable 5.1, coded the papers under the " +
+      "coding item by item; items without a counterpart of the same class are marked uncertain (351 of 2678 steps " +
+      "and 163 of 1724 connections). For 30 papers, a different model, Claude Fable 5.1, coded the papers under the " +
       "same instructions as a reference. Against it, the released coding reached a field-wise strict micro-F1 (an " +
       "item counts when it pairs with a reference item and has the same class) of 0.905 for the unit operation of steps, 0.898 for module type and 0.891 for transfer mode; the lower bounds of " +
       "the 95% intervals were 0.862, 0.858 and 0.847. These figures are agreement between two language models, not " +
@@ -143,16 +147,16 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
   {
     heading: "Timing data",
     text:
-      "The release holds the process numbers the papers state: 454 step durations and 185 numbers of samples one " +
-      "device handles in one run of a step; for platforms, 233 batch sizes, 135 throughputs (91 measured in a " +
-      "campaign, 44 nominal), 13 costs and other quantities; and values for some modules and connections. 228 of the " +
-      "237 papers have at least one value. Claude Opus 5.5 extracted the values under written instructions, once per " +
+      "The release holds the process numbers the papers state: 465 step durations and 192 numbers of samples one " +
+      "device handles in one run of a step; for platforms, 239 batch sizes, 139 throughputs (95 measured in a " +
+      "campaign, 44 nominal), 14 costs and other quantities; and values for some modules and connections. 235 of the " +
+      "244 papers have at least one value. Claude Opus 5.5 extracted the values under written instructions, once per " +
       "paper, from the paper's text and its released coding. The instructions allowed only numbers the paper states, " +
       "with three calculations: the midpoint of a stated range, a measured throughput as a stated number of " +
       "experiments divided by a stated elapsed time of the same campaign, and an expression the paper prints for that " +
       "one quantity; the model was not allowed to estimate a value or derive a time from flow rates, volumes or " +
       "counts. Values are in the paper's unit. A time the paper gives for several consecutive steps sits on the first " +
-      "of them (57 rows). For the same 30 papers as above, Claude Fable 5.1 extracted the timing data under the same " +
+      "of them (61 rows). For the same 30 papers as above, Claude Fable 5.1 extracted the timing data under the same " +
       "instructions as a reference. Counting an item as agreeing when both gave a value and the two differed by at " +
       "most 10%, the share of agreeing items was 1.000 for throughput (15 platforms) and 0.870 for step duration (54 " +
       "steps; 95% interval 0.755 to 0.957). This is agreement between two models, not accuracy; the reference values " +
@@ -162,19 +166,20 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     heading: "Human-intervention reporting",
     text:
       "For every paper, the release records what it states about human intervention during its closed-loop " +
-      "campaign, read by Claude Opus 5.5 under written instructions, once per paper. 25 papers state a number for it " +
-      "(a count of interventions, person-time, or the frequency of a human task), 73 name tasks people performed " +
-      "without a number, 51 state that the campaign ran without human intervention, and 88 state none of these. " +
+      "campaign, read by Claude Opus 5.5 under written instructions, once per paper. 26 papers state a number for it " +
+      "(a count of interventions, person-time, or the frequency of a human task), 74 name tasks people performed " +
+      "without a number, 54 state that the campaign ran without human intervention, and 90 state none of these. " +
       "One-time set-up before the first iteration does not count as intervention, and a capability statement or the " +
-      'word "autonomous" alone does not count as a statement that the campaign ran without it. 48 papers state a ' +
+      'word "autonomous" alone does not count as a statement that the campaign ran without it. 52 papers state a ' +
       "stretch of the campaign that ran without a person. No second reading exists to compare with.",
   },
   {
     heading: "Limits",
     text:
-      "The search ran once, on one date, in two indexes. The 237 papers are the eligible candidates that this search " +
-      "found, not every closed-loop self-driving laboratory paper published, so counts by year reflect the search as " +
-      "well as the field. Page numbers refer to the file versions that were read; 29 main texts are preprints, and 19 " +
+      "The search ran once, on one date, in two indexes, and has since been extended only by one researcher's Google " +
+      "Scholar alerts. The 244 papers are the eligible candidates found this way, not every closed-loop self-driving " +
+      "laboratory paper published, so counts by year reflect the search as well as the field. Page numbers refer to " +
+      "the file versions that were read; 35 main texts are preprints, and 19 " +
       "of them belong to papers with a journal version whose pages differ. Paper text and abstracts, process " +
       "conditions other than the stated times, batch sizes, throughput and cost, the coders' general notes on each " +
       "paper, the extracting model's notes and free-text qualifiers, the second coding and the reference values of " +

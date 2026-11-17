@@ -74,7 +74,7 @@ const config = loadConfig();
 const localZip = process.env.SDL_RELEASE_ZIP || undefined;
 const available = localZip !== undefined || existsSync(join(CACHE_DIR, MARKER_NAME));
 
-describe.skipIf(!available)("AC-8, AC-9 on the real 1.1.0 release", () => {
+describe.skipIf(!available)("AC-8, AC-9 on the real 1.2.0 release", () => {
   let sim: SimulationJson;
   let c: Catalog;
   beforeAll(async () => {
